@@ -1,87 +1,115 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-const mockQuestions = {
-  math: [
-    {
-      id: 1,
-      question: "What is 2 + 2?",
-      options: ["3", "4", "5", "6"],
-      answer: 1,
-    },
-    {
-      id: 2,
-      question: "What is 5 × 6?",
-      options: ["30", "25", "35", "20"],
-      answer: 0,
-    },
-  ],
-  science: [
-    {
-      id: 1,
-      question: "What is H2O?",
-      options: ["Oxygen", "Water", "Hydrogen", "Nitrogen"],
-      answer: 1,
-    },
-    {
-      id: 2,
-      question: "Which planet is closest to the sun?",
-      options: ["Earth", "Mars", "Mercury", "Venus"],
-      answer: 2,
-    },
-  ],
-};
+const API_BASE = "http://localhost:5000"; // Change if deployed
 
 const Exam = () => {
   const { subject } = useParams();
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60 * 60); // 1 hour in seconds
+
+  console.log("subject", subject);
 
   useEffect(() => {
-    // Fetch questions (using mock data for now)
-    setQuestions(mockQuestions[subject] || []);
+    fetch(`${API_BASE}/subjects`)
+      .then((res) => res.json())
+      .then((subjects) => {
+        const subjectObj = subjects.find(
+          (s) => s.name.toLowerCase() === subject.toLowerCase()
+        );
+        if (subjectObj) {
+          fetch(`${API_BASE}/questions/${subjectObj.id}`)
+            .then((res) => res.json())
+            .then(setQuestions);
+        }
+      });
   }, [subject]);
 
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    } else {
+      handleSubmit();
+    }
+  }, [timeLeft]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
   const handleAnswer = (questionId, optionIndex) => {
-    setAnswers({ ...answers, [questionId]: optionIndex });
+    if (timeLeft > 0 && !submitted) {
+      setAnswers({ ...answers, [questionId]: optionIndex });
+    }
   };
 
   const handleSubmit = () => {
-    let correctCount = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.answer) {
-        correctCount++;
-      }
-    });
-    setScore(correctCount);
-    setSubmitted(true);
+    const formattedAnswers = questions.map((q) => ({
+      questionId: q.id,
+      selectedOption: answers[q.id] ?? -1, // -1 if unanswered
+    }));
+
+    fetch(`${API_BASE}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentName: "Joshua Blaese", // Replace with actual student data
+        subjectId: questions[0]?.subject_id,
+        answers: formattedAnswers,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          console.error("Submission error:", data.error);
+        } else {
+          setScore(data.score);
+          setSubmitted(true);
+          setTimeLeft(0); // Stop timer
+        }
+      })
+      .catch((err) => console.error("Network error:", err));
   };
 
   return (
     <div className="container mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Exam: {subject.toUpperCase()}</h2>
 
+      <div className="text-xl font-semibold bg-gray-100 p-2 rounded-md text-center">
+        ⏳ Time Left: {formatTime(timeLeft)}
+      </div>
+
       {questions.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           {questions.map((q) => (
             <div key={q.id} className="p-4 border rounded-lg">
               <p className="font-semibold">{q.question}</p>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {q.options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(q.id, index)}
-                    className={`p-2 rounded-lg ${
-                      answers[q.id] === index
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                {[q.option1, q.option2, q.option3, q.option4, q.option5].map(
+                  (option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswer(q.id, index)}
+                      className={`p-2 rounded-lg ${
+                        answers[q.id] === index
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200"
+                      } ${
+                        timeLeft === 0 ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      disabled={timeLeft === 0}
+                    >
+                      {option}
+                    </button>
+                  )
+                )}
               </div>
             </div>
           ))}
