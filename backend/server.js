@@ -32,21 +32,6 @@ const authenticate = (req, res, next) => {
   });
 };
 
-// ✅ Student Registration
-app.post("/register", async (req, res) => {
-  const { studentId, name, surname, password } = req.body;
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await db.query(
-      "INSERT INTO students (student_id, name, surname, password) VALUES (?, ?, ?, ?)",
-      [studentId, name, surname, hashedPassword]
-    );
-    res.json({ message: "Student registered successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Error registering student" });
-  }
-});
-
 // ✅ Student Login
 app.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
@@ -65,6 +50,8 @@ app.post("/login", async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, student.password);
     if (!isValidPassword)
       return res.status(401).json({ error: "Invalid credentials" });
+
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
     // Generate JWT token
     const token = jwt.sign(
