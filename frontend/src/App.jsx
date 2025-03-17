@@ -13,6 +13,9 @@ import Login from "./pages/Login"; // Ensure this file exists
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [subjects, setSubjects] = useState(
+    JSON.parse(localStorage.getItem("subjects")) || []
+  );
 
   useEffect(() => {
     setToken(localStorage.getItem("token"));
@@ -21,11 +24,13 @@ const App = () => {
   return (
     <Router>
       {token && <Navbar />}
-      <div className="p-4">
+      <div className="">
         <Routes>
           <Route
             path="/"
-            element={token ? <Home /> : <Navigate to="/login" />}
+            element={
+              token ? <Home subjects={subjects} /> : <Navigate to="/login" />
+            }
           />
           <Route
             path="/exam/:subject"
@@ -35,7 +40,10 @@ const App = () => {
             path="/results"
             element={token ? <Results /> : <Navigate to="/login" />}
           />
-          <Route path="/login" element={<Login setToken={setToken} />} />
+          <Route
+            path="/login"
+            element={<Login setToken={setToken} setSubjects={setSubjects} />}
+          />
         </Routes>
       </div>
     </Router>
