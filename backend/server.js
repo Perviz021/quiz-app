@@ -36,26 +36,29 @@ const authenticate = (req, res, next) => {
 app.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
   try {
-    // Fetch student by studentId
+    // Authenticate student
     const [students] = await db.query(
-      "SELECT * FROM students WHERE student_id = ?",
-      [studentId]
+      "SELECT * FROM students WHERE Tələbə_kodu = ? AND Fin_kod = ?",
+      [studentId, password]
     );
+
     if (students.length === 0)
-      return res.status(400).json({ error: "Student not found" });
+      return res.status(400).json({ error: "Invalid student ID or password" });
 
     const student = students[0];
 
-    // Compare password
-    const isValidPassword = await bcrypt.compare(password, student.password);
-    if (!isValidPassword)
-      return res.status(401).json({ error: "Invalid credentials" });
+    // Fetch all subjects for the student
+    const [subjects] = await db.query(
+      "SELECT `Fənnin adı` FROM students WHERE Tələbə_kodu = ?",
+      [studentId]
+    );
 
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    // Extract subject names
+    const subjectList = subjects.map((row) => row["Fənnin adı"]);
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: student.id, studentId: student.student_id, name: student.name },
+      { id: student.id, studentId: student.Tələbə_kodu },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
@@ -64,9 +67,9 @@ app.post("/login", async (req, res) => {
       token,
       student: {
         id: student.id,
-        name: student.name,
-        studentId: student.student_id,
+        studentId: student.Tələbə_kodu,
       },
+      subjects: subjectList, // Send subject names
     });
   } catch (error) {
     console.error("Login error:", error);
