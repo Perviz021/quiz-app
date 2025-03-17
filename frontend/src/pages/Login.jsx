@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Login = ({ setToken }) => {
+const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +22,9 @@ const Login = ({ setToken }) => {
       if (!response.ok) throw new Error(data.error || "Something went wrong");
 
       localStorage.setItem("token", data.token);
-      setToken(data.token); // ✅ Update token state
+      localStorage.setItem("subjects", JSON.stringify(data.subjects));
+      setToken(data.token);
+      setSubjects(data.subjects); // ✅ Update subjects state
       navigate("/");
     } catch (err) {
       setError(err.message);
@@ -30,7 +32,7 @@ const Login = ({ setToken }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center h-screen overflow-hidden bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96">
         <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
