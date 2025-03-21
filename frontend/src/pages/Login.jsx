@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react"; // Import eye icons
 
 const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -24,7 +26,7 @@ const Login = ({ setToken, setSubjects }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("subjects", JSON.stringify(data.subjects));
       setToken(data.token);
-      setSubjects(data.subjects); // ✅ Update subjects state
+      setSubjects(data.subjects);
       navigate("/");
     } catch (err) {
       setError(err.message);
@@ -32,7 +34,7 @@ const Login = ({ setToken, setSubjects }) => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen overflow-hidden bg-gray-100">
+    <div className="flex items-center justify-center h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96">
         <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
@@ -45,15 +47,27 @@ const Login = ({ setToken, setSubjects }) => {
             required
             className="w-full p-2 border rounded mb-2"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full p-2 border rounded mb-4"
-          />
-          <button className="w-full bg-blue-500 text-white py-2 rounded">
+
+          {/* Password field with eye icon */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full p-2 border rounded pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-2 right-3 text-gray-600 hover:text-gray-900"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          <button className="w-full bg-blue-500 text-white py-2 rounded mt-4">
             Login
           </button>
         </form>
