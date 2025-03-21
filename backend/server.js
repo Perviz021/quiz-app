@@ -2,7 +2,6 @@ import express from "express";
 import mysql from "mysql2/promise";
 import cors from "cors";
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 dotenv.config();
@@ -10,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Use connection pool for better performance
+// ✅ Use connection pool
 const db = await mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -25,36 +24,43 @@ const db = await mysql.createPool({
 const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
+
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ error: "Invalid token" });
+
     req.student = decoded;
     next();
   });
 };
 
-// ✅ Student Login
+// ✅ Student Login & Fetch Subjects
 app.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
+
+  console.log("Telebe kodu: ", studentId);
+  console.log("Fin kodu: ", password);
+
   try {
     // Authenticate student
     const [students] = await db.query(
-      "SELECT * FROM students WHERE Tələbə_kodu = ? AND Fin_kod = ?",
+      "SELECT * FROM students WHERE `Tələbə_kodu` = ? AND `Fin_kod` = ?",
       [studentId, password]
     );
 
-    if (students.length === 0)
+    if (students.length === 0) {
       return res.status(400).json({ error: "Invalid student ID or password" });
+    }
 
     const student = students[0];
 
-    // Fetch all subjects for the student
+    // Fetch subjects for the student using `Fənnin kodu`
     const [subjects] = await db.query(
-      "SELECT `Fənnin adı` FROM students WHERE Tələbə_kodu = ?",
+      `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`
+       FROM subjects s
+       JOIN students st ON st.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+       WHERE st.\`Tələbə_kodu\` = ?`,
       [studentId]
     );
-
-    // Extract subject names
-    const subjectList = subjects.map((row) => row["Fənnin adı"]);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -69,7 +75,7 @@ app.post("/login", async (req, res) => {
         id: student.id,
         studentId: student.Tələbə_kodu,
       },
-      subjects: subjectList, // Send subject names
+      subjects, // Now includes subject ID and name
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -89,12 +95,12 @@ app.get("/subjects", authenticate, async (req, res) => {
 });
 
 // ✅ Fetch questions for a subject (Protected Route)
-app.get("/questions/:subjectId", authenticate, async (req, res) => {
+app.get("/questions/:subjectCode", authenticate, async (req, res) => {
   try {
-    const { subjectId } = req.params;
+    const { subjectCode } = req.params;
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE subject_id = ?",
-      [subjectId]
+      "SELECT * FROM questions WHERE `fənnin_kodu` = ?",
+      [subjectCode]
     );
     res.json(questions);
   } catch (error) {
@@ -103,12 +109,12 @@ app.get("/questions/:subjectId", authenticate, async (req, res) => {
   }
 });
 
-// ✅ Submit exam results (Protected Route)
+// ✅ Fix `/submit` to use subjectCode correctly
 app.post("/submit", authenticate, async (req, res) => {
   const { studentId } = req.student;
-  const { subjectId, answers } = req.body;
+  const { subjectCode, answers } = req.body;
 
-  if (!studentId || !subjectId || !Array.isArray(answers)) {
+  if (!studentId || !subjectCode || !Array.isArray(answers)) {
     return res.status(400).json({ error: "Invalid request data" });
   }
 
@@ -122,27 +128,30 @@ app.post("/submit", authenticate, async (req, res) => {
         [ans.questionId]
       );
 
-      if (result.length === 0) continue; // Skip if question ID is invalid
+      if (result.length === 0) continue;
 
       const isCorrect = result[0].correct_option === ans.selectedOption;
       if (isCorrect) score++;
 
-      // Queue insert for answers table
       queries.push(
         db.query(
-          "INSERT INTO answers (student_id, subject_id, question_id, selected_option, is_correct) VALUES (?, ?, ?, ?, ?)",
-          [studentId, subjectId, ans.questionId, ans.selectedOption, isCorrect]
+          "INSERT INTO answers (student_id, subject_code, question_id, selected_option, is_correct) VALUES (?, ?, ?, ?, ?)",
+          [
+            studentId,
+            subjectCode,
+            ans.questionId,
+            ans.selectedOption,
+            isCorrect,
+          ]
         )
       );
     }
 
-    // Insert all answers in parallel
     await Promise.all(queries);
 
-    // Store final result in `results` table
     await db.query(
-      "INSERT INTO results (student_id, subject_id, score, total_questions, submitted_at) VALUES (?, ?, ?, ?, NOW())",
-      [studentId, subjectId, score, answers.length]
+      "INSERT INTO results (student_id, subject_code, score, total_questions, submitted_at) VALUES (?, ?, ?, ?, NOW())",
+      [studentId, subjectCode, score, answers.length]
     );
 
     res.json({ message: "Exam submitted successfully", score });
