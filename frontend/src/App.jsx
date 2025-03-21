@@ -33,7 +33,7 @@ const App = () => {
             }
           />
           <Route
-            path="/exam/:subject"
+            path="/exam/:subjectCode"
             element={token ? <Exam /> : <Navigate to="/login" />}
           />
           <Route
