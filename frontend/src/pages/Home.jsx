@@ -1,12 +1,24 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
-const Home = ({ subjects }) => {
-  const navigate = useNavigate();
+const Home = () => {
+  const [subjects, setSubjects] = useState([]);
 
-  // ✅ Logout function
+  useEffect(() => {
+    const storedSubjects = JSON.parse(localStorage.getItem("subjects")) || [];
+
+    // Convert backend data to match frontend expectations
+    const formattedSubjects = storedSubjects.map((subject, index) => ({
+      id: subject["Fənnin kodu"], // Use "Fənnin kodu" as id
+      name: subject["Fənnin adı"], // Use "Fənnin adı" as name
+    }));
+
+    setSubjects(formattedSubjects);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("subjects"); // Clear subjects
+    localStorage.removeItem("subjects");
     window.location.href = "/login";
   };
 
@@ -24,13 +36,13 @@ const Home = ({ subjects }) => {
 
       {subjects.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {subjects.map((subject, index) => (
+          {subjects.map((subject) => (
             <Link
-              key={index}
-              to={`/exam/${subject.toLowerCase()}`}
+              key={subject.id}
+              to={`/exam/${subject.id}`}
               className="p-4 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600"
             >
-              {subject}
+              {subject.name}
             </Link>
           ))}
         </div>
