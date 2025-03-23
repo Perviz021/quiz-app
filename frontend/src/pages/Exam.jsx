@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "http://localhost:5000/api";
 
 const Exam = () => {
   const { subjectCode } = useParams();
@@ -47,6 +47,10 @@ const Exam = () => {
   };
 
   const handleSubmit = () => {
+    if (submitted) return; // Prevent double submission
+
+    setSubmitted(true); // Disable button after first click
+
     const formattedAnswers = questions.map((q) => ({
       questionId: q.id,
       selectedOption: answers[q.id] ?? -1,
@@ -67,23 +71,23 @@ const Exam = () => {
       .then((data) => {
         if (data.error) {
           console.error("Submission error:", data.error);
+          setSubmitted(false); // Re-enable button if error
         } else {
           setScore(data.score);
-          setSubmitted(true);
-          setTimeLeft(0);
         }
-      });
+      })
+      .catch(() => setSubmitted(false)); // Re-enable button if network error
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Exam</h2>
+      <h2 className="text-2xl font-bold mb-4">İmtahan</h2>
       {!examStarted ? (
         <button
           onClick={handleStartExam}
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-600"
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-600 cursor-pointer"
         >
-          Start Exam
+          İmtahana başla
         </button>
       ) : (
         <div>
