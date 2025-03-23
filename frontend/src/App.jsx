@@ -21,6 +21,10 @@ const App = () => {
     setToken(localStorage.getItem("token"));
   }, []);
 
+  useEffect(() => {
+    token ? setToken(localStorage.getItem("token")) : setToken("");
+  }, [token]);
+
   return (
     <Router>
       {token && <Navbar />}
