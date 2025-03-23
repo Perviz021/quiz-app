@@ -1,0 +1,5 @@
+.loginBg {
+  background-image: url("../img/login-bg.jpg");
+  background-position: center center;
+  @apply bg-cover;
+}
