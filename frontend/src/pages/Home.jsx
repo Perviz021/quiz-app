@@ -28,6 +28,7 @@ const Home = () => {
     localStorage.removeItem("subjects");
     localStorage.removeItem("studentId");
     navigate("/login");
+    window.location.reload(); // 🔄 Hard reload the page
   };
 
   return (
