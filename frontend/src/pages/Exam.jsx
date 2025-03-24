@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import Popup from "../components/Popup";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -9,8 +10,10 @@ const Exam = () => {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(3600);
+  const [timeLeft, setTimeLeft] = useState(600);
   const [examStarted, setExamStarted] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_BASE}/questions/${subjectCode}`, {
@@ -27,14 +30,18 @@ const Exam = () => {
   }, [subjectCode]);
 
   useEffect(() => {
+    console.log("Questions: ", questions);
+  }, [questions]);
+
+  useEffect(() => {
     let timer;
-    if (examStarted && timeLeft > 0) {
+    if (examStarted && timeLeft > 0 && !submitted) {
       timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0 && examStarted) {
       handleSubmit();
     }
     return () => clearInterval(timer);
-  }, [examStarted, timeLeft]);
+  }, [examStarted, timeLeft, submitted]);
 
   const handleStartExam = () => {
     setExamStarted(true);
@@ -46,10 +53,16 @@ const Exam = () => {
     }
   };
 
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    navigate("/");
+  };
+
   const handleSubmit = () => {
     if (submitted) return; // Prevent double submission
 
-    setSubmitted(true); // Disable button after first click
+    setSubmitted(true); // Mark as submitted
+    clearInterval(); // Stop the timer
 
     const formattedAnswers = questions.map((q) => ({
       questionId: q.id,
@@ -71,12 +84,13 @@ const Exam = () => {
       .then((data) => {
         if (data.error) {
           console.error("Submission error:", data.error);
-          setSubmitted(false); // Re-enable button if error
+          setSubmitted(false);
         } else {
           setScore(data.score);
+          setShowPopup(true);
         }
       })
-      .catch(() => setSubmitted(false)); // Re-enable button if network error
+      .catch(() => setSubmitted(false));
   };
 
   return (
@@ -92,7 +106,8 @@ const Exam = () => {
       ) : (
         <div>
           <div className="text-xl font-semibold mb-4">
-            Time Left: {Math.floor(timeLeft / 60)}:{timeLeft % 60}
+            Time Left: {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:
+            {String(timeLeft % 60).padStart(2, "0")}
           </div>
           {questions.map((q) => (
             <div key={q.id} className="p-4 border rounded-lg mb-4">
@@ -125,16 +140,16 @@ const Exam = () => {
             className={`mt-4 px-6 py-3 rounded-lg text-lg ${
               submitted
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600 text-white"
+                : "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
             }`}
           >
-            {submitted ? "Exam Submitted" : "Submit Exam"}
+            {submitted ? "İmtahan sonlandı" : "İmtahanı bitir"}
           </button>
-          {submitted && (
-            <p className="mt-4 text-xl font-semibold">Your Score: {score}</p>
-          )}
         </div>
       )}
+
+      {/* ✅ Show the popup when the exam is submitted */}
+      {showPopup && <Popup score={score} onClose={handleClosePopup} />}
     </div>
   );
 };
