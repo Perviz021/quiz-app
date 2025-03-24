@@ -11,11 +11,13 @@ router.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
   try {
     const [students] = await db.query(
-      "SELECT * FROM students WHERE `Tələbə_kodu` = ? AND `Fin_kod` = ?",
+      "SELECT * FROM students WHERE Binary `Tələbə_kodu` = ? AND Binary `Fin_kod` = ?",
       [studentId, password]
     );
     if (students.length === 0) {
-      return res.status(400).json({ error: "Tələbə kodu və ya fin kod düzgün daxil edilməmişdir!" });
+      return res.status(400).json({
+        error: "Tələbə kodu və ya fin kod düzgün daxil edilməmişdir!",
+      });
     }
     const student = students[0];
     const [subjects] = await db.query(
