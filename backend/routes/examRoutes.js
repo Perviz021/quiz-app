@@ -24,9 +24,9 @@ router.post("/submit", authenticate, async (req, res) => {
 
       if (result.length === 0) continue;
 
-      console.log(
-        `Question: ${ans.questionId}, Correct: ${result[0].correct_option}, Selected: ${ans.selectedOption}`
-      );
+      // console.log(
+      //   `Question: ${ans.questionId}, Correct: ${result[0].correct_option}, Selected: ${ans.selectedOption}`
+      // );
 
       const isCorrect = result[0].correct_option == ans.selectedOption; // Ensure correct type comparison
       if (isCorrect) score++;
