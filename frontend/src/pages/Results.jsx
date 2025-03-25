@@ -31,8 +31,8 @@ const Results = () => {
         <table className="w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-200">
-              <th className="border p-3 text-left">Subject</th>
-              <th className="border p-3 text-left">Score</th>
+              <th className="border p-3 text-left">Fənn</th>
+              <th className="border p-3 text-left">Bal</th>
             </tr>
           </thead>
           <tbody>
