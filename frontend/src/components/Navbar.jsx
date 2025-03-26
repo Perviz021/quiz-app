@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import ProtectedLink from "./ProtectedLink";
 
 const Navbar = () => {
   return (
@@ -6,10 +6,10 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between">
         <h1 className="text-xl font-bold">Quiz App</h1>
         <div>
-          <Link to="/" className="mr-4">
+          <ProtectedLink to="/" className="mr-4">
             Home
-          </Link>
-          <Link to="/results">Results</Link>
+          </ProtectedLink>
+          <ProtectedLink to="/results">Results</ProtectedLink>
         </div>
       </div>
     </nav>
