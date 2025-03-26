@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Popup from "../components/Popup";
+import { useExam } from "../context/ExamContext";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -14,6 +15,7 @@ const Exam = () => {
   const [examStarted, setExamStarted] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const navigate = useNavigate();
+  const { isExamActive, setIsExamActive } = useExam();
 
   // Create refs for each question
   const questionRefs = useRef([]);
@@ -59,8 +61,34 @@ const Exam = () => {
     };
   }, [examStarted, timeLeft, submitted]);
 
+  // useEffect(() => {
+  //   if (examStarted && !submitted) {
+  //     const handleBackButton = (e) => {
+  //       e.preventDefault();
+  //       const confirmLeave = window.confirm(
+  //         "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!"
+  //       );
+  //       if (confirmLeave) {
+  //         handleForceSubmit();
+  //         window.history.pushState(null, "", window.location.pathname);
+  //         navigate(-1);
+  //       } else {
+  //         window.history.pushState(null, "", window.location.pathname);
+  //       }
+  //     };
+
+  //     window.history.pushState(null, "", window.location.pathname);
+  //     window.addEventListener("popstate", handleBackButton);
+
+  //     return () => {
+  //       window.removeEventListener("popstate", handleBackButton);
+  //     };
+  //   }
+  // }, [examStarted, submitted]);
+
   const handleStartExam = () => {
     setExamStarted(true);
+    setIsExamActive(true);
   };
 
   const handleAnswer = (questionId, optionIndex) => {
@@ -88,10 +116,26 @@ const Exam = () => {
     }
   };
 
+  // Add this useEffect to handle force submit requests
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (localStorage.getItem("forceSubmit") === "true") {
+        handleForceSubmit();
+        localStorage.removeItem("forceSubmit");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Modify your existing force submit function
   const handleForceSubmit = () => {
     if (submitted) return;
 
     setSubmitted(true);
+    localStorage.setItem("examActive", "false");
+
     fetch(`${API_BASE}/submit`, {
       method: "POST",
       headers: {
@@ -100,15 +144,19 @@ const Exam = () => {
       },
       body: JSON.stringify({
         subjectCode: subjectCode,
-        answers: [],
+        answers: [], // Empty array gives 0 score
       }),
-    }).catch(() => setSubmitted(false));
+    }).catch(() => {
+      localStorage.setItem("examActive", "false");
+      setSubmitted(false);
+    });
   };
 
   const handleSubmit = () => {
     if (submitted) return;
 
     setSubmitted(true);
+    setIsExamActive(false);
     clearInterval();
 
     const formattedAnswers = questions.map((q) => ({
@@ -172,10 +220,12 @@ const Exam = () => {
                 ref={(el) => (questionRefs.current[index] = el)}
                 className="p-4 border rounded-lg mb-4"
               >
-                <p className="font-semibold text-lg whitespace-pre-line">
-                  {`${index + 1}. `}
-                  {q.question}
-                </p>
+                <p
+                  className="font-semibold text-lg"
+                  dangerouslySetInnerHTML={{
+                    __html: `${index + 1}. ${q.question}`,
+                  }}
+                ></p>
                 <div className="mt-2 space-y-2">
                   {[q.option1, q.option2, q.option3, q.option4, q.option5].map(
                     (option, optionIndex) => (
