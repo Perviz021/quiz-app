@@ -61,31 +61,6 @@ const Exam = () => {
     };
   }, [examStarted, timeLeft, submitted]);
 
-  // useEffect(() => {
-  //   if (examStarted && !submitted) {
-  //     const handleBackButton = (e) => {
-  //       e.preventDefault();
-  //       const confirmLeave = window.confirm(
-  //         "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!"
-  //       );
-  //       if (confirmLeave) {
-  //         handleForceSubmit();
-  //         window.history.pushState(null, "", window.location.pathname);
-  //         navigate(-1);
-  //       } else {
-  //         window.history.pushState(null, "", window.location.pathname);
-  //       }
-  //     };
-
-  //     window.history.pushState(null, "", window.location.pathname);
-  //     window.addEventListener("popstate", handleBackButton);
-
-  //     return () => {
-  //       window.removeEventListener("popstate", handleBackButton);
-  //     };
-  //   }
-  // }, [examStarted, submitted]);
-
   const handleStartExam = () => {
     setExamStarted(true);
     setIsExamActive(true);
@@ -100,20 +75,6 @@ const Exam = () => {
   const handleClosePopup = () => {
     setShowPopup(false);
     navigate("/");
-  };
-
-  const handleNavigate = (path) => {
-    if (examStarted && !submitted) {
-      const confirmLeave = window.confirm(
-        "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!"
-      );
-      if (confirmLeave) {
-        handleForceSubmit(); // Auto-submit with 0
-        navigate(path);
-      }
-    } else {
-      navigate(path);
-    }
   };
 
   // Add this useEffect to handle force submit requests
