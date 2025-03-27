@@ -24,7 +24,7 @@ router.post("/login", async (req, res) => {
       `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`
        FROM subjects s
        JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
-       WHERE f.\`Tələbə_kodu\` = ?`,
+       WHERE f.\`Tələbə_kodu\` = ? && f.Semestr='yaz'`,
       [studentId]
     );
     const token = jwt.sign(
