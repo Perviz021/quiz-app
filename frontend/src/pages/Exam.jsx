@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useBeforeUnload, useNavigate, useParams } from "react-router-dom";
 import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 
@@ -14,8 +14,9 @@ const Exam = () => {
   const [timeLeft, setTimeLeft] = useState(600);
   const [examStarted, setExamStarted] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const navigate = useNavigate();
   const { isExamActive, setIsExamActive } = useExam();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   // Create refs for each question
   const questionRefs = useRef([]);
@@ -33,33 +34,6 @@ const Exam = () => {
       .then(setQuestions)
       .catch((error) => console.error("Error:", error));
   }, [subjectCode]);
-
-  useEffect(() => {
-    let timer;
-
-    // 🕒 Timer Countdown
-    if (examStarted && timeLeft > 0 && !submitted) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && examStarted) {
-      handleSubmit(); // ⏳ Auto-submit when time is up
-    }
-
-    // 🚨 Warn Before Leaving
-    const handleBeforeUnload = (event) => {
-      if (examStarted && !submitted) {
-        event.preventDefault();
-        event.returnValue =
-          "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      clearInterval(timer); // 🛑 Clear timer when component unmounts
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [examStarted, timeLeft, submitted]);
 
   const handleStartExam = () => {
     setExamStarted(true);
@@ -90,14 +64,21 @@ const Exam = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  useEffect(() => {
+    if (examStarted && !submitted) {
+      window.history.pushState({ examInProgress: true }, "");
+    }
+  }, [examStarted, submitted]);
+
   // Modify your existing force submit function
-  const handleForceSubmit = () => {
-    if (submitted) return;
+  const handleForceSubmit = useCallback(() => {
+    if (isSubmitting || submitted) return Promise.resolve();
 
+    setIsSubmitting(true);
     setSubmitted(true);
-    localStorage.setItem("examActive", "false");
+    setIsExamActive(false);
 
-    fetch(`${API_BASE}/submit`, {
+    return fetch(`${API_BASE}/submit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -105,20 +86,21 @@ const Exam = () => {
       },
       body: JSON.stringify({
         subjectCode: subjectCode,
-        answers: [], // Empty array gives 0 score
+        answers: [],
       }),
-    }).catch(() => {
-      localStorage.setItem("examActive", "false");
-      setSubmitted(false);
-    });
-  };
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Submission failed");
+        return res.json();
+      })
+      .finally(() => setIsSubmitting(false));
+  }, [isSubmitting, submitted, subjectCode]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (submitted) return;
 
     setSubmitted(true);
     setIsExamActive(false);
-    clearInterval();
 
     const formattedAnswers = questions.map((q) => ({
       questionId: q.id,
@@ -138,16 +120,96 @@ const Exam = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.error) {
-          console.error("Submission error:", data.error);
-          setSubmitted(false);
-        } else {
-          setScore(data.score);
-          setShowPopup(true);
-        }
+        if (data.error) throw new Error(data.error);
+        setScore(data.score);
+        setShowPopup(true);
       })
-      .catch(() => setSubmitted(false));
-  };
+      .catch((err) => {
+        console.error("Submission error:", err);
+        setSubmitted(false);
+      });
+  }, [submitted, questions, answers, subjectCode]);
+
+  // Handle browser back button
+  useEffect(() => {
+    if (!examStarted || submitted) return;
+
+    const handleBackButton = async (e) => {
+      e.preventDefault();
+
+      if (isSubmitting) {
+        alert("İmtahan yadda saxlanılır... Zəhmət olmasa gözləyin.");
+        return;
+      }
+
+      const confirmLeave = window.confirm(
+        "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!"
+      );
+
+      if (confirmLeave) {
+        try {
+          await handleForceSubmit();
+          setTimeout(() => navigate(-1, { replace: true }), 0);
+        } catch (error) {
+          console.error("Failed to submit before navigation:", error);
+        }
+      } else {
+        window.history.pushState(null, "", window.location.pathname);
+      }
+    };
+
+    window.history.pushState({ examInProgress: true }, "");
+    window.addEventListener("popstate", handleBackButton);
+
+    return () => {
+      window.removeEventListener("popstate", handleBackButton);
+      if (window.history.state?.examInProgress) {
+        window.history.go(-1);
+      }
+    };
+  }, [examStarted, submitted, isSubmitting, handleForceSubmit, navigate]);
+
+  // useEffect(() => {
+  //   const handleBeforeUnload = (e) => {
+  //     if (examStarted && !submitted) {
+  //       handleForceSubmit(); // Submit in background
+  //       e.preventDefault();
+  //       e.returnValue =
+  //         "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!";
+  //     }
+  //   };
+
+  //   window.addEventListener("beforeunload", handleBeforeUnload);
+  //   return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  // }, [examStarted, submitted, handleForceSubmit]);
+
+  useBeforeUnload(
+    useCallback(
+      (e) => {
+        if (examStarted && !submitted) {
+          handleForceSubmit();
+          e.preventDefault();
+          return (e.returnValue = "Are you sure you want to leave?");
+        }
+      },
+      [examStarted, submitted, handleForceSubmit]
+    )
+  );
+
+  useEffect(() => {
+    let timer;
+
+    // Timer Countdown
+    if (examStarted && timeLeft > 0 && !submitted) {
+      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (timeLeft === 0 && examStarted) {
+      handleSubmit();
+    }
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [examStarted, timeLeft, submitted, handleSubmit]); // Add handleSubmit to dependencies
 
   // Scroll to a specific question when clicking the navigation
   const scrollToQuestion = (index) => {
@@ -211,14 +273,18 @@ const Exam = () => {
             ))}
             <button
               onClick={handleSubmit}
-              disabled={submitted}
+              disabled={submitted || isSubmitting}
               className={`mt-4 px-6 py-3 rounded-lg text-lg ${
-                submitted
+                submitted || isSubmitting
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
               }`}
             >
-              {submitted ? "İmtahan sonlandı" : "İmtahanı bitir"}
+              {isSubmitting
+                ? "Yadda saxlanılır..."
+                : submitted
+                ? "İmtahan sonlandı"
+                : "İmtahanı bitir"}
             </button>
           </div>
         )}
