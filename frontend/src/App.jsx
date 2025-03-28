@@ -26,6 +26,18 @@ const App = () => {
     token ? setToken(localStorage.getItem("token")) : setToken("");
   }, [token]);
 
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === "forceSubmit" && e.newValue === "true") {
+        // You might want to add additional force submit logic here
+        localStorage.removeItem("forceSubmit");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   return (
     <ExamProvider>
       <Router>
