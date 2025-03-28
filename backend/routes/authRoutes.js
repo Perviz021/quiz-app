@@ -11,7 +11,7 @@ router.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
   try {
     const [students] = await db.query(
-      "SELECT * FROM students WHERE Binary `Tələbə_kodu` = ? AND Binary `Fin_kod` = ?",
+      "SELECT * FROM students WHERE `Tələbə_kodu` = ? AND `Fin_kod` = ?",
       [studentId, password]
     );
     if (students.length === 0) {
