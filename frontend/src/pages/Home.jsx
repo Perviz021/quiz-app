@@ -27,6 +27,7 @@ const Home = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("subjects");
     localStorage.removeItem("studentId");
+    localStorage.removeItem("forceSubmit");
     navigate("/login");
     window.location.reload(); // 🔄 Hard reload the page
   };
