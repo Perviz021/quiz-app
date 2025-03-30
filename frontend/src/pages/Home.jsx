@@ -1,26 +1,35 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+const API_BASE = "http://localhost:5000/api";
+
 const Home = () => {
   const [subjects, setSubjects] = useState([]);
+  const [completedExams, setCompletedExams] = useState(new Set()); // Store completed exams
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/login"); // Redirect if not logged in
+      navigate("/login");
       return;
     }
 
     const storedSubjects = JSON.parse(localStorage.getItem("subjects")) || [];
-
-    // Ensure correct format from backend
     const formattedSubjects = storedSubjects.map((subject) => ({
-      id: subject["Fənnin kodu"], // Use "Fənnin kodu" as id
-      name: subject["Fənnin adı"], // Use "Fənnin adı" as name
+      id: subject["Fənnin kodu"],
+      name: subject["Fənnin adı"],
     }));
 
     setSubjects(formattedSubjects);
+
+    // Fetch completed exams
+    fetch(`${API_BASE}/completed-exams`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setCompletedExams(new Set(data.completedExams)))
+      .catch((err) => console.error("Error fetching completed exams:", err));
   }, [navigate]);
 
   const handleLogout = () => {
@@ -29,7 +38,7 @@ const Home = () => {
     localStorage.removeItem("studentId");
     localStorage.removeItem("forceSubmit");
     navigate("/login");
-    window.location.reload(); // 🔄 Hard reload the page
+    window.location.reload();
   };
 
   return (
@@ -47,13 +56,20 @@ const Home = () => {
       {subjects.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {subjects.map((subject) => (
-            <Link
-              key={subject.id}
-              to={`/exam/${subject.id}`}
-              className="p-4 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600 flex items-center justify-center"
-            >
-              {subject.name}
-            </Link>
+            <div key={subject.id} className="relative">
+              {completedExams.has(subject.id) ? (
+                <div className="p-4 bg-gray-400 text-white rounded-lg text-center cursor-not-allowed opacity-50">
+                  {subject.name} (Bitdi)
+                </div>
+              ) : (
+                <Link
+                  to={`/exam/${subject.id}`}
+                  className="p-4 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600 flex items-center justify-center"
+                >
+                  {subject.name}
+                </Link>
+              )}
+            </div>
           ))}
         </div>
       ) : (
