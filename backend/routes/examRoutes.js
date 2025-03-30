@@ -13,6 +13,18 @@ router.post("/submit", authenticate, async (req, res) => {
   }
 
   try {
+    // 🔍 Check if the student has already taken this exam
+    const [existingResult] = await db.query(
+      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+      [studentId, subjectCode]
+    );
+
+    if (existingResult.length > 0) {
+      return res
+        .status(403)
+        .json({ error: "You have already taken this exam." });
+    }
+
     let score = 0;
     const queries = [];
 
@@ -24,18 +36,13 @@ router.post("/submit", authenticate, async (req, res) => {
 
       if (result.length === 0) continue;
 
-      // console.log(
-      //   `Question: ${ans.questionId}, Correct: ${result[0].correct_option}, Selected: ${ans.selectedOption}`
-      // );
-
-      const isCorrect = result[0].correct_option == ans.selectedOption; // Ensure correct type comparison
+      const isCorrect = result[0].correct_option == ans.selectedOption;
       if (isCorrect) score++;
 
       queries.push(
         db.query(
           `INSERT INTO answers (Tələbə_kodu, \`Fənnin kodu\`, question_id, selected_option, is_correct)
-           VALUES (?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE selected_option = VALUES(selected_option), is_correct = VALUES(is_correct)`,
+           VALUES (?, ?, ?, ?, ?)`,
           [
             studentId,
             subjectCode,
@@ -51,8 +58,7 @@ router.post("/submit", authenticate, async (req, res) => {
 
     await db.query(
       `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, score, total_questions, submitted_at)
-       VALUES (?, ?, ?, ?, NOW())
-       ON DUPLICATE KEY UPDATE score = VALUES(score), total_questions = VALUES(total_questions), submitted_at = NOW()`,
+       VALUES (?, ?, ?, ?, NOW())`,
       [studentId, subjectCode, score, answers.length]
     );
 
