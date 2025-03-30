@@ -5,6 +5,7 @@ import subjectRoutes from "./routes/subjectRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import examRoutes from "./routes/examRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
+import completedExamsRoutes from "./routes/completedExamsRoutes.js";
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,7 @@ app.use("/api", subjectRoutes);
 app.use("/api", questionRoutes);
 app.use("/api", examRoutes);
 app.use("/api", resultRoutes);
+app.use("/api", completedExamsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
