@@ -21,7 +21,7 @@ const Results = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">Exam Results</h2>
+      <h2 className="text-2xl mb-4 montserrat montserrat-700">İmtahanların nəticələri:</h2>
 
       {loading ? (
         <p>Loading...</p>
