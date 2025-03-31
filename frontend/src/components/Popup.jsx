@@ -8,7 +8,7 @@ const Popup = ({ score, onClose }) => {
         </p>
         <button
           onClick={onClose}
-          className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 cursor-pointer"
+          className="mt-4 bg-secondary text-white px-6 py-2 rounded-lg hover:bg-main cursor-pointer"
         >
           Bağla
         </button>
