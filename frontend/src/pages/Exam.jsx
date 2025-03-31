@@ -141,7 +141,7 @@ const Exam = () => {
         ) : (
           <div>
             <div className="text-xl font-semibold mb-4">
-              Time Left:{" "}
+              Qalan vaxt:{" "}
               {String(Math.floor(state.timeLeft / 60)).padStart(2, "0")}:
               {String(state.timeLeft % 60).padStart(2, "0")}
             </div>
