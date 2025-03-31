@@ -56,7 +56,7 @@ const Login = ({ setToken, setSubjects }) => {
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Fin kod"
+              placeholder="Şifrə"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
