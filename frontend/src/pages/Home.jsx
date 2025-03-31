@@ -44,10 +44,12 @@ const Home = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Bütün fənlər</h2>
+        <h2 className="text-2xl font-bold montserrat montserrat-700">
+          Bütün fənlər
+        </h2>
         <button
           onClick={handleLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer inter inter-500"
         >
           Çıxış
         </button>
@@ -58,13 +60,13 @@ const Home = () => {
           {subjects.map((subject) => (
             <div key={subject.id} className="relative">
               {completedExams.has(subject.id) ? (
-                <div className="p-4 bg-gray-400 text-white rounded-lg text-center cursor-not-allowed opacity-50">
-                  {subject.name} (Bitdi)
+                <div className="p-4 bg-gray-400 text-white rounded-lg text-center cursor-not-allowed opacity-50 inter inter-600">
+                  {subject.name} (Bitmişdir)
                 </div>
               ) : (
                 <Link
                   to={`/exam/${subject.id}`}
-                  className="p-4 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600 flex items-center justify-center"
+                  className="p-4 bg-secondary text-white rounded-lg text-center hover:bg-main transition duration-300 ease-in-out flex items-center justify-center inter inter-600"
                 >
                   {subject.name}
                 </Link>
