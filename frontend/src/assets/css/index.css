@@ -1,2 +1,8 @@
 @import "tailwindcss";
+@import "./font.css";
 @import "./helper.css";
+
+@theme {
+  --color-main: #155dfc;
+  --color-secondary: #2b7fff;
+}
