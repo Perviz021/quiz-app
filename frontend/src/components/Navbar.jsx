@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useExam } from "../context/ExamContext";
+import { logo } from "../assets";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -12,7 +13,6 @@ const Navbar = () => {
       );
       if (confirmLeave) {
         try {
-          // localStorage.setItem("forceSubmit", "true");
           await submitZeroScore();
           setIsExamActive(false);
           navigate(path);
@@ -26,7 +26,7 @@ const Navbar = () => {
   };
 
   const submitZeroScore = async () => {
-    const subjectCode = window.location.pathname.split("/").pop(); // Get subjectCode from URL
+    const subjectCode = window.location.pathname.split("/").pop();
     const token = localStorage.getItem("token");
 
     const response = await fetch(`http://localhost:5000/api/submit`, {
@@ -37,7 +37,7 @@ const Navbar = () => {
       },
       body: JSON.stringify({
         subjectCode: subjectCode,
-        answers: [], // Empty array forces 0 score
+        answers: [],
       }),
     });
 
@@ -47,21 +47,26 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between">
-        <h1 className="text-xl font-bold">Quiz App</h1>
-        <div>
+    <nav className="bg-main text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <div className="flex items-center justify-evenly space-x-2">
+          <img src={logo} alt="Logo" className="size-12 mr-2" />
+          <h1 className="text-xl montserrat montserrat-700">BAAU</h1>
+        </div>
+        <div className="flex space-x-8">
           <button
             onClick={() => handleNavigation("/")}
-            className="mr-4 hover:underline cursor-pointer"
+            className="group relative px-2 py-4 montserrat text-[#eee] montserrat-600 hover:text-white transition-colors cursor-pointer"
           >
-            Home
+            Ana səhifə
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
           </button>
           <button
             onClick={() => handleNavigation("/results")}
-            className="hover:underline cursor-pointer"
+            className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
           >
-            Results
+            Nəticələr
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
           </button>
         </div>
       </div>
