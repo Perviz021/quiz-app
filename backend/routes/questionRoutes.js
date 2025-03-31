@@ -27,7 +27,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
 
     // ✅ Fetch 5 random questions if exam is not taken
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 5",
+      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 10",
       [subjectCode]
     );
 
