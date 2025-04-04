@@ -24,17 +24,25 @@ router.post("/login", async (req, res) => {
       `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`
        FROM subjects s
        JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
-       WHERE f.\`Tələbə_kodu\` = ? && f.Semestr='yaz'`,
+       WHERE f.\`Tələbə_kodu\` = ?`,
       [studentId]
     );
     const token = jwt.sign(
-      { id: student.id, studentId: student.Tələbə_kodu },
+      {
+        id: student.id,
+        studentId: student.Tələbə_kodu,
+        status: student.status,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
     res.json({
       token,
-      student: { id: student.id, studentId: student.Tələbə_kodu },
+      student: {
+        id: student.id,
+        studentId: student.Tələbə_kodu,
+        status: student.status,
+      },
       subjects,
     });
   } catch (error) {
