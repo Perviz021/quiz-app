@@ -37,6 +37,7 @@ const Home = () => {
     localStorage.removeItem("subjects");
     localStorage.removeItem("studentId");
     localStorage.removeItem("forceSubmit");
+    localStorage.removeItem("status");
     navigate("/login");
     window.location.reload();
   };
