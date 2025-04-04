@@ -7,10 +7,7 @@ const Login = ({ setToken, setSubjects }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-
-  
   const navigate = useNavigate();
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,11 +27,17 @@ const Login = ({ setToken, setSubjects }) => {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("studentId", data.student.studentId); // Store student ID
-      localStorage.setItem("subjects", JSON.stringify(data.subjects)); // Store subjects
+      localStorage.setItem("status", data.student.status); // Store status
 
       setToken(data.token);
-      setSubjects(data.subjects);
-      navigate("/");
+
+      if (data.student.status === "student") {
+        localStorage.setItem("subjects", JSON.stringify(data.subjects)); // Store subjects
+        setSubjects(data.subjects);
+        navigate("/");
+      } else if (data.student.status === "staff") {
+        navigate("/admin");
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -48,7 +51,7 @@ const Login = ({ setToken, setSubjects }) => {
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Tələbə kodu"
+            placeholder="Tələbə kodu / İşçi kodu"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
             required
