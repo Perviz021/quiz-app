@@ -230,7 +230,10 @@ const Exam = () => {
       )}
 
       {state.showPopup && (
-        <Popup score={state.score} onClose={() => navigate("/")} />
+        <Popup
+          score={state.score}
+          onClose={() => navigate(`/review/${subjectCode}`)}
+        />
       )}
     </div>
   );
