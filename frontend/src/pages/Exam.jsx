@@ -61,6 +61,10 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
+  useEffect(()=>{
+      console.log("Questions:", state.questions);
+  }, [state.questions])
+
   const handleStartExam = () => {
     dispatch({ type: "START_EXAM" });
     setIsExamActive(true);
@@ -89,7 +93,7 @@ const Exam = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      body: JSON.stringify({ subjectCode, answers: formattedAnswers }),
+      body: JSON.stringify({ fənnin_kodu: subjectCode, answers: formattedAnswers }),
     })
       .then((res) => res.json())
       .then((data) => dispatch({ type: "SET_SCORE", payload: data.score }))
@@ -161,13 +165,7 @@ const Exam = () => {
                     }}
                   ></p>
                   <div className="mt-2 space-y-2">
-                    {[
-                      q.option1,
-                      q.option2,
-                      q.option3,
-                      q.option4,
-                      q.option5,
-                    ].map((option, optionIndex) => (
+                    {q.options.map((option, optionIndex) => (
                       <label
                         key={optionIndex}
                         className="flex items-center space-x-2 cursor-pointer"
@@ -175,9 +173,9 @@ const Exam = () => {
                         <input
                           type="radio"
                           name={`question-${q.id}`}
-                          value={optionIndex + 1}
-                          checked={state.answers[q.id] === optionIndex + 1}
-                          onChange={() => handleAnswer(q.id, optionIndex + 1)}
+                          value={optionIndex}
+                          checked={state.answers[q.id] === optionIndex}
+                          onChange={() => handleAnswer(q.id, optionIndex)}
                           className="w-4 h-4 text-blue-600"
                         />
                         <span>{option}</span>
