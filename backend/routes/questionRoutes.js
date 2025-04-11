@@ -4,14 +4,13 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// 🔁 Utility to shuffle an array
+const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+
 router.get("/questions/:subjectCode", authenticate, async (req, res) => {
   try {
-    // console.log("req params: ", req.params);
-    // console.log("req student: ", req.student);
-    // console.log("------------");
-
     const { subjectCode } = req.params;
-    const studentId = req.student.studentId; // Extract from authentication
+    const studentId = req.student.studentId;
 
     // 🔍 Check if student has already taken the exam
     const [existingExam] = await db.query(
@@ -25,19 +24,34 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
         .json({ error: "You have already taken this exam." });
     }
 
-    // ✅ Fetch 5 random questions if exam is not taken
+    // ✅ Fetch 10 random questions
     const [questions] = await db.query(
       "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 10",
       [subjectCode]
     );
 
-    // res.json(questions);
-    res.json(
-      questions.map((q) => ({
-        ...q,
-        question: q.question.replace(/\n/g, "<br>"), // Replace \n with <br> for HTML
-      }))
-    );
+    const randomizedQuestions = questions.map((q) => {
+      // 🧠 Prepare all options
+      const options = [
+        { text: q.option1, isCorrect: true },
+        { text: q.option2, isCorrect: false },
+        { text: q.option3, isCorrect: false },
+        { text: q.option4, isCorrect: false },
+        { text: q.option5, isCorrect: false },
+      ];
+
+      // 🔀 Shuffle options
+      const shuffledOptions = shuffleArray(options);
+
+      return {
+        id: q.id,
+        question: q.question.replace(/\n/g, "<br>"),
+        options: shuffledOptions.map((opt) => opt.text),
+        correctIndex: shuffledOptions.findIndex((opt) => opt.isCorrect),
+      };
+    });
+
+    res.json(randomizedQuestions);
   } catch (error) {
     console.error("Error fetching questions:", error);
     res.status(500).json({ error: "Internal Server Error" });
