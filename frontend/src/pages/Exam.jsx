@@ -61,13 +61,32 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
-  useEffect(()=>{
-      console.log("Questions:", state.questions);
-  }, [state.questions])
+  // useEffect(() => {
+  //   console.log("Questions:", state.questions);
+  // }, [state.questions]);
 
-  const handleStartExam = () => {
-    dispatch({ type: "START_EXAM" });
-    setIsExamActive(true);
+  const handleStartExam = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(`${API_BASE}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode }),
+      });
+
+      dispatch({ type: "START_EXAM" });
+      setIsExamActive(true);
+    } catch (error) {
+      console.error("Failed to start exam:", error);
+      dispatch({
+        type: "SET_ERROR",
+        payload: "İmtahan başlatmaq mümkün olmadı.",
+      });
+    }
   };
 
   const handleAnswer = (questionId, optionIndex) => {
@@ -93,7 +112,10 @@ const Exam = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      body: JSON.stringify({ fənnin_kodu: subjectCode, answers: formattedAnswers }),
+      body: JSON.stringify({
+        subjectCode: subjectCode,
+        answers: formattedAnswers,
+      }),
     })
       .then((res) => res.json())
       .then((data) => dispatch({ type: "SET_SCORE", payload: data.score }))
@@ -215,7 +237,7 @@ const Exam = () => {
                 key={q.id}
                 onClick={() => scrollToQuestion(index)}
                 className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold cursor-pointer ${
-                  state.answers[q.id]
+                  q.id in state.answers
                     ? "bg-green-500 text-white"
                     : "bg-gray-200"
                 } hover:bg-gray-300 transition`}
