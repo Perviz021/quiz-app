@@ -57,9 +57,9 @@ router.post("/submit", authenticate, async (req, res) => {
     await Promise.all(queries);
 
     await db.query(
-      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, score, total_questions, submitted_at)
-       VALUES (?, ?, ?, ?, NOW())`,
-      [studentId, subjectCode, score, answers.length]
+      `UPDATE results SET score = ?, total_questions = ?, submitted_at = NOW()
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+      [score, answers.length, studentId, subjectCode]
     );
 
     res.json({ message: "Exam submitted successfully", score });
