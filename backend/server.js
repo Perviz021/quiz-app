@@ -1,5 +1,8 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
@@ -13,6 +16,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// __dirname ES module üçün
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Yüklənmiş şəkilləri serve etmək üçün:
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// API route-lar
 app.use("/api", authRoutes);
 app.use("/api", subjectRoutes);
 app.use("/api", questionRoutes);
@@ -23,4 +34,4 @@ app.use("/api", reviewRoutes);
 app.use("/api", examStartRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
