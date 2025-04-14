@@ -180,12 +180,28 @@ const Exam = () => {
                   ref={(el) => (questionRefs.current[index] = el)}
                   className="p-4 border rounded-lg mb-4"
                 >
-                  <p
+                  {q.question.startsWith("uploads/") &&
+                  (q.question.endsWith(".png") ||
+                    q.question.endsWith(".jpg") ||
+                    q.question.endsWith(".jpeg") ||
+                    q.question.endsWith(".gif")) ? (
+                    <div className="mb-2">
+                      <p className="font-semibold text-lg">{index + 1}.</p>
+                      <img
+                        src={`http://localhost:5000/${q.question}`}
+                        alt="Sual şəkli"
+                        className="w-full max-w-md object-contain"
+                      />
+
+                    </div>
+                  ) : (
+                    <p
                     className="font-semibold text-lg"
                     dangerouslySetInnerHTML={{
                       __html: `${index + 1}. ${q.question}`,
                     }}
                   ></p>
+                  )}
                   <div className="mt-2 space-y-2">
                     {q.options.map((option, optionIndex) => (
                       <label
