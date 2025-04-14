@@ -15,7 +15,7 @@ router.post("/submit", authenticate, async (req, res) => {
   try {
     // 🔍 Check if the student has already taken this exam
     const [existingResult] = await db.query(
-      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ? AND submitted = true",
       [studentId, subjectCode]
     );
 
@@ -36,7 +36,7 @@ router.post("/submit", authenticate, async (req, res) => {
 
       if (result.length === 0) continue;
 
-      const isCorrect = result[0].correct_option == ans.selectedOption;
+      const isCorrect = result[0].correct_option == ans.selectedOption+1;
       if (isCorrect) score++;
 
       queries.push(
@@ -57,7 +57,7 @@ router.post("/submit", authenticate, async (req, res) => {
     await Promise.all(queries);
 
     await db.query(
-      `UPDATE results SET score = ?, total_questions = ?, submitted_at = NOW()
+      `UPDATE results SET score = ?, total_questions = ?, submitted = true, submitted_at = NOW()
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
       [score, answers.length, studentId, subjectCode]
     );
