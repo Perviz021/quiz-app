@@ -8,12 +8,10 @@ router.post("/start", authenticate, async (req, res) => {
   const { studentId } = req.student;
   const { subjectCode } = req.body;
 
-  console.log(req.body);
-
   try {
     // Prevent duplicate start entries
     const [existing] = await db.query(
-      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ? AND submitted = true",
       [studentId, subjectCode]
     );
 
@@ -24,7 +22,7 @@ router.post("/start", authenticate, async (req, res) => {
     }
 
     await db.query(
-      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`) VALUES (?, ?)`,
+      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, submitted) VALUES (?, ?, false)`,
       [studentId, subjectCode]
     );
 
