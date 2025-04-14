@@ -21,7 +21,7 @@ const Login = ({ setToken, setSubjects }) => {
       });
 
       const data = await response.json();
-      console.log("Data: ", data);
+      // console.log("Data: ", data);
 
       if (!response.ok) throw new Error(data.error || "Something went wrong");
 
