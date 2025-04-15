@@ -212,8 +212,8 @@ const Exam = () => {
                           type="radio"
                           name={`question-${q.id}`}
                           value={optionIndex}
-                          checked={state.answers[q.id] === optionIndex}
-                          onChange={() => handleAnswer(q.id, optionIndex)}
+                          checked={state.answers[q.id] === optionIndex+1}
+                          onChange={() => handleAnswer(q.id, optionIndex+1)}
                           className="w-4 h-4 text-blue-600"
                         />
                         <span>{option}</span>

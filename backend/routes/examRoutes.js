@@ -36,7 +36,7 @@ router.post("/submit", authenticate, async (req, res) => {
 
       if (result.length === 0) continue;
 
-      const isCorrect = result[0].correct_option == ans.selectedOption+1;
+      const isCorrect = result[0].correct_option == ans.selectedOption;
       if (isCorrect) score++;
 
       queries.push(
