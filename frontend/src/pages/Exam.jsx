@@ -61,9 +61,9 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
-  // useEffect(() => {
-  //   console.log("Questions:", state.questions);
-  // }, [state.questions]);
+  useEffect(() => {
+    console.log("Questions:", state.questions);
+  }, [state.questions]);
 
   const handleStartExam = async () => {
     try {
@@ -192,18 +192,23 @@ const Exam = () => {
                         alt="Sual şəkli"
                         className="w-full max-w-md object-contain"
                       />
-
                     </div>
                   ) : (
                     <p
-                    className="font-semibold text-lg"
-                    dangerouslySetInnerHTML={{
-                      __html: `${index + 1}. ${q.question}`,
-                    }}
-                  ></p>
+                      className="font-semibold text-lg"
+                      dangerouslySetInnerHTML={{
+                        __html: `${index + 1}. ${q.question}`,
+                      }}
+                    ></p>
                   )}
                   <div className="mt-2 space-y-2">
-                    {q.options.map((option, optionIndex) => (
+                    {[
+                      q.option1,
+                      q.option2,
+                      q.option3,
+                      q.option4,
+                      q.option5,
+                    ].map((option, optionIndex) => (
                       <label
                         key={optionIndex}
                         className="flex items-center space-x-2 cursor-pointer"
@@ -212,8 +217,8 @@ const Exam = () => {
                           type="radio"
                           name={`question-${q.id}`}
                           value={optionIndex}
-                          checked={state.answers[q.id] === optionIndex+1}
-                          onChange={() => handleAnswer(q.id, optionIndex+1)}
+                          checked={state.answers[q.id] === optionIndex + 1}
+                          onChange={() => handleAnswer(q.id, optionIndex + 1)}
                           className="w-4 h-4 text-blue-600"
                         />
                         <span>{option}</span>
