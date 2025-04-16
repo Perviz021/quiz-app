@@ -26,7 +26,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
 
     // ✅ Fetch 10 random questions
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 10",
+      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 15",
       [subjectCode]
     );
 
@@ -51,7 +51,18 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
       };
     });
 
-    res.json(randomizedQuestions);
+    res.json(
+      questions.map((q) => ({
+        id: q.id,
+        question: q.question.replace(/\n/g, "<br>"),
+        option1: q.option1,
+        option2: q.option2,
+        option3: q.option3,
+        option4: q.option4,
+        option5: q.option5,
+        correctOption: q.correct_option,
+      }))
+    );
   } catch (error) {
     console.error("Error fetching questions:", error);
     res.status(500).json({ error: "Internal Server Error" });
