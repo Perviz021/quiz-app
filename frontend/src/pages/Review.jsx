@@ -49,7 +49,7 @@ const Review = () => {
       return "bg-red-200 border-red-600"; // Wrong selection
     }
     if (option === correct) {
-      return "bg-green-100 border-green-500"; // Correct answer shown
+      return "bg-green-100 border-green-400"; // Correct answer shown
     }
     return "bg-white"; // Neutral
   };
