@@ -28,6 +28,7 @@ const Login = ({ setToken, setSubjects }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("studentId", data.student.studentId); // Store student ID
       localStorage.setItem("status", data.student.status); // Store status
+      localStorage.setItem("fullname", data.student.fullname);
 
       setToken(data.token);
 
