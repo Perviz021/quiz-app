@@ -42,6 +42,7 @@ router.post("/login", async (req, res) => {
         id: student.id,
         studentId: student.Tələbə_kodu,
         status: student.status,
+        fullname: student["Soyadı, adı və ata adı"],
       },
       subjects,
     });
