@@ -14,3 +14,17 @@ export const authenticate = (req, res, next) => {
     next();
   });
 };
+
+// export const authorizeAdmin = (req, res, next) => {
+//   if (req.user?.status !== "admin") {
+//     return res.status(403).json({ error: "Admin access required" });
+//   }
+//   next();
+// };
+
+// export const authorizeStudent = (req, res, next) => {
+//   if (req.user?.status !== "student") {
+//     return res.status(403).json({ error: "Student access required" });
+//   }
+//   next();
+// };
