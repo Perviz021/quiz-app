@@ -9,7 +9,7 @@ router.get("/results/:studentId", async (req, res) => {
 
   try {
     const [results] = await pool.query(
-      `SELECT s.\`Fənnin adı\`, r.\`Fənnin kodu\`, r.score 
+      `SELECT s.\`Fənnin adı\`, r.\`Fənnin kodu\`, r.score, r.created_at, r.submitted_at
         FROM results r
         JOIN subjects s ON r.\`Fənnin kodu\` = s.\`Fənnin kodu\`
         WHERE r.\`Tələbə_kodu\` = ?`,
