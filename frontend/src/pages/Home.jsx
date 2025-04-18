@@ -23,6 +23,7 @@ const Home = () => {
     const formattedSubjects = storedSubjects.map((subject) => ({
       id: subject["Fənnin kodu"],
       name: subject["Fənnin adı"],
+      exam_date: subject["Exam_date"],
     }));
 
     setSubjects(formattedSubjects);
@@ -55,7 +56,7 @@ const Home = () => {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
         <div className="mb-2 text-xl font-semibold montserrat montserrat-700">
-          Xoş gəlmisiz, {formattedString(fullname)}!
+          Xoş gəlmisiniz, {formattedString(fullname)}!
         </div>
         {/* <h2 className="text-2xl font-bold montserrat montserrat-700">
           Bütün fənlər
@@ -74,7 +75,11 @@ const Home = () => {
             <div key={subject.id} className="relative">
               {completedExams.has(subject.id) ? (
                 <div className="p-4 bg-gray-400 text-white rounded-lg text-center cursor-not-allowed opacity-50 inter inter-600">
-                  {subject.name} (Bitmişdir)
+                  {subject.name} (Bitmişdir){" "}
+                  <span>
+                    İmtahan vaxtı: {""}
+                    {formatDate(subject.exam_date)}
+                  </span>
                 </div>
               ) : (
                 <Link
@@ -82,7 +87,10 @@ const Home = () => {
                   className="p-4 bg-secondary text-white rounded-lg text-center hover:bg-main transition duration-300 ease-in-out flex items-center justify-center flex-col inter inter-600"
                 >
                   <span>{subject.name}</span>
-                  <span>İmtahan vaxtı: {formatDate(1736467200000)}</span>
+                  <span>
+                    İmtahan vaxtı: {""}
+                    {formatDate(subject.exam_date)}
+                  </span>
                 </Link>
               )}
             </div>
