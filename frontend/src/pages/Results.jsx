@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { formatDate } from "../utils/dateFormatter";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -36,6 +37,8 @@ const Results = () => {
             <thead>
               <tr className="bg-gray-200">
                 <th className="border p-3 text-left">Fənn</th>
+                <th className="border p-3 text-left">Başlama vaxtı</th>
+                <th className="border p-3 text-left">Bitmə vaxtı</th>
                 <th className="border p-3 text-left">Bal</th>
               </tr>
             </thead>
@@ -43,6 +46,12 @@ const Results = () => {
               {results.map((result, index) => (
                 <tr key={index} className="hover:bg-gray-100">
                   <td className="border p-3">{result["Fənnin adı"]}</td>
+                  <td className="border p-3">
+                    {formatDate(result["created_at"], "dd/MM/yyyy HH:mm:ss")}
+                  </td>
+                  <td className="border p-3">
+                    {formatDate(result["submitted_at"], "dd/MM/yyyy HH:mm:ss")}
+                  </td>
                   <td className="border p-3 flex justify-around items-center">
                     {result["score"]}
                     <Link
