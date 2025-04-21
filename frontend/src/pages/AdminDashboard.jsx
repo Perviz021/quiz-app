@@ -49,6 +49,29 @@ const AdminDashboard = () => {
     window.location.reload();
   };
 
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("file", e.target.docxFile.files[0]);
+    formData.append("subjectCode", e.target.subjectCode.value);
+
+    try {
+      const res = await fetch(`${API_BASE}/upload-questions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      alert(result.message || "Test yükləndi.");
+    } catch (err) {
+      alert("Xəta baş verdi.");
+      console.error(err);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
@@ -61,10 +84,36 @@ const AdminDashboard = () => {
         </button>
       </div>
 
+      <div className="mb-6">
+        <h3 className="text-xl font-semibold mb-2">Test Yüklə (.docx)</h3>
+        <form onSubmit={handleUpload} className="flex items-center gap-4">
+          <input
+            type="file"
+            name="docxFile"
+            accept=".docx"
+            required
+            className="border p-2 rounded"
+          />
+          <input
+            type="text"
+            name="subjectCode"
+            placeholder="Fənn kodu"
+            required
+            className="border p-2 rounded"
+          />
+          <button
+            type="submit"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Yüklə
+          </button>
+        </form>
+      </div>
+
       <h3 className="text-xl font-semibold mb-2">
         Aktiv imtahanda olan tələbələr:
       </h3>
-      {activeStudents.length === 0 ? (
+      {activeStudents?.length === 0 ? (
         <p>No active students currently.</p>
       ) : (
         <table className="w-full border">
@@ -77,7 +126,7 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {activeStudents.map((student) => (
+            {activeStudents?.map((student) => (
               <tr key={student.id}>
                 <td className="border p-2">{student.name}</td>
                 <td className="border p-2">{student.subject}</td>
