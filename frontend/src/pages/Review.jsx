@@ -10,7 +10,7 @@ const Review = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/review/${subjectCode}`, {
+    fetch(`http://192.168.137.177:5000/api/review/${subjectCode}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },

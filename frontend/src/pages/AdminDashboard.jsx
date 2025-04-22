@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://192.168.137.177:5000/api";
 
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
