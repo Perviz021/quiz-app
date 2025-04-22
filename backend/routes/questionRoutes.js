@@ -26,7 +26,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
 
     // ✅ Fetch 10 random questions
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 15",
+      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 50",
       [subjectCode]
     );
 
