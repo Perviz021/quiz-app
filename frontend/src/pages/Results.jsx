@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "../utils/dateFormatter";
 
-const API_BASE = "http://192.168.137.177:5000/api";
+const API_BASE = "http://192.168.11.78:5000/api";
 
 const Results = () => {
   const [results, setResults] = useState([]);

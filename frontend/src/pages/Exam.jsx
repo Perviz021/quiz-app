@@ -3,7 +3,7 @@ import { useBeforeUnload, useNavigate, useParams } from "react-router-dom";
 import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 
-const API_BASE = "http://192.168.137.177:5000/api";
+const API_BASE = "http://192.168.11.78:5000/api";
 
 const initialState = {
   questions: [],
