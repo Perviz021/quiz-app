@@ -158,12 +158,27 @@ const Exam = () => {
       <div className="flex-grow">
         <h2 className="text-2xl font-bold mb-4">İmtahan</h2>
         {!state.examStarted ? (
-          <button
-            onClick={handleStartExam}
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-600 cursor-pointer"
-          >
-            İmtahana başla
-          </button>
+          <div className="ml-4">
+            <p className="mb-4 text-lg">
+              Test imtahanı zamanı qəti qadağandır: <br /> 1. Tələbə bileti
+              olmadan imtahana girmək <br /> 2. Auditoriyanın sakitliyini
+              pozmaq, yüksəkdən düşünmək, danışmaq <br /> 3. Kənar kompüter və
+              masalara baxmaq, söz soruşmaq, oturduğu yerdə hərəkətliliyə yol
+              vermək <br /> 4. Nəzarətçinin təlimatlarına uymamaq <br /> 5.
+              İmtahan zamanı qulaqlıq, telefon və digər texniki avadanlıqlardan
+              istifadə etmək <br /> 6. Köməkçi vasitələr-konspekt, dəftər və s.
+              istifadə etmək <br /> 7. İmtahan otağının stol, stul və
+              divarlarına yazı yazmaq <br /> 8. Digər tələbə yoldaşına köməyə
+              cəhd etmək <br /> 9. Kompüter ekranında digər səhifəni açmağa cəhd
+              etmək <br /> 10. Qaydalara riayət etməmək
+            </p>
+            <button
+              onClick={handleStartExam}
+              className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-600 cursor-pointer"
+            >
+              İmtahana başla
+            </button>
+          </div>
         ) : (
           <div>
             <div className="text-xl font-semibold mb-4">
