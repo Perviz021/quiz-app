@@ -5,6 +5,7 @@ import { logo } from "../assets";
 const Navbar = () => {
   const navigate = useNavigate();
   const { isExamActive, setIsExamActive } = useExam();
+  const status = localStorage.getItem("status");
 
   const handleNavigation = async (path) => {
     if (isExamActive) {
@@ -61,13 +62,25 @@ const Navbar = () => {
             Ana səhifə
             <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
           </button>
-          <button
-            onClick={() => handleNavigation("/results")}
-            className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
-          >
-            Nəticələr
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
-          </button>
+          {status === "student" && (
+            <button
+              onClick={() => handleNavigation("/results")}
+              className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
+            >
+              Nəticələr
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+            </button>
+          )}
+
+          {status === "staff" && (
+            <button
+              onClick={() => handleNavigation("/admin/add-question")}
+              className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
+            >
+              Sual Əlavə Et
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+            </button>
+          )}
         </div>
       </div>
     </nav>
