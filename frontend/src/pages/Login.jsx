@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import API_BASE from "../config/api";
 
 const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");
@@ -14,7 +15,7 @@ const Login = ({ setToken, setSubjects }) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
+      const response = await fetch(`${API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ studentId, password }),
