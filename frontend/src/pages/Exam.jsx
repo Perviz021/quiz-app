@@ -3,8 +3,7 @@ import { useBeforeUnload, useNavigate, useParams } from "react-router-dom";
 import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 import { MathJaxContext, MathJax } from "better-react-mathjax";
-
-const API_BASE = "http://192.168.11.78:5000/api";
+import API_BASE from "../config";
 
 const initialState = {
   questions: [],

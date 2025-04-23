@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import API_BASE from "../config";
 
 const Review = () => {
   const { subjectCode } = useParams();
@@ -10,7 +11,7 @@ const Review = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://192.168.11.78:5000/api/review/${subjectCode}`, {
+    fetch(`${API_BASE}/review/${subjectCode}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },

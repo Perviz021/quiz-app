@@ -1,8 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { formatDate } from "../utils/dateFormatter";
-
-const API_BASE = "http://192.168.11.78:5000/api";
+import API_BASE from "../config";
 
 const Home = () => {
   const [subjects, setSubjects] = useState([]);
