@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API_BASE from "../config";
+import API_BASE from "../config/api";
 
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);

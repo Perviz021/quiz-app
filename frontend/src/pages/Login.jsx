@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import API_BASE from "../config";
+import API_BASE from "../config/api";
 
 const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");

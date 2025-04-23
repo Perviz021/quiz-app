@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "../utils/dateFormatter";
-import API_BASE from "../config";
+import API_BASE from "../config/api";
 
 const Results = () => {
   const [results, setResults] = useState([]);

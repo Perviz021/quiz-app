@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import API_BASE from "../config";
+import API_BASE from "../config/api";
 
 const Review = () => {
   const { subjectCode } = useParams();
