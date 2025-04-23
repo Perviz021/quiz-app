@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard"; // Import the admin page
 import { ExamProvider } from "./context/ExamContext.jsx";
 import Review from "./pages/Review.jsx";
+import AddQuestion from "./pages/AddQuestion.jsx";
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -57,7 +58,7 @@ const App = () => {
             {status === "staff" && (
               <>
                 <Route path="/admin" element={<AdminDashboard />} />
-                {/* You can add more admin-specific routes here */}
+                <Route path="/admin/add-question" element={<AddQuestion />} />
               </>
             )}
 
