@@ -3,12 +3,18 @@ import API_BASE from "../config/api";
 
 const AddQuestion = () => {
   const [formData, setFormData] = useState({
-    question: "",
-    option1: null,
-    option2: null,
-    option3: null,
-    option4: null,
-    option5: null,
+    questionText: "",
+    questionImage: null,
+    option1Text: "",
+    option1Image: null,
+    option2Text: "",
+    option2Image: null,
+    option3Text: "",
+    option3Image: null,
+    option4Text: "",
+    option4Image: null,
+    option5Text: "",
+    option5Image: null,
     correctOption: 1,
     subjectCode: "",
   });
@@ -23,11 +29,13 @@ const AddQuestion = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const payload = new FormData();
-    Object.keys(formData).forEach((key) => {
-      payload.append(key, formData[key]);
-    });
+
+    for (const key in formData) {
+      if (formData[key] !== null) {
+        payload.append(key, formData[key]);
+      }
+    }
 
     try {
       const res = await fetch(`${API_BASE}/add-question`, {
@@ -39,9 +47,9 @@ const AddQuestion = () => {
       });
 
       const data = await res.json();
-      alert(data.message || "Question added!");
+      alert(data.message || "Sual əlavə olundu!");
     } catch (err) {
-      alert("Error adding question.");
+      alert("Xəta baş verdi!");
       console.error(err);
     }
   };
@@ -50,30 +58,42 @@ const AddQuestion = () => {
     <div className="container mx-auto p-4">
       <h2 className="text-xl font-bold mb-4">Yeni sual əlavə et</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <label>Sualın mətni:</label>
         <input
           type="text"
-          name="question"
+          name="questionText"
           onChange={handleChange}
-          placeholder="Sual (metn və ya şəkil adı)"
-          required
+          className="w-full p-2 border rounded"
+          placeholder="Sualın mətni (istəyə bağlı)"
+        />
+
+        <label>Sualın şəkli:</label>
+        <input
+          type="file"
+          name="questionImage"
+          accept="image/*"
+          onChange={handleChange}
           className="w-full p-2 border rounded"
         />
 
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i}>
-            <label>Variant {i} (metn və ya şəkil):</label>
-            <input
-              type="file"
-              name={`option${i}`}
-              accept="image/*"
-              onChange={handleChange}
-            />
+          <div key={i} className="border p-2 rounded">
+            <label>Variant {i} mətni:</label>
             <input
               type="text"
-              name={`option${i}`}
+              name={`option${i}Text`}
               onChange={handleChange}
-              placeholder={`Variant ${i} mətn (boş buraxıla bilər)`}
-              className="w-full p-2 border rounded mt-1"
+              className="w-full p-2 border rounded mb-2"
+              placeholder={`Variant ${i} mətni (istəyə bağlı)`}
+            />
+
+            <label>Variant {i} şəkli:</label>
+            <input
+              type="file"
+              name={`option${i}Image`}
+              accept="image/*"
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
             />
           </div>
         ))}
