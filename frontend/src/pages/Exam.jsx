@@ -76,9 +76,51 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
+  // useEffect(() => {
+  //   console.log("Questions:", state.questions);
+  // }, [state.questions]);
+
   useEffect(() => {
-    console.log("Questions:", state.questions);
-  }, [state.questions]);
+    const studentId = localStorage.getItem("studentId");
+    const token = localStorage.getItem("token");
+    console.log("inside useEffect");
+
+    const timeout = setTimeout(() => {
+      const interval = setInterval(async () => {
+        try {
+          console.log("inside interval");
+
+          const res = await fetch(`${API_BASE}/check-exam-status`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              studentId,
+              subjectCode,
+            }),
+          });
+
+          const data = await res.json();
+          console.log("Exam status data:", data);
+
+          if (!data.active) {
+            alert("Your exam has been stopped by the admin.");
+            navigate("/");
+            window.location.reload();
+          }
+        } catch (err) {
+          console.error("Error checking exam status:", err);
+        }
+      }, 10000); // every 10 seconds
+
+      // clear interval on unmount
+      return () => clearInterval(interval);
+    }, 3000); // wait 3 seconds before starting checks
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleStartExam = async () => {
     try {
@@ -279,7 +321,7 @@ const Exam = () => {
           )}
         </div>
 
-        {state.examStarted && (
+        {state.examStarted && state.questions.length > 0 && (
           <div className="fixed top-20 right-4 w-64 p-4 bg-white border border-gray-300 shadow-lg rounded-lg">
             <h3 className="text-lg font-semibold mb-2 text-center">
               Sual Naviqasiyası
