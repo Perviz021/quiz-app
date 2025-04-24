@@ -43,15 +43,26 @@ const Review = () => {
     const selected = options[question.selected_option - 1]; // Map index to actual string
     const correct = options[question.correct_option - 1];
 
+    // Case 1: User selected the correct option - show green
     if (option === selected && option === correct) {
-      return "bg-green-200 border-green-600"; // Correctly selected
+      return "bg-green-200 border-green-600";
     }
-    if (option === selected && option !== correct) {
-      return "bg-red-200 border-red-600"; // Wrong selection
+
+    // Case 2: User selected wrong option - show red for selected, green for correct
+    if (selected && selected !== correct) {
+      if (option === selected) {
+        return "bg-red-200 border-red-600"; // Wrong selection
+      }
+      if (option === correct) {
+        return "bg-green-200 border-green-600"; // Show correct answer with green
+      }
     }
-    if (option === correct) {
-      return "bg-green-100 border-green-400"; // Correct answer shown
+
+    // Case 3: User didn't select anything - show yellow for correct
+    if (!selected && option === correct) {
+      return "bg-yellow-200 border-yellow-600";
     }
+
     return "bg-white"; // Neutral
   };
 
