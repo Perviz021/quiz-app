@@ -28,7 +28,7 @@ router.get("/active-students", authenticate, async (req, res) => {
 });
 
 // 🚫 Stop a student's exam
-router.post("/stop-exam", authenticate, async (req, res) => {
+router.post("/stop-exam", async (req, res) => {
   const { studentId, subjectCode } = req.body;
   await db.query(
     `UPDATE results SET is_active = false WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
@@ -38,7 +38,7 @@ router.post("/stop-exam", authenticate, async (req, res) => {
 });
 
 // ⏳ Give extra time
-router.post("/extend-time", authenticate, async (req, res) => {
+router.post("/extend-time", async (req, res) => {
   const { studentId, subjectCode, minutes } = req.body;
   await db.query(
     `UPDATE results SET extra_time = extra_time + ? WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
@@ -48,7 +48,7 @@ router.post("/extend-time", authenticate, async (req, res) => {
 });
 
 // ✅ Force submit
-router.post("/force-submit", authenticate, async (req, res) => {
+router.post("/force-submit", async (req, res) => {
   const { studentId, subjectCode } = req.body;
   await db.query(
     `UPDATE results SET submitted = true, submitted_at = NOW() WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
