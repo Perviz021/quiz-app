@@ -14,6 +14,7 @@ import examStartRoutes from "./routes/examStartRoutes.js";
 import adminExamControl from "./routes/adminExamControl.js";
 import uploadQuestionRoutes from "./routes/uploadQuestionRoutes.js";
 import addQuestion from "./routes/addQuestion.js";
+import examStatus from "./routes/examStatus.js";
 
 const app = express();
 app.use(cors());
@@ -38,6 +39,7 @@ app.use("/api", examStartRoutes);
 app.use("/api", adminExamControl); // Admin exam control routes
 app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
+app.use("/api", examStatus);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
