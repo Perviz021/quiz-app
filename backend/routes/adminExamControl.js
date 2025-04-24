@@ -11,6 +11,7 @@ router.get("/active-students", authenticate, async (req, res) => {
         s.\`Soyadı, adı və ata adı\` AS fullname,
         s.\`Tələbə_kodu\` AS id,
         sub.\`Fənnin adı\` AS subject,
+        sub.\`Fənnin kodu\` AS subjectCode,
         TIMESTAMPDIFF(MINUTE, NOW(), r.created_at + INTERVAL 1 HOUR) AS timeLeft
       FROM results r
       JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
@@ -50,7 +51,7 @@ router.post("/extend-time", authenticate, async (req, res) => {
 router.post("/force-submit", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
   await db.query(
-    `UPDATE results SET force_submit = true WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+    `UPDATE results SET submitted = true, submitted_at = NOW() WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
     [studentId, subjectCode]
   );
   res.json({ message: "Exam marked for force submit." });
