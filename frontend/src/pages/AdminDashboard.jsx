@@ -18,9 +18,12 @@ const AdminDashboard = () => {
   }, []);
 
   const handleForceSubmit = (studentId, subjectCode) => {
+    console.log("Force submit for:", studentId, subjectCode);
+
     fetch(`${API_BASE}/force-submit`, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({ studentId, subjectCode }),
