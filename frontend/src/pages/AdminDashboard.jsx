@@ -17,12 +17,13 @@ const AdminDashboard = () => {
       .catch((err) => console.error("Error fetching students", err));
   }, []);
 
-  const handleForceSubmit = (studentId) => {
-    fetch(`${API_BASE}/force-submit/${studentId}`, {
+  const handleForceSubmit = (studentId, subjectCode) => {
+    fetch(`${API_BASE}/force-submit`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
+      body: JSON.stringify({ studentId, subjectCode }),
     }).then(() => {
       alert("Exam stopped for student.");
       setActiveStudents((prev) =>
@@ -127,12 +128,14 @@ const AdminDashboard = () => {
           <tbody>
             {activeStudents?.map((student) => (
               <tr key={student.id}>
-                <td className="border p-2">{student.name}</td>
+                <td className="border p-2">{student.fullname}</td>
                 <td className="border p-2">{student.subject}</td>
                 <td className="border p-2">{student.timeLeft} dəq</td>
                 <td className="border p-2 flex gap-2">
                   <button
-                    onClick={() => handleForceSubmit(student.id)}
+                    onClick={() =>
+                      handleForceSubmit(student.id, student.subjectCode)
+                    }
                     className="bg-red-500 text-white px-2 py-1 rounded"
                   >
                     İmtahanı bitir
