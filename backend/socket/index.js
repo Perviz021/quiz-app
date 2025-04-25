@@ -1,10 +1,25 @@
-import http from "http";
-import app from "./app.js";
-import initSocket from "./socket/index.js";
+import { Server } from "socket.io";
 
-const server = http.createServer(app);
-const io = initSocket(server);
+export default function initSocket(server) {
+  const io = new Server(server, {
+    cors: {
+      origin: "http://localhost:5173", // adjust for production
+      methods: ["GET", "POST"],
+    },
+  });
 
-server.listen(3001, () => {
-  console.log("Server running on port 3001");
-});
+  io.on("connection", (socket) => {
+    console.log("🟢 New socket connected:", socket.id);
+
+    socket.on("join_exam", (studentId) => {
+      socket.join(studentId);
+      console.log(`Student ${studentId} joined room`);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 Socket disconnected:", socket.id);
+    });
+  });
+
+  return io;
+}
