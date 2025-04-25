@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../db.js";
 import { authenticate } from "../middleware/auth.js";
+import { getIO } from "../socket/ioInstance.js";
 
 const router = express.Router();
 
@@ -47,14 +48,25 @@ router.post("/extend-time", async (req, res) => {
   res.json({ message: "Extra time granted." });
 });
 
+export const forceSubmitExam = (req, res) => {
+  const { studentId } = req.body;
+
+  const io = getIO(); // get socket instance
+  io.to(studentId).emit("force_submit"); // send event to the student room
+
+  res
+    .status(200)
+    .json({ message: `Exam force submitted for student ${studentId}` });
+};
+
 // ✅ Force submit
-router.post("/force-submit", async (req, res) => {
-  const { studentId, subjectCode } = req.body;
-  await db.query(
-    `UPDATE results SET submitted = true, submitted_at = NOW() WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-    [studentId, subjectCode]
-  );
-  res.json({ message: "Exam marked for force submit." });
-});
+// router.post("/force-submit", async (req, res) => {
+//   const { studentId, subjectCode } = req.body;
+//   await db.query(
+//     `UPDATE results SET submitted = true, submitted_at = NOW() WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+//     [studentId, subjectCode]
+//   );
+//   res.json({ message: "Exam marked for force submit." });
+// });
 
 export default router;
