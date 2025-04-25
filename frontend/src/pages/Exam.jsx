@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback, useReducer } from "react";
+import { useEffect, useRef, useCallback, useReducer } from "react";
 import { useBeforeUnload, useNavigate, useParams } from "react-router-dom";
 import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 import { MathJaxContext, MathJax } from "better-react-mathjax";
 import API_BASE from "../config/api";
+import { io } from "socket.io-client";
+const socket = io("http://192.168.11.78:5000"); // change URL for production
 
 const initialState = {
   questions: [],
@@ -17,20 +19,20 @@ const initialState = {
   error: null,
 };
 
-const mathJaxConfig = {
-  loader: { load: ["[tex]/require", "[tex]/ams"] },
-  tex: {
-    packages: { "[+]": ["require", "ams"] },
-    inlineMath: [
-      ["$", "$"],
-      ["\\(", "\\)"],
-    ],
-    displayMath: [
-      ["$$", "$$"],
-      ["\\[", "\\]"],
-    ],
-  },
-};
+// const mathJaxConfig = {
+//   loader: { load: ["[tex]/require", "[tex]/ams"] },
+//   tex: {
+//     packages: { "[+]": ["require", "ams"] },
+//     inlineMath: [
+//       ["$", "$"],
+//       ["\\(", "\\)"],
+//     ],
+//     displayMath: [
+//       ["$$", "$$"],
+//       ["\\[", "\\]"],
+//     ],
+//   },
+// };
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -75,6 +77,29 @@ const Exam = () => {
       .then((data) => dispatch({ type: "SET_QUESTIONS", payload: data }))
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
+
+  useEffect(() => {
+    const studentId = localStorage.getItem("studentId"); // or however you're storing it
+    if (studentId) {
+      socket.emit("join_exam", studentId); // student joins their own room
+    }
+
+    // Listen for force submit
+    socket.on("force_submit", () => {
+      console.log("Admin forced submission!");
+      // call your function to auto-submit the exam
+    });
+
+    // Listen for time extension
+    socket.on("extend_time", (extraMinutes) => {
+      console.log(`Exam time extended by ${extraMinutes} minutes`);
+      // update your timer logic accordingly
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   // useEffect(() => {
   //   console.log("Questions:", state.questions);
