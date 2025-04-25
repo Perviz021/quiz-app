@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
+import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import initSocket from "./socket/index.js"; // 🆕
 
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
@@ -17,17 +19,17 @@ import addQuestion from "./routes/addQuestion.js";
 import examStatus from "./routes/examStatus.js";
 
 const app = express();
+const server = http.createServer(app); // 🆕 create HTTP server
+
+initSocket(server); // 🆕 initialize WebSocket
+
 app.use(cors());
 app.use(express.json());
 
-// __dirname ES module üçün
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Yüklənmiş şəkilləri serve etmək üçün:
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// API route-lar
 app.use("/api", authRoutes);
 app.use("/api", subjectRoutes);
 app.use("/api", questionRoutes);
@@ -36,12 +38,12 @@ app.use("/api", resultRoutes);
 app.use("/api", completedExamsRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api", examStartRoutes);
-app.use("/api", adminExamControl); // Admin exam control routes
+app.use("/api", adminExamControl);
 app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
 app.use("/api", examStatus);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
+server.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
 );
