@@ -23,6 +23,7 @@ const Home = () => {
       id: subject["Fənnin kodu"],
       name: subject["Fənnin adı"],
       exam_date: subject["Exam_date"],
+      fenn_qrupu: subject["Stable"],
     }));
 
     setSubjects(formattedSubjects);
@@ -54,7 +55,7 @@ const Home = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <div className="mb-2 text-xl font-semibold montserrat montserrat-700">
+        <div className="mb-2 text-2xl font-semibold montserrat montserrat-700">
           Xoş gəlmisiniz, {formattedString(fullname)}!
         </div>
         {/* <h2 className="text-2xl font-bold montserrat montserrat-700">
@@ -71,25 +72,29 @@ const Home = () => {
       {subjects.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {subjects.map((subject) => (
-            <div key={subject.id} className="relative">
+            <div
+              key={subject.id}
+              className="relative shadow-lg shadow-gray-400 rounded-lg overflow-hidden"
+            >
               {completedExams.has(subject.id) ? (
-                <div className="p-4 bg-gray-400 text-white rounded-lg text-center cursor-not-allowed opacity-50 inter inter-600">
-                  {subject.name} (Bitmişdir){" "}
-                  <span>
+                <div className="p-4 bg-gray-400 text-white text-center cursor-not-allowed opacity-50 inter inter-600 size-full flex items-center justify-center flex-col">
+                  <p>{subject.name} (Bitmişdir) </p>
+                  <p className="text-sm">
                     İmtahan vaxtı: {""}
                     {formatDate(subject.exam_date)}
-                  </span>
+                  </p>
                 </div>
               ) : (
                 <Link
                   to={`/exam/${subject.id}`}
-                  className="p-4 bg-secondary text-white rounded-lg text-center hover:bg-main transition duration-300 ease-in-out flex items-center justify-center flex-col inter inter-600"
+                  className="p-4 bg-secondary text-white text-center hover:bg-main transition duration-300 ease-in-out flex items-center justify-center flex-col inter inter-600 space-y-1.5 size-full"
                 >
-                  <span>{subject.name}</span>
-                  <span>
+                  <p>{subject.name}</p>
+                  <p className="text-sm">
                     İmtahan vaxtı: {""}
                     {formatDate(subject.exam_date)}
-                  </span>
+                  </p>
+                  <p className="text-sm">Fənn qrupu: {subject.fenn_qrupu}</p>
                 </Link>
               )}
             </div>
