@@ -59,6 +59,8 @@ export const forceSubmitExam = (req, res) => {
     .json({ message: `Exam force submitted for student ${studentId}` });
 };
 
+router.post("/force-submit", forceSubmitExam);
+
 // ✅ Force submit
 // router.post("/force-submit", async (req, res) => {
 //   const { studentId, subjectCode } = req.body;
