@@ -27,14 +27,14 @@ const Results = () => {
       </h2>
 
       {loading ? (
-        <p>Loading...</p>
+        <p>Yüklənir...</p>
       ) : results.length === 0 ? (
-        <p>No results found.</p>
+        <p className="text-xl">Heç bir nəticə tapılmadı.</p>
       ) : (
         <>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
-              <tr className="bg-gray-200">
+              <tr className="bg-blue-300">
                 <th className="border p-3 text-left">Fənn</th>
                 <th className="border p-3 text-left">Başlama vaxtı</th>
                 <th className="border p-3 text-left">Bitmə vaxtı</th>
@@ -43,7 +43,7 @@ const Results = () => {
             </thead>
             <tbody>
               {results.map((result, index) => (
-                <tr key={index} className="hover:bg-gray-100">
+                <tr key={index} className="hover:bg-blue-100">
                   <td className="border p-3">{result["Fənnin adı"]}</td>
                   <td className="border p-3">
                     {formatDate(result["created_at"], "dd/MM/yyyy HH:mm:ss")}
@@ -51,14 +51,16 @@ const Results = () => {
                   <td className="border p-3">
                     {formatDate(result["submitted_at"], "dd/MM/yyyy HH:mm:ss")}
                   </td>
-                  <td className="border p-3 flex justify-around items-center">
-                    {result["score"]}
-                    <Link
-                      to={`/review/${result["Fənnin kodu"]}`}
-                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
-                    >
-                      Review
-                    </Link>
+                  <td className="border p-3">
+                    <div className="flex space-x-[30px] items-center">
+                      <span>{result["score"]}</span>
+                      <Link
+                        to={`/review/${result["Fənnin kodu"]}`}
+                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                      >
+                        Baxış
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
