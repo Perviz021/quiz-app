@@ -21,7 +21,7 @@ router.post("/login", async (req, res) => {
     }
     const student = students[0];
     const [subjects] = await db.query(
-      `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date
+      `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date, f.Stable
        FROM subjects s
        JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
        WHERE f.\`Tələbə_kodu\` = ?`,
