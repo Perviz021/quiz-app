@@ -16,7 +16,6 @@ import examStartRoutes from "./routes/examStartRoutes.js";
 import adminExamControl from "./routes/adminExamControl.js";
 import uploadQuestionRoutes from "./routes/uploadQuestionRoutes.js";
 import addQuestion from "./routes/addQuestion.js";
-import examStatus from "./routes/examStatus.js";
 
 const app = express();
 const server = http.createServer(app); // 🆕 create HTTP server
@@ -41,7 +40,6 @@ app.use("/api", examStartRoutes);
 app.use("/api", adminExamControl);
 app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
-app.use("/api", examStatus);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
