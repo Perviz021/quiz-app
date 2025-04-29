@@ -11,7 +11,7 @@ const initialState = {
   answers: {},
   submitted: false,
   score: 0,
-  timeLeft: 600,
+  timeLeft: 5400,
   examStarted: false,
   isSubmitting: false,
   showPopup: false,
@@ -49,6 +49,34 @@ const Exam = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [acceptedRules, setAcceptedRules] = useState(false);
 
+  const handleSubmit = useCallback(() => {
+    if (state.submitted) return;
+
+    dispatch({ type: "SUBMIT_EXAM" });
+    setIsExamActive(false);
+
+    const formattedAnswers = state.questions.map((q) => ({
+      questionId: q.id,
+      selectedOption: state.answers[q.id] ?? -1,
+    }));
+
+    fetch(`${API_BASE}/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        subjectCode: subjectCode,
+        answers: formattedAnswers,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => dispatch({ type: "SET_SCORE", payload: data.score }))
+      .catch((err) => console.error("Submission error:", err))
+      .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
+  }, [state, subjectCode]);
+
   useEffect(() => {
     fetch(`${API_BASE}/questions/${subjectCode}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -72,19 +100,21 @@ const Exam = () => {
     // Listen for force submit
     socket.on("force_submit", () => {
       console.log("Admin forced submission!");
-      // call your function to auto-submit the exam
+      if (!state.submitted) {
+        handleSubmit();
+      }
     });
 
     // Listen for time extension
     socket.on("extend_time", (extraMinutes) => {
       console.log(`Exam time extended by ${extraMinutes} minutes`);
-      // update your timer logic accordingly
+      dispatch({ type: "DECREMENT_TIME", payload: -(extraMinutes * 60) });
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [handleSubmit, state.submitted]);
 
   const handleStartExam = async () => {
     try {
@@ -115,34 +145,6 @@ const Exam = () => {
       dispatch({ type: "SET_ANSWER", payload: { [questionId]: optionIndex } });
     }
   };
-
-  const handleSubmit = useCallback(() => {
-    if (state.submitted) return;
-
-    dispatch({ type: "SUBMIT_EXAM" });
-    setIsExamActive(false);
-
-    const formattedAnswers = state.questions.map((q) => ({
-      questionId: q.id,
-      selectedOption: state.answers[q.id] ?? -1,
-    }));
-
-    fetch(`${API_BASE}/submit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        subjectCode: subjectCode,
-        answers: formattedAnswers,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => dispatch({ type: "SET_SCORE", payload: data.score }))
-      .catch((err) => console.error("Submission error:", err))
-      .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
-  }, [state, subjectCode]);
 
   useBeforeUnload(
     useCallback(
