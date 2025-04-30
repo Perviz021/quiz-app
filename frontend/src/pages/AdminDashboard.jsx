@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
+import { toast } from "react-toastify";
 
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
@@ -35,15 +36,21 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleAddTime = (studentId, minutes) => {
-    fetch(`${API_BASE}/extend-time/${studentId}`, {
+  const handleAddTime = (studentId, subjectCode, minutes) => {
+    fetch(`${API_BASE}/extend-time`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      body: JSON.stringify({ minutes }),
-    }).then(() => alert("Time extended!"));
+      body: JSON.stringify({
+        studentId: studentId,
+        subjectCode: subjectCode,
+        minutes,
+      }),
+    })
+      .then(() => toast.success("Vaxt əlavə edildi."))
+      .catch(() => toast.error("Xəta baş verdi."));
   };
 
   const handleLogout = () => {
@@ -133,7 +140,14 @@ const AdminDashboard = () => {
               <tr key={student.id}>
                 <td className="border p-2">{student.fullname}</td>
                 <td className="border p-2">{student.subject}</td>
-                <td className="border p-2">{student.timeLeft} dəq</td>
+                <td className="border p-2">
+                  {String(Math.floor(student.timeLeft / 60)).padStart(2, "0")}:
+                  {String(Math.floor((student.timeLeft % 60) / 60)).padStart(
+                    2,
+                    "0"
+                  )}
+                  :{String(student.timeLeft % 60).padStart(2, "0")} dəq
+                </td>
                 <td className="border p-2 flex gap-2">
                   <button
                     onClick={() =>
@@ -148,7 +162,12 @@ const AdminDashboard = () => {
                       const minutes = prompt(
                         "Neçə dəqiqə əlavə etmək istəyirsiniz?"
                       );
-                      if (minutes) handleAddTime(student.id, parseInt(minutes));
+                      if (minutes)
+                        handleAddTime(
+                          student.id,
+                          student.subjectCode,
+                          parseInt(minutes)
+                        );
                     }}
                     className="bg-blue-500 text-white px-2 py-1 rounded"
                   >
