@@ -5,6 +5,7 @@ import { useExam } from "../context/ExamContext";
 import API_BASE from "../config/api";
 import { io } from "socket.io-client";
 const socket = io("http://192.168.11.78:5000"); // change URL for production
+import { toast } from "react-toastify";
 
 const initialState = {
   questions: [],
@@ -36,6 +37,8 @@ const reducer = (state, action) => {
       return { ...state, isSubmitting: false };
     case "SET_ERROR":
       return { ...state, error: action.payload };
+    case "EXTEND_TIME":
+      return { ...state, timeLeft: state.timeLeft + action.payload };
     default:
       return state;
   }
@@ -91,30 +94,46 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
+  // Reference to the latest handleSubmit function
+  const handleSubmitRef = useRef(() => {});
+  const submittedRef = useRef(false);
+
+  // Update refs when values change
   useEffect(() => {
-    const studentId = localStorage.getItem("studentId"); // or however you're storing it
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
+
+  useEffect(() => {
+    submittedRef.current = state.submitted;
+  }, [state.submitted]);
+
+  useEffect(() => {
+    const studentId = localStorage.getItem("studentId");
     if (studentId) {
-      socket.emit("join_exam", studentId); // student joins their own room
+      socket.emit("join_exam", studentId);
     }
 
-    // Listen for force submit
-    socket.on("force_submit", () => {
+    const forceSubmitHandler = () => {
       console.log("Admin forced submission!");
-      if (!state.submitted) {
-        handleSubmit();
+      if (!submittedRef.current) {
+        handleSubmitRef.current();
       }
-    });
+    };
 
-    // Listen for time extension
-    socket.on("extend_time", (extraMinutes) => {
+    const extendTimeHandler = (extraMinutes) => {
       console.log(`Exam time extended by ${extraMinutes} minutes`);
-      dispatch({ type: "DECREMENT_TIME", payload: -(extraMinutes * 60) });
-    });
+      dispatch({ type: "EXTEND_TIME", payload: extraMinutes * 60 });
+      toast.info(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı`);
+    };
+
+    socket.on("force_submit", forceSubmitHandler);
+    socket.on("extend_time", extendTimeHandler);
 
     return () => {
-      socket.disconnect();
+      socket.off("force_submit", forceSubmitHandler);
+      socket.off("extend_time", extendTimeHandler);
     };
-  }, [handleSubmit, state.submitted]);
+  }, []);
 
   const handleStartExam = async () => {
     try {
@@ -237,8 +256,12 @@ const Exam = () => {
 
             <div className="text-xl font-semibold mb-4">
               Qalan vaxt:{" "}
-              {String(Math.floor(state.timeLeft / 60)).padStart(2, "0")}:
-              {String(state.timeLeft % 60).padStart(2, "0")}
+              {String(Math.floor(state.timeLeft / 3600)).padStart(2, "0")}:
+              {String(Math.floor((state.timeLeft % 3600) / 60)).padStart(
+                2,
+                "0"
+              )}
+              :{String(state.timeLeft % 60).padStart(2, "0")}
             </div>
             {state.error ? (
               <p className="text-red-500">{state.error}</p>
