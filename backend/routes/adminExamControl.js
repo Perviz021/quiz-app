@@ -13,12 +13,13 @@ router.get("/active-students", authenticate, async (req, res) => {
         s.\`Tələbə_kodu\` AS id,
         sub.\`Fənnin adı\` AS subject,
         sub.\`Fənnin kodu\` AS subjectCode,
-        TIMESTAMPDIFF(MINUTE, NOW(), r.created_at + INTERVAL 90 MINUTE) AS timeLeft
+        r.extra_time as bonusTime,
+        TIMESTAMPDIFF(MINUTE, NOW(), r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE) AS timeLeft
       FROM results r
       JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
       JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
       WHERE r.submitted = false
-        AND NOW() < r.created_at + INTERVAL 90 MINUTE
+        AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE
     `);
 
     res.json({ students: rows });
