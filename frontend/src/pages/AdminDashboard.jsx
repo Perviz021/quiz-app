@@ -28,12 +28,14 @@ const AdminDashboard = () => {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({ studentId, subjectCode }),
-    }).then(() => {
-      alert("Exam stopped for student.");
-      setActiveStudents((prev) =>
-        prev.filter((student) => student.id !== studentId)
-      );
-    });
+    })
+      .then(() => {
+        toast.success("Imtahan bitirildi.");
+        setActiveStudents((prev) =>
+          prev.filter((student) => student.id !== studentId)
+        );
+      })
+      .catch(() => toast.error("Xəta baş verdi."));
   };
 
   const handleAddTime = (studentId, subjectCode, minutes) => {
@@ -59,28 +61,28 @@ const AdminDashboard = () => {
     window.location.reload();
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("file", e.target.docxFile.files[0]);
-    formData.append("subjectCode", e.target.subjectCode.value);
+  // const handleUpload = async (e) => {
+  //   e.preventDefault();
+  //   const formData = new FormData();
+  //   formData.append("file", e.target.docxFile.files[0]);
+  //   formData.append("subjectCode", e.target.subjectCode.value);
 
-    try {
-      const res = await fetch(`${API_BASE}/upload-questions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: formData,
-      });
+  //   try {
+  //     const res = await fetch(`${API_BASE}/upload-questions`, {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //       },
+  //       body: formData,
+  //     });
 
-      const result = await res.json();
-      alert(result.message || "Test yükləndi.");
-    } catch (err) {
-      alert("Xəta baş verdi.");
-      console.error(err);
-    }
-  };
+  //     const result = await res.json();
+  //     alert(result.message || "Test yükləndi.");
+  //   } catch (err) {
+  //     alert("Xəta baş verdi.");
+  //     console.error(err);
+  //   }
+  // };
 
   return (
     <div className="container mx-auto p-4">
@@ -94,7 +96,7 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">Test Yüklə (.docx)</h3>
         <form onSubmit={handleUpload} className="flex items-center gap-4">
           <input
@@ -118,7 +120,7 @@ const AdminDashboard = () => {
             Yüklə
           </button>
         </form>
-      </div>
+      </div> */}
 
       <h3 className="text-xl font-semibold mb-2">
         Aktiv imtahanda olan tələbələr:
@@ -132,6 +134,7 @@ const AdminDashboard = () => {
               <th className="border p-2">Ad Soyad</th>
               <th className="border p-2">Fənn</th>
               <th className="border p-2">Vaxt qalıb</th>
+              <th className="border p-2">Bonus vaxt</th>
               <th className="border p-2">Əməliyyat</th>
             </tr>
           </thead>
@@ -142,37 +145,40 @@ const AdminDashboard = () => {
                 <td className="border p-2">{student.subject}</td>
                 <td className="border p-2">
                   {String(Math.floor(student.timeLeft / 60)).padStart(2, "0")}:
-                  {String(Math.floor((student.timeLeft % 60) / 60)).padStart(
+                  {String(Math.floor(student.timeLeft % 60)).padStart(2, "0")}:
+                  {String(Math.floor((student.timeLeft * 60) % 60)).padStart(
                     2,
                     "0"
                   )}
-                  :{String(student.timeLeft % 60).padStart(2, "0")} dəq
                 </td>
-                <td className="border p-2 flex gap-2">
-                  <button
-                    onClick={() =>
-                      handleForceSubmit(student.id, student.subjectCode)
-                    }
-                    className="bg-red-500 text-white px-2 py-1 rounded"
-                  >
-                    İmtahanı bitir
-                  </button>
-                  <button
-                    onClick={() => {
-                      const minutes = prompt(
-                        "Neçə dəqiqə əlavə etmək istəyirsiniz?"
-                      );
-                      if (minutes)
-                        handleAddTime(
-                          student.id,
-                          student.subjectCode,
-                          parseInt(minutes)
+                <td className="border p-2">{student.bonusTime}</td>
+                <td className="border">
+                  <div className="p-2 flex gap-2">
+                    <button
+                      onClick={() =>
+                        handleForceSubmit(student.id, student.subjectCode)
+                      }
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                    >
+                      İmtahanı bitir
+                    </button>
+                    <button
+                      onClick={() => {
+                        const minutes = prompt(
+                          "Neçə dəqiqə əlavə etmək istəyirsiniz?"
                         );
-                    }}
-                    className="bg-blue-500 text-white px-2 py-1 rounded"
-                  >
-                    Vaxt əlavə et
-                  </button>
+                        if (minutes)
+                          handleAddTime(
+                            student.id,
+                            student.subjectCode,
+                            parseInt(minutes)
+                          );
+                      }}
+                      className="bg-blue-500 text-white px-2 py-1 rounded"
+                    >
+                      Vaxt əlavə et
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
