@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/AdminDashboard"; // Import the admin page
 import { ExamProvider } from "./context/ExamContext.jsx";
 import Review from "./pages/Review.jsx";
 import AddQuestion from "./pages/AddQuestion.jsx";
+import { ToastContainer } from "react-toastify";
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -37,6 +38,17 @@ const App = () => {
       <Router>
         {token && <Navbar />}
         <div>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
           <Routes>
             {/* Common Routes */}
             <Route
