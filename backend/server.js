@@ -3,7 +3,7 @@ import cors from "cors";
 import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import initSocket from "./socket/index.js"; // 🆕
+import initSocket from "./socket/index.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
@@ -27,7 +27,7 @@ app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads/students", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", authRoutes);
 app.use("/api", subjectRoutes);
