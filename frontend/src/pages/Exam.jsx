@@ -4,7 +4,14 @@ import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 import API_BASE from "../config/api";
 import { io } from "socket.io-client";
-const socket = io("http://192.168.11.78:5000"); // change URL for production
+const socket = io("http://192.168.11.78:5000", {
+  reconnection: true,
+  reconnectionAttempts: 10, // Try to reconnect 10 times
+  reconnectionDelay: 1000, // Wait 1 second between attempts
+  reconnectionDelayMax: 5000, // Maximum delay between attempts
+  timeout: 20000, // 20-second timeout for the connection
+  autoConnect: true, // Automatically connect
+});
 import { toast } from "react-toastify";
 
 const initialState = {
