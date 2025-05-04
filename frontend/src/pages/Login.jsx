@@ -22,19 +22,18 @@ const Login = ({ setToken, setSubjects }) => {
       });
 
       const data = await response.json();
-      // console.log("Data: ", data);
 
       if (!response.ok) throw new Error(data.error || "Something went wrong");
 
       localStorage.setItem("token", data.token);
-      localStorage.setItem("studentId", data.student.studentId); // Store student ID
-      localStorage.setItem("status", data.student.status); // Store status
+      localStorage.setItem("studentId", data.student.studentId);
+      localStorage.setItem("status", data.student.status);
       localStorage.setItem("fullname", data.student.fullname);
 
       setToken(data.token);
 
       if (data.student.status === "student") {
-        localStorage.setItem("subjects", JSON.stringify(data.subjects)); // Store subjects
+        localStorage.setItem("subjects", JSON.stringify(data.subjects));
         setSubjects(data.subjects);
         navigate("/");
       } else if (data.student.status === "staff") {
@@ -46,41 +45,61 @@ const Login = ({ setToken, setSubjects }) => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100 loginBg">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Tələbə kodu / İşçi kodu"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            required
-            className="w-full p-2 border rounded mb-2"
-          />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 loginBg">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 transform transition-all duration-300 hover:scale-105">
+        <h1 className="text-4xl font-bold text-center text-gray-900 mb-8 tracking-tight">
+          Xoş Gəlmisiniz
+        </h1>
 
-          {/* Password field with eye icon */}
-          <div className="relative">
+        {error && (
+          <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg mb-6 text-center animate-fade-in">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Tələbə Kodu / İşçi Kodu
+            </label>
             <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Şifrə"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="text"
+              placeholder="Kodu daxil edin"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
               required
-              className="w-full p-2 border rounded pr-10"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute top-2 right-3 text-gray-600 hover:text-gray-900 cursor-pointer"
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
           </div>
 
-          <button className="w-full bg-blue-500 text-white py-2 rounded mt-4 cursor-pointer hover:bg-blue-600">
-            Login
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Şifrə
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Şifrənizi daxil edin"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-indigo-600 transition-colors duration-200 cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+          >
+            Giriş Et
           </button>
         </form>
       </div>
