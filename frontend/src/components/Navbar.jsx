@@ -48,37 +48,36 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-main text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center justify-evenly space-x-2">
-          <img src={logo} alt="Logo" className="size-12 mr-2" />
-          <h1 className="text-xl montserrat montserrat-700">BAAU</h1>
+    <nav className="bg-indigo-800 text-white shadow-lg">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+          <img src={logo} alt="BAAU Logo" className="size-14" />
+          <h1 className="text-2xl font-bold tracking-tight">BAAU</h1>
         </div>
-        <div className="flex space-x-8">
+        <div className="flex items-center space-x-6">
           <button
             onClick={() => handleNavigation("/")}
-            className="group relative px-2 py-4 montserrat text-[#eee] montserrat-600 hover:text-white transition-colors cursor-pointer"
+            className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
           >
-            Ana səhifə
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+            Ana Səhifə
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
           </button>
           {status === "student" && (
             <button
               onClick={() => handleNavigation("/results")}
-              className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
+              className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
             >
               Nəticələr
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
             </button>
           )}
-
           {status === "staff" && (
             <button
               onClick={() => handleNavigation("/admin/add-question")}
-              className="group relative px-2 py-4 montserrat montserrat-600 text-[#eee] hover:text-white transition-colors cursor-pointer"
+              className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group"
             >
               Sual Əlavə Et
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
             </button>
           )}
         </div>
