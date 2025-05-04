@@ -6,7 +6,7 @@ import API_BASE from "../config/api";
 const Results = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const studentId = localStorage.getItem("studentId"); // Get student ID
+  const studentId = localStorage.getItem("studentId");
 
   useEffect(() => {
     fetch(`${API_BASE}/results/${studentId}`, {
@@ -21,42 +21,49 @@ const Results = () => {
   }, [studentId]);
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-2xl mb-4 montserrat montserrat-700">
-        İmtahanların nəticələri:
+    <div className="container mx-auto px-4 py-8">
+      <h2 className="text-3xl font-bold text-gray-900 mb-8">
+        İmtahanların Nəticələri
       </h2>
 
       {loading ? (
-        <p>Yüklənir...</p>
+        <p className="text-gray-600 text-lg text-center">Yüklənir...</p>
       ) : results.length === 0 ? (
-        <p className="text-xl">Heç bir nəticə tapılmadı.</p>
+        <p className="text-gray-600 text-lg text-center">
+          Heç bir nəticə tapılmadı.
+        </p>
       ) : (
-        <>
-          <table className="w-full border-collapse border border-gray-300">
+        <div className="overflow-x-auto bg-white rounded-2xl shadow-lg">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-blue-300">
-                <th className="border p-3 text-left">Fənn</th>
-                <th className="border p-3 text-left">Başlama vaxtı</th>
-                <th className="border p-3 text-left">Bitmə vaxtı</th>
-                <th className="border p-3 text-left">Bal</th>
+              <tr className="bg-indigo-600 text-white">
+                <th className="p-4 text-left font-semibold">Fənn</th>
+                <th className="p-4 text-left font-semibold">Başlama Vaxtı</th>
+                <th className="p-4 text-left font-semibold">Bitmə Vaxtı</th>
+                <th className="p-4 text-left font-semibold">Bal</th>
               </tr>
             </thead>
             <tbody>
               {results.map((result, index) => (
-                <tr key={index} className="hover:bg-blue-100">
-                  <td className="border p-3">{result["Fənnin adı"]}</td>
-                  <td className="border p-3">
+                <tr
+                  key={index}
+                  className="border-b border-gray-200 hover:bg-indigo-50 transition-colors duration-200"
+                >
+                  <td className="p-4 text-gray-800">{result["Fənnin adı"]}</td>
+                  <td className="p-4 text-gray-600">
                     {formatDate(result["created_at"], "dd/MM/yyyy HH:mm:ss")}
                   </td>
-                  <td className="border p-3">
+                  <td className="p-4 text-gray-600">
                     {formatDate(result["submitted_at"], "dd/MM/yyyy HH:mm:ss")}
                   </td>
-                  <td className="border p-3">
-                    <div className="flex space-x-[30px] items-center">
-                      <span>{result["score"]}</span>
+                  <td className="p-4">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-gray-800 font-medium">
+                        {result["score"]}
+                      </span>
                       <Link
                         to={`/review/${result["Fənnin kodu"]}`}
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                        className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
                       >
                         Baxış
                       </Link>
@@ -66,7 +73,7 @@ const Results = () => {
               ))}
             </tbody>
           </table>
-        </>
+        </div>
       )}
     </div>
   );
