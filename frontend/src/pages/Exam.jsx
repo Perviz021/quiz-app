@@ -6,11 +6,11 @@ import API_BASE from "../config/api";
 import { io } from "socket.io-client";
 const socket = io("http://192.168.11.78:5000", {
   reconnection: true,
-  reconnectionAttempts: 10, // Try to reconnect 10 times
-  reconnectionDelay: 1000, // Wait 1 second between attempts
-  reconnectionDelayMax: 5000, // Maximum delay between attempts
-  timeout: 20000, // 20-second timeout for the connection
-  autoConnect: true, // Automatically connect
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
+  autoConnect: true,
 });
 import { toast } from "react-toastify";
 
@@ -101,11 +101,9 @@ const Exam = () => {
       .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
   }, [subjectCode]);
 
-  // Reference to the latest handleSubmit function
   const handleSubmitRef = useRef(() => {});
   const submittedRef = useRef(false);
 
-  // Update refs when values change
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
@@ -178,7 +176,7 @@ const Exam = () => {
         if (state.examStarted && !state.submitted) {
           handleSubmit();
           e.preventDefault();
-          return (e.returnValue = "Are you sure you want to leave?");
+          e.returnValue = "Are you sure you want to leave?";
         }
       },
       [state.examStarted, state.submitted, handleSubmit]
@@ -203,14 +201,14 @@ const Exam = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 flex">
+    <div className="container mx-auto px-4 py-8 flex">
       <div className="flex-grow">
         {!state.examStarted ? (
-          <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-center mb-4">
+          <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl p-8">
+            <h2 className="text-3xl font-bold text-center mb-6 text-gray-900">
               İmtahan Qaydaları
             </h2>
-            <div className="overflow-y-auto max-h-80 p-4 border rounded-lg bg-gray-50 text-gray-700 space-y-2">
+            <div className="max-h-80 overflow-y-auto p-4 bg-gray-50 rounded-lg text-gray-700 space-y-3">
               <p>1. Tələbə bileti olmadan imtahana girmək qadağandır.</p>
               <p>
                 2. Auditoriyanın sakitliyini pozmaq, yüksək səslə danışmaq
@@ -228,19 +226,22 @@ const Exam = () => {
               </p>
               <p>7. Stol, stul və divarlara yazı yazmaq qadağandır.</p>
               <p>8. Digər tələbə yoldaşına kömək etmək qadağandır.</p>
-              <p>9. Kompüterdə başqa səhifə açmaq qadağandır.</p>
+              <p>9. Kompüterdə başqa səhifə açmak qadağandır.</p>
               <p>10. Qaydalara riayət etməmək cəzalandırılır.</p>
             </div>
 
-            <div className="flex items-center mt-4">
+            <div className="flex items-center mt-6">
               <input
                 id="acceptRules"
                 type="checkbox"
                 checked={acceptedRules}
                 onChange={(e) => setAcceptedRules(e.target.checked)}
-                className="mr-2"
+                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
               />
-              <label htmlFor="acceptRules" className="text-sm cursor-pointer">
+              <label
+                htmlFor="acceptRules"
+                className="ml-2 text-sm text-gray-700 cursor-pointer"
+              >
                 Qaydaları oxudum və razıyam
               </label>
             </div>
@@ -248,10 +249,10 @@ const Exam = () => {
             <button
               onClick={handleStartExam}
               disabled={!acceptedRules}
-              className={`mt-4 w-full px-6 py-3 rounded-lg text-lg ${
+              className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
                 acceptedRules
-                  ? "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
-                  : "bg-gray-400 text-white cursor-not-allowed"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+                  : "bg-gray-400 text-gray-200 cursor-not-allowed"
               }`}
             >
               İmtahana Başla
@@ -259,70 +260,80 @@ const Exam = () => {
           </div>
         ) : (
           <div>
-            <h2 className="text-2xl font-bold mb-4">İmtahan</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">İmtahan</h2>
 
-            <div className="text-xl font-semibold mb-4">
+            <div className="text-xl font-semibold text-gray-800 mb-6 bg-indigo-50 p-4 rounded-lg">
               Qalan vaxt:{" "}
-              {String(Math.floor(state.timeLeft / 3600)).padStart(2, "0")}:
-              {String(Math.floor((state.timeLeft % 3600) / 60)).padStart(
-                2,
-                "0"
-              )}
-              :{String(state.timeLeft % 60).padStart(2, "0")}
+              <span className="font-bold">
+                {String(Math.floor(state.timeLeft / 3600)).padStart(2, "0")}:
+                {String(Math.floor((state.timeLeft % 3600) / 60)).padStart(
+                  2,
+                  "0"
+                )}
+                :{String(state.timeLeft % 60).padStart(2, "0")}
+              </span>
             </div>
+
             {state.error ? (
-              <p className="text-red-500">{state.error}</p>
+              <p className="text-red-600 text-lg">{state.error}</p>
             ) : (
               state.questions.map((q, index) => (
                 <div
                   key={q.id}
                   ref={(el) => (questionRefs.current[index] = el)}
-                  className="p-4 border rounded-lg mb-4"
+                  className="p-6 bg-white border border-gray-200 rounded-2xl mb-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
                   {q.question.startsWith("uploads/") &&
                   (q.question.endsWith(".png") ||
                     q.question.endsWith(".jpg") ||
                     q.question.endsWith(".jpeg") ||
                     q.question.endsWith(".gif")) ? (
-                    <div className="mb-2">
-                      <p className="font-semibold text-lg">{index + 1}.</p>
+                    <div className="mb-4">
+                      <p className="font-semibold text-lg text-gray-900">
+                        {index + 1}.
+                      </p>
                       <img
                         src={`http://localhost:5000/${q.question}`}
                         alt="Sual şəkli"
-                        className="w-full max-w-md object-contain"
+                        className="w-full max-w-md object-contain mt-2 rounded-lg"
                       />
                     </div>
                   ) : (
                     <p
-                      className="font-semibold text-lg"
+                      className="font-semibold text-lg text-gray-900"
                       dangerouslySetInnerHTML={{
                         __html: `${index + 1}. ${q.question}`,
                       }}
                     ></p>
                   )}
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-4 space-y-3">
                     {[
                       q.option1,
                       q.option2,
                       q.option3,
                       q.option4,
                       q.option5,
-                    ].map((option, optionIndex) => (
-                      <label
-                        key={optionIndex}
-                        className="flex items-center space-x-2 cursor-pointer"
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${q.id}`}
-                          value={optionIndex}
-                          checked={state.answers[q.id] === optionIndex + 1}
-                          onChange={() => handleAnswer(q.id, optionIndex + 1)}
-                          className="w-4 h-4 text-blue-600"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
+                    ].map(
+                      (option, optionIndex) =>
+                        option && (
+                          <label
+                            key={optionIndex}
+                            className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                          >
+                            <input
+                              type="radio"
+                              name={`question-${q.id}`}
+                              value={optionIndex}
+                              checked={state.answers[q.id] === optionIndex + 1}
+                              onChange={() =>
+                                handleAnswer(q.id, optionIndex + 1)
+                              }
+                              className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-gray-700">{option}</span>
+                          </label>
+                        )
+                    )}
                   </div>
                 </div>
               ))
@@ -330,10 +341,10 @@ const Exam = () => {
             <button
               onClick={handleSubmit}
               disabled={state.submitted || state.isSubmitting}
-              className={`mt-4 px-6 py-3 rounded-lg text-lg ${
+              className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
                 state.submitted || state.isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700 cursor-pointer"
               }`}
             >
               {state.isSubmitting
@@ -347,8 +358,8 @@ const Exam = () => {
       </div>
 
       {state.examStarted && state.questions.length > 0 && (
-        <div className="fixed top-20 right-4 w-64 p-4 bg-white border border-gray-300 shadow-lg rounded-lg">
-          <h3 className="text-lg font-semibold mb-2 text-center">
+        <div className="fixed top-20 right-4 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-2xl">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">
             Sual Naviqasiyası
           </h3>
           <div className="grid grid-cols-5 gap-2">
@@ -356,11 +367,11 @@ const Exam = () => {
               <button
                 key={q.id}
                 onClick={() => scrollToQuestion(index)}
-                className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold cursor-pointer ${
+                className={`w-10 h-10 locuri items-center justify-center rounded-full font-semibold transition-all duration-200 ${
                   q.id in state.answers
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200"
-                } hover:bg-gray-300 transition`}
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
               >
                 {index + 1}
               </button>
