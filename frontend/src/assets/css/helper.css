@@ -1,5 +1,5 @@
 .loginBg {
-  background-image: url("../img/login-bg.jpg");
+  background-image: url("../img/loginbgnew.jpg");
   background-position: center center;
-  @apply bg-cover;
+  @apply bg-cover bg-no-repeat backdrop-blur-2xl;
 }
