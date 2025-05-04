@@ -4,7 +4,6 @@ import API_BASE from "../config/api";
 
 const Review = () => {
   const { subjectCode } = useParams();
-  //   const studentId = localStorage.getItem("studentId");
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,30 +39,27 @@ const Review = () => {
       question.option5,
     ];
 
-    const selected = options[question.selected_option - 1]; // Map index to actual string
+    const selected = options[question.selected_option - 1];
     const correct = options[question.correct_option - 1];
 
-    // Case 1: User selected the correct option - show green
     if (option === selected && option === correct) {
-      return "bg-green-200 border-green-600";
+      return "bg-green-100 border-green-500 text-green-700";
     }
 
-    // Case 2: User selected wrong option - show red for selected, green for correct
     if (selected && selected !== correct) {
       if (option === selected) {
-        return "bg-red-200 border-red-600"; // Wrong selection
+        return "bg-red-100 border-red-500 text-red-700";
       }
       if (option === correct) {
-        return "bg-green-200 border-green-600"; // Show correct answer with green
+        return "bg-green-100 border-green-500 text-green-700";
       }
     }
 
-    // Case 3: User didn't select anything - show yellow for correct
     if (!selected && option === correct) {
-      return "bg-yellow-200 border-yellow-600";
+      return "bg-yellow-100 border-yellow-500 text-yellow-700";
     }
 
-    return "bg-white"; // Neutral
+    return "bg-gray-50 border-gray-200 text-gray-700";
   };
 
   const formatTextWithNewlines = (text) => {
@@ -71,43 +67,47 @@ const Review = () => {
   };
 
   return (
-    <div>
-      {/* {error && <p className="text-red-600">{error}</p>} */}
+    <div className="container mx-auto px-4 py-8">
+      {error && (
+        <p className="text-red-600 text-lg text-center mb-6">{error}</p>
+      )}
       {loading ? (
-        <p>Yüklənir...</p>
+        <p className="text-gray-600 text-lg text-center">Yüklənir...</p>
       ) : (
-        <>
-          <div className="max-w-4xl mx-auto p-4">
-            <h2 className="text-2xl font-bold mb-4">Cavabların Yoxlanması</h2>
-            {questions.map((q, index) => (
-              <div key={q.questionId} className="mb-6">
-                <p
-                  className="font-semibold text-lg"
-                  dangerouslySetInnerHTML={{
-                    __html: `${index + 1}. ${formatTextWithNewlines(
-                      q.question
-                    )}`,
-                  }}
-                ></p>
-                <div className="grid gap-2">
-                  {[q.option1, q.option2, q.option3, q.option4, q.option5].map(
-                    (opt, idx) => (
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            Cavabların Yoxlanması
+          </h2>
+          {questions.map((q, index) => (
+            <div
+              key={q.questionId}
+              className="mb-8 bg-white p-6 rounded-2xl shadow-lg transition-all duration-200 hover:shadow-xl"
+            >
+              <p
+                className="font-semibold text-lg text-gray-900 mb-4"
+                dangerouslySetInnerHTML={{
+                  __html: `${index + 1}. ${formatTextWithNewlines(q.question)}`,
+                }}
+              ></p>
+              <div className="grid gap-3">
+                {[q.option1, q.option2, q.option3, q.option4, q.option5].map(
+                  (opt, idx) =>
+                    opt && (
                       <div
                         key={idx}
-                        className={`p-2 border rounded ${getOptionClass(
+                        className={`p-3 border rounded-lg ${getOptionClass(
                           opt,
                           q
-                        )}`}
+                        )} transition-colors duration-200`}
                       >
                         {opt}
                       </div>
                     )
-                  )}
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
