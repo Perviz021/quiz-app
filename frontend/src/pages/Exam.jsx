@@ -4,15 +4,21 @@ import Popup from "../components/Popup";
 import { useExam } from "../context/ExamContext";
 import API_BASE from "../config/api";
 import { io } from "socket.io-client";
-const socket = io("http://192.168.11.78:5000", {
+import { toast } from "react-toastify";
+
+// Derive Socket.IO URL from VITE_API_BASE or use fallback
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
+  ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
+  : "http://192.168.11.163:5000";
+
+const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
-  reconnectionAttempts: 10,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  timeout: 20000,
+  timeout: 30000,
   autoConnect: true,
 });
-import { toast } from "react-toastify";
 
 const initialState = {
   questions: [],
@@ -38,6 +44,8 @@ const reducer = (state, action) => {
       return { ...state, submitted: true, isSubmitting: true };
     case "SET_SCORE":
       return { ...state, score: action.payload, showPopup: true };
+    case "SET_TIME_LEFT":
+      return { ...state, timeLeft: action.payload };
     case "DECREMENT_TIME":
       return { ...state, timeLeft: state.timeLeft - 1 };
     case "STOP_SUBMITTING":
@@ -82,8 +90,15 @@ const Exam = () => {
       }),
     })
       .then((res) => res.json())
-      .then((data) => dispatch({ type: "SET_SCORE", payload: data.score }))
-      .catch((err) => console.error("Submission error:", err))
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        dispatch({ type: "SET_SCORE", payload: data.score });
+      })
+      .catch((err) => {
+        console.error("Submission error:", err);
+        toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
+        dispatch({ type: "SET_ERROR", payload: err.message });
+      })
       .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
   }, [state, subjectCode]);
 
@@ -114,8 +129,29 @@ const Exam = () => {
 
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
+
+    // Sync timer with server
+    const syncTimer = () => {
+      fetch(`${API_BASE}/exam-time/${subjectCode}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.timeLeft !== undefined) {
+            dispatch({ type: "SET_TIME_LEFT", payload: data.timeLeft });
+          } else if (data.error) {
+            toast.error(data.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Timer sync error:", err);
+          toast.error("Vaxt sinxronizasiyası mümkün olmadı.");
+        });
+    };
+
     if (studentId) {
-      socket.emit("join_exam", studentId);
+      socket.emit("join_exam", { studentId, subjectCode });
+      syncTimer();
     }
 
     const forceSubmitHandler = () => {
@@ -131,20 +167,69 @@ const Exam = () => {
       toast.info(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı`);
     };
 
+    const updateTimeHandler = ({ timeLeft }) => {
+      console.log(`Server updated time: ${timeLeft} seconds`);
+      dispatch({ type: "SET_TIME_LEFT", payload: timeLeft });
+    };
+
+    const errorHandler = (message) => {
+      console.error("Socket error:", message);
+      toast.error(`Bağlantı xətası: ${message}`);
+      if (message.includes("No active exam session")) {
+        navigate("/dashboard");
+      }
+    };
+
+    const examStoppedHandler = () => {
+      console.log("Exam stopped by admin!");
+      if (!submittedRef.current) {
+        handleSubmitRef.current();
+        toast.warn("İmtahan admin tərəfindən dayandırıldı.");
+      }
+    };
+
+    socket.on("connect", () => {
+      console.log("🟢 Socket connected:", socket.id);
+      if (studentId) {
+        socket.emit("join_exam", { studentId, subjectCode });
+        syncTimer();
+      }
+    });
+    socket.on("reconnect", () => {
+      console.log("Socket reconnected!");
+      if (studentId) {
+        socket.emit("join_exam", { studentId, subjectCode });
+        syncTimer();
+        toast.info("İmtahan bağlantısı bərpa olundu.");
+      }
+    });
+    socket.on("reconnect_error", (error) => {
+      console.error("Reconnect error:", error);
+      toast.error("Bağlantı bərpa edilə bilmədi.");
+    });
+    socket.on("error", errorHandler);
     socket.on("force_submit", forceSubmitHandler);
     socket.on("extend_time", extendTimeHandler);
+    socket.on("update_time", updateTimeHandler);
+    socket.on("exam_stopped", examStoppedHandler);
 
     return () => {
+      socket.off("connect");
+      socket.off("reconnect");
+      socket.off("reconnect_error");
+      socket.off("error", errorHandler);
       socket.off("force_submit", forceSubmitHandler);
       socket.off("extend_time", extendTimeHandler);
+      socket.off("update_time", updateTimeHandler);
+      socket.off("exam_stopped", examStoppedHandler);
     };
-  }, []);
+  }, [subjectCode, navigate]);
 
   const handleStartExam = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`${API_BASE}/start`, {
+      const res = await fetch(`${API_BASE}/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,14 +238,18 @@ const Exam = () => {
         body: JSON.stringify({ subjectCode }),
       });
 
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start exam");
       dispatch({ type: "START_EXAM" });
+      dispatch({ type: "SET_TIME_LEFT", payload: data.timeLeft || 5400 });
       setIsExamActive(true);
     } catch (error) {
       console.error("Failed to start exam:", error);
       dispatch({
         type: "SET_ERROR",
-        payload: "İmtahan başlatmaq mümkün olmadı.",
+        payload: `İmtahan başlatmaq mümkün olmadı: ${error.message}`,
       });
+      toast.error(`İmtahan başlatmaq mümkün olmadı: ${error.message}`);
     }
   };
 
@@ -187,7 +276,7 @@ const Exam = () => {
     let timer;
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
       timer = setInterval(() => dispatch({ type: "DECREMENT_TIME" }), 1000);
-    } else if (state.timeLeft === 0 && state.examStarted) {
+    } else if (state.timeLeft <= 0 && state.examStarted && !state.submitted) {
       handleSubmit();
     }
     return () => clearInterval(timer);
@@ -251,7 +340,7 @@ const Exam = () => {
               disabled={!acceptedRules}
               className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
                 acceptedRules
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
                   : "bg-gray-400 text-gray-200 cursor-not-allowed"
               }`}
             >
@@ -344,7 +433,7 @@ const Exam = () => {
               className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
                 state.submitted || state.isSubmitting
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700 cursor-pointer"
+                  : "bg-green-600 text-white hover:bg-green-700"
               }`}
             >
               {state.isSubmitting
@@ -367,7 +456,7 @@ const Exam = () => {
               <button
                 key={q.id}
                 onClick={() => scrollToQuestion(index)}
-                className={`w-10 h-10 locuri items-center justify-center rounded-full font-semibold transition-all duration-200 ${
+                className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold transition-all duration-200 ${
                   q.id in state.answers
                     ? "bg-green-500 text-white hover:bg-green-600"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
