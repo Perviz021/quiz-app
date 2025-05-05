@@ -2,25 +2,69 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
+import { io } from "socket.io-client";
+
+// Derive Socket.IO URL from VITE_API_BASE or use fallback
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
+  ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
+  : "http://192.168.11.163:5000";
+
+const socket = io(SOCKET_SERVER_URL, {
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 30000,
+  autoConnect: true,
+});
 
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch initial active students
     fetch(`${API_BASE}/active-students`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
     })
       .then((res) => res.json())
-      .then((data) => setActiveStudents(data.students))
-      .catch((err) => console.error("Error fetching students", err));
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setActiveStudents(data.students || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching students:", err);
+        toast.error(`Tələbələri yükləmək mümkün olmadı: ${err.message}`);
+      });
+
+    // Socket.IO listeners
+    socket.on("connect", () =>
+      console.log("🟢 Admin socket connected:", socket.id)
+    );
+    socket.on("update_active_students", (students) => {
+      console.log("Received active students update:", students);
+      setActiveStudents(students || []);
+    });
+    socket.on("student_disconnected", ({ studentId }) => {
+      console.log(`Student ${studentId} disconnected`);
+      setActiveStudents((prev) => prev.filter((s) => s.id !== studentId));
+    });
+    socket.on("error", (message) => {
+      console.error("Socket error:", message);
+      toast.error(`Bağlantı xətası: ${message}`);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("update_active_students");
+      socket.off("student_disconnected");
+      socket.off("error");
+    };
   }, []);
 
   const handleForceSubmit = (studentId, subjectCode) => {
-    console.log("Force submit for:", studentId, subjectCode);
-
     fetch(`${API_BASE}/force-submit`, {
       method: "POST",
       headers: {
@@ -29,13 +73,18 @@ const AdminDashboard = () => {
       },
       body: JSON.stringify({ studentId, subjectCode }),
     })
-      .then(() => {
-        toast.success("Imtahan bitirildi.");
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        toast.success("İmtahan bitirildi.");
         setActiveStudents((prev) =>
           prev.filter((student) => student.id !== studentId)
         );
       })
-      .catch(() => toast.error("Xəta baş verdi."));
+      .catch((err) => {
+        console.error("Force submit error:", err);
+        toast.error(`İmtahanı bitirmək mümkün olmadı: ${err.message}`);
+      });
   };
 
   const handleAddTime = (studentId, subjectCode, minutes) => {
@@ -46,13 +95,20 @@ const AdminDashboard = () => {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({
-        studentId: studentId,
-        subjectCode: subjectCode,
+        studentId,
+        subjectCode,
         minutes,
       }),
     })
-      .then(() => toast.success("Vaxt əlavə edildi."))
-      .catch(() => toast.error("Xəta baş verdi."));
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        toast.success("Vaxt əlavə edildi.");
+      })
+      .catch((err) => {
+        console.error("Extend time error:", err);
+        toast.error(`Vaxt əlavə etmək mümkün olmadı: ${err.message}`);
+      });
   };
 
   const handleLogout = () => {
@@ -90,7 +146,7 @@ const AdminDashboard = () => {
         <h2 className="text-3xl font-bold text-gray-900">Admin Panel</h2>
         <button
           onClick={handleLogout}
-          className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+          className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
         >
           Çıxış
         </button>
@@ -151,16 +207,19 @@ const AdminDashboard = () => {
                     <td className="p-4 text-gray-800">{student.fullname}</td>
                     <td className="p-4 text-gray-800">{student.subject}</td>
                     <td className="p-4 text-gray-800">
-                      {String(Math.floor(student.timeLeft / 60)).padStart(
+                      {String(Math.floor(student.timeLeft / 3600)).padStart(
                         2,
                         "0"
                       )}
-                      :{String(student.timeLeft % 60).padStart(2, "0")}:
+                      :
                       {String(
-                        Math.floor((student.timeLeft * 60) % 60)
+                        Math.floor((student.timeLeft % 3600) / 60)
                       ).padStart(2, "0")}
+                      :{String(student.timeLeft % 60).padStart(2, "0")}
                     </td>
-                    <td className="p-4 text-gray-800">{student.bonusTime}</td>
+                    <td className="p-4 text-gray-800">
+                      {student.bonusTime || 0} dəq
+                    </td>
                     <td className="p-4">
                       <div className="flex gap-3">
                         <button
