@@ -4,6 +4,41 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 
+router.post("/start", authenticate, async (req, res) => {
+  const { subjectCode } = req.body;
+  const studentId = req.student.studentId;
+
+  try {
+    // Check if exam already started or submitted
+    const [existing] = await db.query(
+      `SELECT 1 FROM results 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
+      [studentId, subjectCode]
+    );
+
+    if (existing.length > 0) {
+      const [timer] = await db.query(
+        `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
+         FROM results WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+        [studentId, subjectCode]
+      );
+      return res.json({ timeLeft: Math.max(0, timer[0].timeLeft) });
+    }
+
+    // Start new exam
+    await db.query(
+      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, extra_time, is_active)
+       VALUES (?, ?, NOW(), false, 0, true)`,
+      [studentId, subjectCode]
+    );
+
+    res.json({ timeLeft: 5400 }); // 90 minutes
+  } catch (err) {
+    console.error("Error starting exam:", err);
+    res.status(500).json({ error: "Failed to start exam" });
+  }
+});
+
 router.post("/submit", authenticate, async (req, res) => {
   const { studentId } = req.student;
   const { subjectCode, answers } = req.body;
@@ -13,16 +48,17 @@ router.post("/submit", authenticate, async (req, res) => {
   }
 
   try {
-    // 🔍 Check if the student has already taken this exam
-    const [existingResult] = await db.query(
-      "SELECT id FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ? AND submitted = true",
+    // Check if exam is still active
+    const [result] = await db.query(
+      `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
+       FROM results WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
       [studentId, subjectCode]
     );
 
-    if (existingResult.length > 0) {
+    if (result.length === 0 || result[0].timeLeft <= 0) {
       return res
         .status(403)
-        .json({ error: "You have already taken this exam." });
+        .json({ error: "Exam session expired or already submitted." });
     }
 
     let score = 0;
