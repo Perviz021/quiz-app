@@ -13,7 +13,7 @@ router.post("/start", authenticate, async (req, res) => {
     const [existing] = await db.query(
       `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
        FROM results 
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false AND is_active = true`,
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
       [studentId, subjectCode]
     );
 
@@ -34,8 +34,8 @@ router.post("/start", authenticate, async (req, res) => {
 
     // Start new exam
     await db.query(
-      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, extra_time, is_active)
-       VALUES (?, ?, NOW(), false, 0, true)`,
+      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, extra_time)
+       VALUES (?, ?, NOW(), false, 0)`,
       [studentId, subjectCode]
     );
 
