@@ -19,7 +19,6 @@ router.get("/active-students", authenticate, async (req, res) => {
       JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
       JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
       WHERE r.submitted = false
-        AND r.is_active = true
         AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE
     `);
 
@@ -43,7 +42,7 @@ router.get("/exam-time/:subjectCode", authenticate, async (req, res) => {
     const [rows] = await db.query(
       `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
        FROM results 
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false AND is_active = true`,
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
       [studentId, subjectCode]
     );
 
@@ -64,7 +63,8 @@ router.post("/stop-exam", authenticate, async (req, res) => {
 
   try {
     await db.query(
-      `UPDATE results SET is_active = false WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+      `UPDATE results SET submitted = true, submitted_at = NOW() 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
       [studentId, subjectCode]
     );
 
@@ -84,7 +84,8 @@ router.post("/extend-time", authenticate, async (req, res) => {
 
   try {
     await db.query(
-      `UPDATE results SET extra_time = extra_time + ? WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+      `UPDATE results SET extra_time = extra_time + ? 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
       [minutes, studentId, subjectCode]
     );
 
