@@ -37,11 +37,7 @@ const Home = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("subjects");
-    localStorage.removeItem("studentId");
-    localStorage.removeItem("forceSubmit");
-    localStorage.removeItem("status");
+    localStorage.clear();
     navigate("/login");
     window.location.reload();
   };
