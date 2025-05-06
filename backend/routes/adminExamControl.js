@@ -38,6 +38,10 @@ router.get("/exam-time/:subjectCode", authenticate, async (req, res) => {
   const { subjectCode } = req.params;
   const studentId = req.student.studentId;
 
+  if (!subjectCode.match(/^[A-Z0-9]+$/)) {
+    return res.status(400).json({ error: "Invalid subject code" });
+  }
+
   try {
     const [rows] = await db.query(
       `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
@@ -61,7 +65,23 @@ router.get("/exam-time/:subjectCode", authenticate, async (req, res) => {
 router.post("/stop-exam", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
 
+  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Z0-9]+$/)) {
+    return res
+      .status(400)
+      .json({ error: "Invalid student ID or subject code" });
+  }
+
   try {
+    const [rows] = await db.query(
+      `SELECT id FROM results 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
+      [studentId, subjectCode]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "No active exam session found" });
+    }
+
     await db.query(
       `UPDATE results SET submitted = true, submitted_at = NOW() 
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
@@ -82,7 +102,28 @@ router.post("/stop-exam", authenticate, async (req, res) => {
 router.post("/extend-time", authenticate, async (req, res) => {
   const { studentId, subjectCode, minutes } = req.body;
 
+  if (
+    !studentId.match(/^\d{8}$/) ||
+    !subjectCode.match(/^[A-Z0-9]+$/) ||
+    !Number.isInteger(minutes) ||
+    minutes <= 0
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Invalid student ID, subject code, or minutes" });
+  }
+
   try {
+    const [rows] = await db.query(
+      `SELECT id FROM results 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
+      [studentId, subjectCode]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "No active exam session found" });
+    }
+
     await db.query(
       `UPDATE results SET extra_time = extra_time + ? 
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
@@ -103,7 +144,23 @@ router.post("/extend-time", authenticate, async (req, res) => {
 router.post("/force-submit", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
 
+  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Z0-9]+$/)) {
+    return res
+      .status(400)
+      .json({ error: "Invalid student ID or subject code" });
+  }
+
   try {
+    const [rows] = await db.query(
+      `SELECT id FROM results 
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
+      [studentId, subjectCode]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "No active exam session found" });
+    }
+
     await db.query(
       `UPDATE results SET submitted = true, submitted_at = NOW() 
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
