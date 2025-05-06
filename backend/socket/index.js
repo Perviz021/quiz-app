@@ -37,7 +37,6 @@ export default function initSocket(server) {
         JOIN students s ON r.Tələbə_kodu = s.Tələbə_kodu
         JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
         WHERE r.submitted = false
-          AND r.is_active = true
           AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE
       `);
 
@@ -79,7 +78,7 @@ export default function initSocket(server) {
         const [results] = await db.query(
           `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
            FROM results 
-           WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false AND is_active = true`,
+           WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
           [studentId, subjectCode]
         );
 
@@ -126,7 +125,6 @@ export default function initSocket(server) {
               JOIN students s ON r.Tələbə_kodu = s.Tələbə_kodu
               JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
               WHERE r.submitted = false
-                AND r.is_active = true
                 AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE
             `);
             io.emit("update_active_students", rows);
@@ -138,14 +136,3 @@ export default function initSocket(server) {
 
   return io;
 }
-
-let io = null;
-
-export const setIO = (ioInstance) => {
-  io = ioInstance;
-};
-
-export const getIO = () => {
-  if (!io) throw new Error("Socket.io not initialized!");
-  return io;
-};
