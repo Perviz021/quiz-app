@@ -4,9 +4,6 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// 🔁 Utility to shuffle an array
-const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
-
 router.get("/questions/:subjectCode", authenticate, async (req, res) => {
   try {
     const { subjectCode } = req.params;
@@ -24,32 +21,31 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
         .json({ error: "You have already taken this exam." });
     }
 
-    // ✅ Fetch 10 random questions
-    const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY RAND() LIMIT 50",
-      [subjectCode]
+    // Get the language for this subject from FTP table
+    const [subjectInfo] = await db.query(
+      "SELECT lang FROM FTP WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+      [studentId, subjectCode]
     );
 
-    const randomizedQuestions = questions.map((q) => {
-      // 🧠 Prepare all options
-      const options = [
-        { text: q.option1, isCorrect: true },
-        { text: q.option2, isCorrect: false },
-        { text: q.option3, isCorrect: false },
-        { text: q.option4, isCorrect: false },
-        { text: q.option5, isCorrect: false },
-      ];
+    if (subjectInfo.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Subject not found for this student." });
+    }
 
-      // 🔀 Shuffle options
-      const shuffledOptions = shuffleArray(options);
+    const language = subjectInfo[0].lang;
 
-      return {
-        id: q.id,
-        question: q.question.replace(/\n/g, "<br>"),
-        options: shuffledOptions.map((opt) => opt.text),
-        correctIndex: shuffledOptions.findIndex((opt) => opt.isCorrect),
-      };
-    });
+    // ✅ Fetch questions with language filter
+    const [questions] = await db.query(
+      "SELECT * FROM questions WHERE `fənnin_kodu` = ? AND lang = ? ORDER BY RAND() LIMIT 50",
+      [subjectCode, language]
+    );
+
+    if (questions.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No questions found for this subject and language." });
+    }
 
     res.json(
       questions.map((q) => ({
