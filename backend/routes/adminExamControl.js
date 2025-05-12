@@ -14,6 +14,7 @@ router.get("/active-students", authenticate, async (req, res) => {
         sub.\`Fənnin adı\` AS subject,
         sub.\`Fənnin kodu\` AS subjectCode,
         r.extra_time AS bonusTime,
+        CONCAT(s.\`Tələbə_kodu\`, '_', sub.\`Fənnin kodu\`) AS roomId,
         TIMESTAMPDIFF(SECOND, NOW(), r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE) AS timeLeft
       FROM results r
       JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
@@ -38,7 +39,7 @@ router.get("/exam-time/:subjectCode", authenticate, async (req, res) => {
   const { subjectCode } = req.params;
   const studentId = req.student.studentId;
 
-  if (!subjectCode.match(/^[A-Z0-9]+$/)) {
+  if (!subjectCode.match(/^[A-Za-z0-9]+$/)) {
     return res.status(400).json({ error: "Invalid subject code" });
   }
 
@@ -65,7 +66,7 @@ router.get("/exam-time/:subjectCode", authenticate, async (req, res) => {
 router.post("/stop-exam", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
 
-  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Z0-9]+$/)) {
+  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Za-z0-9]+$/)) {
     return res
       .status(400)
       .json({ error: "Invalid student ID or subject code" });
@@ -104,7 +105,7 @@ router.post("/extend-time", authenticate, async (req, res) => {
 
   if (
     !studentId.match(/^\d{8}$/) ||
-    !subjectCode.match(/^[A-Z0-9]+$/) ||
+    !subjectCode.match(/^[A-Za-z0-9]+$/) ||
     !Number.isInteger(minutes) ||
     minutes <= 0
   ) {
@@ -131,7 +132,8 @@ router.post("/extend-time", authenticate, async (req, res) => {
     );
 
     const io = getIO();
-    io.to(studentId).emit("extend_time", minutes);
+    const roomId = `${studentId}_${subjectCode}`;
+    io.to(roomId).emit("extend_time", minutes);
 
     res.json({ message: "Extra time granted and socket notified." });
   } catch (err) {
@@ -144,7 +146,7 @@ router.post("/extend-time", authenticate, async (req, res) => {
 router.post("/force-submit", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
 
-  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Z0-9]+$/)) {
+  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Za-z0-9]+$/)) {
     return res
       .status(400)
       .json({ error: "Invalid student ID or subject code" });
@@ -168,7 +170,8 @@ router.post("/force-submit", authenticate, async (req, res) => {
     );
 
     const io = getIO();
-    io.to(studentId).emit("force_submit");
+    const roomId = `${studentId}_${subjectCode}`;
+    io.to(roomId).emit("force_submit");
 
     res.json({ message: `Exam force submitted for student ${studentId}` });
   } catch (err) {
