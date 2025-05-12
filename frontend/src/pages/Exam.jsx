@@ -66,6 +66,7 @@ const Exam = () => {
   const questionRefs = useRef([]);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [acceptedRules, setAcceptedRules] = useState(false);
+  const roomId = useRef(null);
 
   const handleSubmit = useCallback(() => {
     if (state.submitted) return;
@@ -102,19 +103,64 @@ const Exam = () => {
       .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
   }, [state, subjectCode]);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/questions/${subjectCode}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    })
-      .then((res) => {
-        if (res.status === 403)
-          throw new Error("You have already taken this exam.");
-        if (!res.ok) throw new Error("Failed to fetch questions");
-        return res.json();
-      })
-      .then((data) => dispatch({ type: "SET_QUESTIONS", payload: data }))
-      .catch((err) => dispatch({ type: "SET_ERROR", payload: err.message }));
-  }, [subjectCode]);
+  const handleStartExam = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start exam");
+
+      dispatch({ type: "START_EXAM" });
+      dispatch({ type: "SET_TIME_LEFT", payload: data.timeLeft || 5400 });
+      setIsExamActive(true);
+
+      // After starting the exam, initialize socket connection
+      const studentId = localStorage.getItem("studentId");
+      if (studentId) {
+        roomId.current = `${studentId}_${subjectCode}`;
+        socket.emit("join_exam", { roomId: roomId.current });
+      }
+
+      // Fetch questions after starting the exam
+      fetchQuestions();
+    } catch (error) {
+      console.error("Failed to start exam:", error);
+      dispatch({
+        type: "SET_ERROR",
+        payload: `İmtahan başlatmaq mümkün olmadı: ${error.message}`,
+      });
+      toast.error(`İmtahan başlatmaq mümkün olmadı: ${error.message}`);
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/questions/${subjectCode}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
+      if (response.status === 403) {
+        throw new Error("You have already taken this exam.");
+      }
+      if (!response.ok) {
+        throw new Error("Failed to fetch questions");
+      }
+
+      const data = await response.json();
+      dispatch({ type: "SET_QUESTIONS", payload: data });
+    } catch (err) {
+      dispatch({ type: "SET_ERROR", payload: err.message });
+    }
+  };
 
   const handleSubmitRef = useRef(() => {});
   const submittedRef = useRef(false);
@@ -129,8 +175,11 @@ const Exam = () => {
 
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
+    if (!studentId || !state.examStarted) return;
 
-    // Sync timer with server
+    roomId.current = `${studentId}_${subjectCode}`;
+
+    // Sync timer with server only if exam has started
     const syncTimer = () => {
       fetch(`${API_BASE}/exam-time/${subjectCode}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -149,11 +198,7 @@ const Exam = () => {
         });
     };
 
-    if (studentId) {
-      socket.emit("join_exam", { studentId, subjectCode });
-      syncTimer();
-    }
-
+    // Socket event handlers
     const forceSubmitHandler = () => {
       console.log("Admin forced submission!");
       if (!submittedRef.current) {
@@ -190,23 +235,26 @@ const Exam = () => {
 
     socket.on("connect", () => {
       console.log("🟢 Socket connected:", socket.id);
-      if (studentId) {
-        socket.emit("join_exam", { studentId, subjectCode });
+      if (state.examStarted) {
+        socket.emit("join_exam", { roomId: roomId.current });
         syncTimer();
       }
     });
+
     socket.on("reconnect", () => {
       console.log("Socket reconnected!");
-      if (studentId) {
-        socket.emit("join_exam", { studentId, subjectCode });
+      if (state.examStarted) {
+        socket.emit("join_exam", { roomId: roomId.current });
         syncTimer();
         toast.info("İmtahan bağlantısı bərpa olundu.");
       }
     });
+
     socket.on("reconnect_error", (error) => {
       console.error("Reconnect error:", error);
       toast.error("Bağlantı bərpa edilə bilmədi.");
     });
+
     socket.on("error", errorHandler);
     socket.on("force_submit", forceSubmitHandler);
     socket.on("extend_time", extendTimeHandler);
@@ -223,35 +271,7 @@ const Exam = () => {
       socket.off("update_time", updateTimeHandler);
       socket.off("exam_stopped", examStoppedHandler);
     };
-  }, [subjectCode, navigate]);
-
-  const handleStartExam = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`${API_BASE}/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ subjectCode }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to start exam");
-      dispatch({ type: "START_EXAM" });
-      dispatch({ type: "SET_TIME_LEFT", payload: data.timeLeft || 5400 });
-      setIsExamActive(true);
-    } catch (error) {
-      console.error("Failed to start exam:", error);
-      dispatch({
-        type: "SET_ERROR",
-        payload: `İmtahan başlatmaq mümkün olmadı: ${error.message}`,
-      });
-      toast.error(`İmtahan başlatmaq mümkün olmadı: ${error.message}`);
-    }
-  };
+  }, [subjectCode, navigate, state.examStarted]);
 
   const handleAnswer = (questionId, optionIndex) => {
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
