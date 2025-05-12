@@ -1,11 +1,11 @@
 import { Server } from "socket.io";
-import { setIO } from "./ioInstance.js";
+import { initSocket } from "./ioInstance.js";
 import db from "../db.js";
 
 // Map to track socket IDs for active students
 const socketMap = new Map(); // Map<studentId, { socketId, subjectCode }>
 
-export default function initSocket(server) {
+export default function setupSocketServer(server) {
   const io = new Server(server, {
     cors: {
       origin: [
@@ -20,7 +20,7 @@ export default function initSocket(server) {
     pingInterval: 10000,
   });
 
-  setIO(io);
+  initSocket(io);
 
   // Sync timers and notify clients every second
   setInterval(async () => {
@@ -32,6 +32,7 @@ export default function initSocket(server) {
           s.\`Soyadı, adı və ata adı\` AS fullname,
           sub.\`Fənnin adı\` AS subject,
           r.extra_time AS bonusTime,
+          CONCAT(r.Tələbə_kodu, '_', r.\`Fənnin kodu\`) AS roomId,
           TIMESTAMPDIFF(SECOND, NOW(), r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE) AS timeLeft
         FROM results r
         JOIN students s ON r.Tələbə_kodu = s.Tələbə_kodu
@@ -43,6 +44,7 @@ export default function initSocket(server) {
       const activeStudents = rows.map((row) => ({
         id: row.studentId,
         subjectCode: row.subjectCode,
+        roomId: row.roomId,
         fullname: row.fullname,
         subject: row.subject,
         bonusTime: row.bonusTime,
@@ -51,14 +53,16 @@ export default function initSocket(server) {
 
       // Update timers and check for expiration
       activeStudents.forEach(async (student) => {
-        io.to(student.id).emit("update_time", { timeLeft: student.timeLeft });
+        io.to(student.roomId).emit("update_time", {
+          timeLeft: student.timeLeft,
+        });
         if (student.timeLeft <= 0 && !student.submitted) {
           await db.query(
             `UPDATE results SET submitted = true, submitted_at = NOW() 
              WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
             [student.id, student.subjectCode]
           );
-          io.to(student.id).emit("force_submit");
+          io.to(student.roomId).emit("force_submit");
         }
       });
 
@@ -72,8 +76,16 @@ export default function initSocket(server) {
   io.on("connection", (socket) => {
     console.log("🟢 New socket connected:", socket.id);
 
-    socket.on("join_exam", async ({ studentId, subjectCode }) => {
+    socket.on("join_exam", async ({ roomId }) => {
       try {
+        // Extract studentId and subjectCode from roomId
+        const [studentId, subjectCode] = roomId.split("_");
+
+        if (!studentId || !subjectCode) {
+          socket.emit("error", "Invalid room ID format.");
+          return;
+        }
+
         // Validate exam session
         const [results] = await db.query(
           `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
@@ -89,9 +101,21 @@ export default function initSocket(server) {
 
         socket.studentId = studentId;
         socket.subjectCode = subjectCode;
-        socketMap.set(studentId, { socketId: socket.id, subjectCode });
-        socket.join(studentId);
-        console.log(`Student ${studentId} joined room for ${subjectCode}`);
+        socket.roomId = roomId;
+
+        socketMap.set(studentId, { socketId: socket.id, subjectCode, roomId });
+
+        // Leave any existing rooms
+        Array.from(socket.rooms).forEach((room) => {
+          if (room !== socket.id) {
+            socket.leave(room);
+          }
+        });
+
+        socket.join(roomId);
+        console.log(
+          `Student ${studentId} joined room ${roomId} for ${subjectCode}`
+        );
 
         // Send initial timer state
         socket.emit("update_time", {
@@ -113,6 +137,8 @@ export default function initSocket(server) {
           ) {
             socketMap.delete(socket.studentId);
             io.emit("student_disconnected", { studentId: socket.studentId });
+
+            // Re-fetch active students after disconnect
             const [rows] = await db.query(`
               SELECT 
                 r.Tələbə_kodu AS studentId,
@@ -120,6 +146,7 @@ export default function initSocket(server) {
                 s.\`Soyadı, adı və ata adı\` AS fullname,
                 sub.\`Fənnin adı\` AS subject,
                 r.extra_time AS bonusTime,
+                CONCAT(r.Tələbə_kodu, '_', r.\`Fənnin kodu\`) AS roomId,
                 TIMESTAMPDIFF(SECOND, NOW(), r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE) AS timeLeft
               FROM results r
               JOIN students s ON r.Tələbə_kodu = s.Tələbə_kodu
@@ -127,7 +154,18 @@ export default function initSocket(server) {
               WHERE r.submitted = false
                 AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE
             `);
-            io.emit("update_active_students", rows);
+
+            const activeStudents = rows.map((row) => ({
+              id: row.studentId,
+              subjectCode: row.subjectCode,
+              roomId: row.roomId,
+              fullname: row.fullname,
+              subject: row.subject,
+              bonusTime: row.bonusTime,
+              timeLeft: Math.max(0, row.timeLeft),
+            }));
+
+            io.emit("update_active_students", activeStudents);
           }
         }, 30000); // 30-second grace period
       }
