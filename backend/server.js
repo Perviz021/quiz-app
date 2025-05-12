@@ -3,7 +3,7 @@ import cors from "cors";
 import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import initSocket from "./socket/index.js";
+import setupSocketServer from "./socket/index.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
@@ -20,7 +20,7 @@ import addQuestion from "./routes/addQuestion.js";
 const app = express();
 const server = http.createServer(app); // 🆕 create HTTP server
 
-initSocket(server); // 🆕 initialize WebSocket
+setupSocketServer(server); // 🆕 initialize WebSocket
 
 app.use(cors());
 app.use(express.json());
