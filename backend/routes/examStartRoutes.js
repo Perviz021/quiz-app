@@ -9,33 +9,29 @@ router.post("/start", authenticate, async (req, res) => {
   const { subjectCode } = req.body;
 
   try {
-    // Check for active or submitted exam session
+    // Check for active exam session
     const [existing] = await db.query(
-      `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
+      `SELECT TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft,
+              submitted
        FROM results 
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
+       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
       [studentId, subjectCode]
     );
 
-    if (existing.length > 0) {
+    // If there's an active session, return its time
+    if (existing.length > 0 && existing[0].submitted === 0) {
       return res.json({ timeLeft: Math.max(0, existing[0].timeLeft) });
     }
 
     // Check if exam was previously submitted
-    const [submitted] = await db.query(
-      `SELECT id FROM results 
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = true`,
-      [studentId, subjectCode]
-    );
-
-    if (submitted.length > 0) {
+    if (existing.length > 0 && existing[0].submitted === 1) {
       return res.status(400).json({ error: "Exam already submitted." });
     }
 
     // Start new exam
     await db.query(
-      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, extra_time)
-       VALUES (?, ?, NOW(), false, 0)`,
+      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, submitted_at, extra_time)
+       VALUES (?, ?, NOW(), 0, NULL, 0)`,
       [studentId, subjectCode]
     );
 
