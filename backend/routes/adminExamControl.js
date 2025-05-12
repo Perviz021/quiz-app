@@ -153,6 +153,7 @@ router.post("/force-submit", authenticate, async (req, res) => {
   }
 
   try {
+    // First check if exam exists and is not submitted
     const [rows] = await db.query(
       `SELECT id FROM results 
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
@@ -163,16 +164,38 @@ router.post("/force-submit", authenticate, async (req, res) => {
       return res.status(404).json({ error: "No active exam session found" });
     }
 
+    // Instead of marking as submitted immediately, set a force_submit flag
     await db.query(
-      `UPDATE results SET submitted = true, submitted_at = NOW() 
+      `UPDATE results SET force_submit = true, force_submit_time = NOW()
        WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
       [studentId, subjectCode]
     );
 
+    // Notify the client to submit their current answers
     const io = getIO();
     const roomId = `${studentId}_${subjectCode}`;
+    console.log(`Sending force-submit to room: ${roomId}`);
     io.to(roomId).emit("exam_stopped");
     io.to(roomId).emit("force_submit");
+
+    // Give client a short time to submit answers, then ensure exam is ended
+    setTimeout(async () => {
+      try {
+        // After grace period, mark as submitted if not already submitted
+        await db.query(
+          `UPDATE results 
+           SET submitted = true, 
+               submitted_at = COALESCE(submitted_at, NOW()),
+               score = COALESCE(score, 0),
+               total_questions = COALESCE(total_questions, 0)
+           WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? 
+           AND submitted = false`,
+          [studentId, subjectCode]
+        );
+      } catch (err) {
+        console.error("Error in force-submit cleanup:", err);
+      }
+    }, 10000); // Give 10 seconds for client to submit
 
     res.json({ message: `Exam force submitted for student ${studentId}` });
   } catch (err) {
