@@ -12,20 +12,28 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
     const { subjectCode } = req.params;
     const studentId = req.student.studentId;
 
+    console.log(
+      `Fetching questions for student ${studentId}, subject ${subjectCode}`
+    );
+
     // 🔍 Check exam status
     const [examStatus] = await db.query(
       "SELECT submitted, submitted_at FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
       [studentId, subjectCode]
     );
 
+    console.log("Exam status:", examStatus);
+
     // If no exam record exists or exam is submitted
     if (examStatus.length === 0) {
+      console.log("No active exam found");
       return res
         .status(404)
         .json({ error: "No active exam found. Please start the exam first." });
     }
 
     if (examStatus[0].submitted === 1) {
+      console.log("Exam already submitted");
       return res
         .status(403)
         .json({ error: "You have already taken this exam." });
@@ -37,13 +45,17 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
       [studentId, subjectCode]
     );
 
+    console.log("Subject info from FTP:", subjectInfo);
+
     if (subjectInfo.length === 0) {
+      console.log("No subject info found in FTP table");
       return res
         .status(404)
-        .json({ error: "Subject not found for this student." });
+        .json({ error: "Subject not found for this student in FTP table." });
     }
 
     const language = subjectInfo[0].lang;
+    console.log("Language found:", language);
 
     // ✅ Fetch questions
     const [questions] = await db.query(
@@ -51,10 +63,13 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
       [subjectCode, language]
     );
 
+    console.log(`Found ${questions.length} questions`);
+
     if (questions.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "No questions found for this subject." });
+      console.log("No questions found for subject and language combination");
+      return res.status(404).json({
+        error: `No questions found for subject ${subjectCode} with language ${language}`,
+      });
     }
 
     res.json(
@@ -71,7 +86,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
     );
   } catch (error) {
     console.error("Error fetching questions:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error: " + error.message });
   }
 });
 
