@@ -4,18 +4,28 @@ import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// 🔁 Utility to shuffle an array
+const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+
 router.get("/questions/:subjectCode", authenticate, async (req, res) => {
   try {
     const { subjectCode } = req.params;
     const studentId = req.student.studentId;
 
-    // 🔍 Check if student has already taken the exam
-    const [existingExam] = await db.query(
-      "SELECT * FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+    // 🔍 Check exam status
+    const [examStatus] = await db.query(
+      "SELECT submitted, submitted_at FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
       [studentId, subjectCode]
     );
 
-    if (existingExam.length > 0) {
+    // If no exam record exists or exam is submitted
+    if (examStatus.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No active exam found. Please start the exam first." });
+    }
+
+    if (examStatus[0].submitted === 1) {
       return res
         .status(403)
         .json({ error: "You have already taken this exam." });
@@ -35,7 +45,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
 
     const language = subjectInfo[0].lang;
 
-    // ✅ Fetch questions with language filter
+    // ✅ Fetch questions
     const [questions] = await db.query(
       "SELECT * FROM questions WHERE `fənnin_kodu` = ? AND lang = ? ORDER BY RAND() LIMIT 50",
       [subjectCode, language]
@@ -44,7 +54,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
     if (questions.length === 0) {
       return res
         .status(404)
-        .json({ error: "No questions found for this subject and language." });
+        .json({ error: "No questions found for this subject." });
     }
 
     res.json(
