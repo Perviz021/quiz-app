@@ -203,6 +203,8 @@ const Exam = () => {
       console.log("Admin forced submission!");
       if (!submittedRef.current) {
         handleSubmitRef.current();
+        toast.warn("İmtahan admin tərəfindən dayandırıldı.");
+        navigate(`/review/${subjectCode}`);
       }
     };
 
@@ -230,6 +232,7 @@ const Exam = () => {
       if (!submittedRef.current) {
         handleSubmitRef.current();
         toast.warn("İmtahan admin tərəfindən dayandırıldı.");
+        navigate(`/review/${subjectCode}`);
       }
     };
 
