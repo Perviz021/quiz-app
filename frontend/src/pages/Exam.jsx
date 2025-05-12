@@ -54,6 +54,14 @@ const reducer = (state, action) => {
       return { ...state, error: action.payload };
     case "EXTEND_TIME":
       return { ...state, timeLeft: state.timeLeft + action.payload };
+    case "FORCE_SUBMIT":
+      return {
+        ...state,
+        submitted: true,
+        isSubmitting: false,
+        showPopup: true,
+        score: action.payload || 0,
+      };
     default:
       return state;
   }
@@ -69,8 +77,12 @@ const Exam = () => {
   const roomId = useRef(null);
 
   const handleSubmit = useCallback(() => {
-    if (state.submitted) return;
+    if (state.submitted) {
+      console.log("Exam already submitted, preventing resubmission");
+      return;
+    }
 
+    console.log("Submitting exam with answers:", state.answers);
     dispatch({ type: "SUBMIT_EXAM" });
     setIsExamActive(false);
 
@@ -78,6 +90,8 @@ const Exam = () => {
       questionId: q.id,
       selectedOption: state.answers[q.id] ?? -1,
     }));
+
+    console.log("Formatted answers for submission:", formattedAnswers);
 
     fetch(`${API_BASE}/submit`, {
       method: "POST",
@@ -93,6 +107,7 @@ const Exam = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
+        console.log("Submission successful, score:", data.score);
         dispatch({ type: "SET_SCORE", payload: data.score });
       })
       .catch((err) => {
@@ -173,38 +188,79 @@ const Exam = () => {
     submittedRef.current = state.submitted;
   }, [state.submitted]);
 
+  const forceSubmitHandler = useCallback(() => {
+    console.log("Received force-submit event from server");
+    if (!submittedRef.current) {
+      console.log("Processing force submit, current state:", {
+        answers: state.answers,
+        questions: state.questions,
+      });
+
+      // Format answers before submitting
+      const formattedAnswers = state.questions.map((q) => ({
+        questionId: q.id,
+        selectedOption: state.answers[q.id] ?? -1,
+      }));
+
+      console.log("Formatted answers for force submit:", formattedAnswers);
+
+      // Submit answers to backend
+      fetch(`${API_BASE}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subjectCode,
+          answers: formattedAnswers,
+          isForceSubmit: true, // Add flag to indicate force submit
+        }),
+      })
+        .then((res) => {
+          console.log("Force submit response status:", res.status);
+          return res.json();
+        })
+        .then((data) => {
+          console.log("Force submit response data:", data);
+          if (data.error) throw new Error(data.error);
+          dispatch({ type: "FORCE_SUBMIT", payload: data.score });
+          setIsExamActive(false);
+          submittedRef.current = true;
+          toast.warn("İmtahan admin tərəfindən dayandırıldı.");
+          navigate(`/review/${subjectCode}`);
+        })
+        .catch((err) => {
+          console.error("Force submit error:", err);
+          // Even if submission fails, we should still end the exam
+          dispatch({ type: "FORCE_SUBMIT", payload: 0 });
+          setIsExamActive(false);
+          submittedRef.current = true;
+          toast.error(`İmtahan təhvil vermək mümkün olmadı: ${err.message}`);
+          navigate(`/review/${subjectCode}`);
+        });
+    } else {
+      console.log("Ignoring force-submit, already submitted");
+    }
+  }, [state, subjectCode, navigate, setIsExamActive]);
+
+  const examStoppedHandler = useCallback(() => {
+    console.log("Received exam-stopped event from server");
+    forceSubmitHandler();
+  }, [forceSubmitHandler]);
+
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
     if (!studentId || !state.examStarted) return;
 
     roomId.current = `${studentId}_${subjectCode}`;
-
-    // Sync timer with server only if exam has started
-    const syncTimer = () => {
-      fetch(`${API_BASE}/exam-time/${subjectCode}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.timeLeft !== undefined) {
-            dispatch({ type: "SET_TIME_LEFT", payload: data.timeLeft });
-          } else if (data.error) {
-            toast.error(data.error);
-          }
-        })
-        .catch((err) => {
-          console.error("Timer sync error:", err);
-          toast.error("Vaxt sinxronizasiyası mümkün olmadı.");
-        });
-    };
+    console.log("Setting up socket connection for room:", roomId.current);
 
     // Socket event handlers
-    const forceSubmitHandler = () => {
-      console.log("Admin forced submission!");
-      if (!submittedRef.current) {
-        handleSubmitRef.current();
-        toast.warn("İmtahan admin tərəfindən dayandırıldı.");
-        navigate(`/review/${subjectCode}`);
+    const updateTimeHandler = ({ timeLeft }) => {
+      console.log(`Received time update: ${timeLeft} seconds`);
+      if (!submittedRef.current && timeLeft !== undefined) {
+        dispatch({ type: "SET_TIME_LEFT", payload: timeLeft });
       }
     };
 
@@ -212,11 +268,6 @@ const Exam = () => {
       console.log(`Exam time extended by ${extraMinutes} minutes`);
       dispatch({ type: "EXTEND_TIME", payload: extraMinutes * 60 });
       toast.info(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı`);
-    };
-
-    const updateTimeHandler = ({ timeLeft }) => {
-      console.log(`Server updated time: ${timeLeft} seconds`);
-      dispatch({ type: "SET_TIME_LEFT", payload: timeLeft });
     };
 
     const errorHandler = (message) => {
@@ -227,54 +278,60 @@ const Exam = () => {
       }
     };
 
-    const examStoppedHandler = () => {
-      console.log("Exam stopped by admin!");
-      if (!submittedRef.current) {
-        handleSubmitRef.current();
-        toast.warn("İmtahan admin tərəfindən dayandırıldı.");
-        navigate(`/review/${subjectCode}`);
+    const connectHandler = () => {
+      console.log("🟢 Socket connected:", socket.id);
+      if (state.examStarted) {
+        console.log("Joining exam room:", roomId.current);
+        socket.emit("join_exam", { roomId: roomId.current });
       }
     };
 
-    socket.on("connect", () => {
-      console.log("🟢 Socket connected:", socket.id);
-      if (state.examStarted) {
-        socket.emit("join_exam", { roomId: roomId.current });
-        syncTimer();
-      }
-    });
-
-    socket.on("reconnect", () => {
+    const reconnectHandler = () => {
       console.log("Socket reconnected!");
       if (state.examStarted) {
+        console.log("Rejoining exam room after reconnect:", roomId.current);
         socket.emit("join_exam", { roomId: roomId.current });
-        syncTimer();
         toast.info("İmtahan bağlantısı bərpa olundu.");
       }
-    });
+    };
 
+    // Set up socket listeners
+    socket.on("connect", connectHandler);
+    socket.on("reconnect", reconnectHandler);
     socket.on("reconnect_error", (error) => {
       console.error("Reconnect error:", error);
       toast.error("Bağlantı bərpa edilə bilmədi.");
     });
-
     socket.on("error", errorHandler);
     socket.on("force_submit", forceSubmitHandler);
+    socket.on("exam_stopped", examStoppedHandler);
     socket.on("extend_time", extendTimeHandler);
     socket.on("update_time", updateTimeHandler);
-    socket.on("exam_stopped", examStoppedHandler);
+
+    // Join exam room on mount
+    if (state.examStarted && socket.connected) {
+      console.log("Initially joining exam room:", roomId.current);
+      socket.emit("join_exam", { roomId: roomId.current });
+    }
 
     return () => {
-      socket.off("connect");
-      socket.off("reconnect");
+      console.log("Cleaning up socket listeners");
+      socket.off("connect", connectHandler);
+      socket.off("reconnect", reconnectHandler);
       socket.off("reconnect_error");
       socket.off("error", errorHandler);
       socket.off("force_submit", forceSubmitHandler);
+      socket.off("exam_stopped", examStoppedHandler);
       socket.off("extend_time", extendTimeHandler);
       socket.off("update_time", updateTimeHandler);
-      socket.off("exam_stopped", examStoppedHandler);
     };
-  }, [subjectCode, navigate, state.examStarted]);
+  }, [
+    subjectCode,
+    navigate,
+    state.examStarted,
+    forceSubmitHandler,
+    examStoppedHandler,
+  ]);
 
   const handleAnswer = (questionId, optionIndex) => {
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
