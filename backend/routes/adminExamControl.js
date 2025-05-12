@@ -171,6 +171,7 @@ router.post("/force-submit", authenticate, async (req, res) => {
 
     const io = getIO();
     const roomId = `${studentId}_${subjectCode}`;
+    io.to(roomId).emit("exam_stopped");
     io.to(roomId).emit("force_submit");
 
     res.json({ message: `Exam force submitted for student ${studentId}` });
