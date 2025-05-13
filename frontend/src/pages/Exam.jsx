@@ -189,60 +189,17 @@ const Exam = () => {
   }, [state.submitted]);
 
   const forceSubmitHandler = useCallback(() => {
-    console.log("Received force-submit event from server");
     if (!submittedRef.current) {
-      console.log("Processing force submit, current state:", {
-        answers: state.answers,
-        questions: state.questions,
-      });
-
-      // Format answers before submitting
-      const formattedAnswers = state.questions.map((q) => ({
-        questionId: q.id,
-        selectedOption: state.answers[q.id] ?? -1,
-      }));
-
-      console.log("Formatted answers for force submit:", formattedAnswers);
-
-      // Submit answers to backend
-      fetch(`${API_BASE}/submit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          subjectCode: subjectCode,
-          answers: formattedAnswers,
-          isForceSubmit: true, // Add flag to indicate force submit
-        }),
-      })
-        .then((res) => {
-          console.log("Force submit response status:", res.status);
-          return res.json();
-        })
-        .then((data) => {
-          console.log("Force submit response data:", data);
-          if (data.error) throw new Error(data.error);
-          dispatch({ type: "FORCE_SUBMIT", payload: data.score });
-          setIsExamActive(false);
-          submittedRef.current = true;
-          toast.warn("İmtahan admin tərəfindən dayandırıldı.");
-          navigate(`/review/${subjectCode}`);
-        })
-        .catch((err) => {
-          console.error("Force submit error:", err);
-          // Even if submission fails, we should still end the exam
-          dispatch({ type: "FORCE_SUBMIT", payload: 0 });
-          setIsExamActive(false);
-          submittedRef.current = true;
-          toast.error(`İmtahan təhvil vermək mümkün olmadı: ${err.message}`);
-          navigate(`/review/${subjectCode}`);
-        });
+      console.log("Received force-submit event");
+      submittedRef.current = true;
+      setIsExamActive(false);
+      dispatch({ type: "FORCE_SUBMIT", payload: 0 });
+      toast.warn("İmtahan admin tərəfindən dayandırıldı.");
+      navigate(`/review/${subjectCode}`);
     } else {
       console.log("Ignoring force-submit, already submitted");
     }
-  }, [state, subjectCode, navigate, setIsExamActive]);
+  }, [subjectCode, navigate, setIsExamActive]);
 
   const examStoppedHandler = useCallback(() => {
     console.log("Received exam-stopped event from server");
