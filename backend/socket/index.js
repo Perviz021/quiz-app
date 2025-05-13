@@ -69,7 +69,7 @@ export const initializeSocket = (server) => {
 
         // Validate exam session
         const [results] = await db.query(
-          `SELECT submitted, TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
+          `SELECT submitted, force_submit, TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
            FROM results 
            WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
           [studentId, subjectCode]
@@ -87,7 +87,6 @@ export const initializeSocket = (server) => {
           console.log(
             `Exam already submitted for ${studentId} in ${subjectCode}`
           );
-          socket.emit("force_submit");
           socket.emit("exam_stopped");
           return;
         }
@@ -96,6 +95,7 @@ export const initializeSocket = (server) => {
         socket.subjectCode = subjectCode;
         socket.roomId = roomId;
 
+        // Store socket info in map
         socketMap.set(studentId, { socketId: socket.id, subjectCode, roomId });
 
         // Leave any existing rooms
@@ -105,14 +105,16 @@ export const initializeSocket = (server) => {
           }
         });
 
+        // Join the exam room
         socket.join(roomId);
-        console.log(
-          `Student ${studentId} joined room ${roomId} for ${subjectCode}`
-        );
+        // console.log(
+        //   `Student ${studentId} joined room ${roomId} for ${subjectCode}`
+        // );
 
         // Send initial timer state
         socket.emit("update_time", {
           timeLeft: Math.max(0, results[0].timeLeft),
+          isForceSubmit: results[0].force_submit === 1,
         });
       } catch (err) {
         console.error("Error in join_exam:", err);
@@ -147,71 +149,162 @@ export const initializeSocket = (server) => {
   // Sync timers and notify clients every second
   setInterval(async () => {
     try {
-      // First get all active exams (including recently submitted ones)
+      // Get all active exams
       const [rows] = await db.query(`
         SELECT 
+          r.id,
           r.Tələbə_kodu AS studentId,
           r.\`Fənnin kodu\` AS subjectCode,
           s.\`Soyadı, adı və ata adı\` AS fullname,
           sub.\`Fənnin adı\` AS subject,
           r.extra_time AS bonusTime,
           r.submitted,
-          CONCAT(r.Tələbə_kodu, '_', r.\`Fənnin kodu\`) AS roomId,
+          r.force_submit,
+          r.force_submit_time,
           TIMESTAMPDIFF(SECOND, NOW(), r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE) AS timeLeft,
-          TIMESTAMPDIFF(SECOND, NOW(), r.submitted_at + INTERVAL 5 SECOND) AS gracePeriod
+          TIMESTAMPDIFF(SECOND, NOW(), r.force_submit_time + INTERVAL 10 SECOND) AS forceSubmitTimeLeft,
+          CONCAT(r.Tələbə_kodu, '_', r.\`Fənnin kodu\`) AS roomId
         FROM results r
-        JOIN students s ON r.Tələbə_kodu = s.Tələbə_kodu
+        JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
         JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
-        WHERE (r.submitted = false AND NOW() < r.created_at + INTERVAL 90 MINUTE + INTERVAL r.extra_time MINUTE)
-           OR (r.submitted = true AND r.submitted_at > NOW() - INTERVAL 5 SECOND)
+        WHERE (r.submitted = 0) 
+           OR (r.force_submit = 1 AND r.force_submit_time > NOW() - INTERVAL 10 SECOND)
       `);
 
-      const activeStudents = rows
-        .map((row) => ({
-          id: row.studentId,
-          subjectCode: row.subjectCode,
-          roomId: row.roomId,
-          fullname: row.fullname,
-          subject: row.subject,
-          bonusTime: row.bonusTime,
-          submitted: row.submitted,
-          timeLeft: Math.max(0, row.timeLeft),
-          gracePeriod: row.gracePeriod,
-        }))
-        .filter((student) => !student.submitted || student.gracePeriod > 0);
+      console.log(`Processing ${rows.length} active exams`);
 
-      // Update timers and check for expiration
-      activeStudents.forEach(async (student) => {
-        const roomId = `${student.id}_${student.subjectCode}`;
-        // console.log(
-        //   `Sending update to room: ${roomId}, Time left: ${student.timeLeft}, Submitted: ${student.submitted}`
-        // );
+      for (const exam of rows) {
+        const roomId = exam.roomId;
 
-        if (!student.submitted) {
+        // Skip if already submitted
+        if (exam.submitted) {
+          console.log(`Skipping submitted exam for ${exam.studentId}`);
+          continue;
+        }
+
+        // Handle force submit case
+        if (exam.force_submit) {
+          console.log(
+            `Processing force submit for ${exam.studentId}, time left: ${exam.forceSubmitTimeLeft}`
+          );
+
+          if (exam.forceSubmitTimeLeft <= 0) {
+            console.log(`Force submit time expired for ${exam.studentId}`);
+
+            try {
+              // Get current answers
+              const [answers] = await db.query(
+                `SELECT question_id, selected_option 
+                 FROM answers 
+                 WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+                [exam.studentId, exam.subjectCode]
+              );
+
+              // Calculate score
+              let score = 0;
+              let totalQuestions = answers.length;
+
+              if (answers.length > 0) {
+                const [questions] = await db.query(
+                  `SELECT id, correct_option 
+                   FROM questions 
+                   WHERE id IN (?)`,
+                  [answers.map((a) => a.question_id)]
+                );
+
+                score = answers.reduce((acc, ans) => {
+                  const question = questions.find(
+                    (q) => q.id === ans.question_id
+                  );
+                  return (
+                    acc +
+                    (question && question.correct_option === ans.selected_option
+                      ? 1
+                      : 0)
+                  );
+                }, 0);
+              }
+
+              // Update final result
+              await db.query(
+                `UPDATE results 
+                 SET submitted = 1,
+                     submitted_at = NOW(),
+                     score = ?,
+                     total_questions = ?
+                 WHERE id = ? AND submitted = 0`,
+                [score, totalQuestions, exam.id]
+              );
+
+              io.to(roomId).emit("exam_stopped");
+              console.log(
+                `Force submit completed for ${exam.studentId}, score: ${score}/${totalQuestions}`
+              );
+            } catch (err) {
+              console.error(
+                `Error processing force submit completion for ${exam.studentId}:`,
+                err
+              );
+            }
+            continue;
+          }
+
+          // Notify about remaining force submit time
           io.to(roomId).emit("update_time", {
-            timeLeft: student.timeLeft,
+            timeLeft: exam.forceSubmitTimeLeft,
+            isForceSubmit: true,
           });
+          continue;
+        }
 
-          if (student.timeLeft <= 0) {
-            console.log(
-              `Time expired for student ${student.id} in subject ${student.subjectCode}`
-            );
+        // Handle normal exam time expiration
+        if (exam.timeLeft <= 0) {
+          console.log(`Regular exam time expired for ${exam.studentId}`);
+
+          try {
+            // Mark as submitted
             await db.query(
-              `UPDATE results SET submitted = true, submitted_at = NOW() 
-               WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-              [student.id, student.subjectCode]
+              `UPDATE results 
+               SET submitted = 1,
+                   submitted_at = NOW()
+               WHERE id = ? AND submitted = 0`,
+              [exam.id]
             );
+
+            // Notify client
             io.to(roomId).emit("force_submit");
             io.to(roomId).emit("exam_stopped");
+          } catch (err) {
+            console.error(
+              `Error processing exam expiration for ${exam.studentId}:`,
+              err
+            );
           }
+          continue;
         }
-      });
 
-      // Notify admin panel only about truly active students
-      const activeForAdmin = activeStudents.filter(
-        (student) => !student.submitted
-      );
-      io.emit("update_active_students", activeForAdmin);
+        // Update normal exam time
+        io.to(roomId).emit("update_time", {
+          timeLeft: exam.timeLeft,
+          isForceSubmit: false,
+        });
+      }
+
+      // Update admin panel with active students
+      const activeStudents = rows
+        .filter((exam) => !exam.submitted)
+        .map((exam) => ({
+          id: exam.studentId,
+          subjectCode: exam.subjectCode,
+          fullname: exam.fullname,
+          subject: exam.subject,
+          bonusTime: exam.bonusTime,
+          roomId: exam.roomId,
+          timeLeft: exam.timeLeft,
+          isForceSubmit: exam.force_submit === 1,
+        }));
+
+      io.emit("update_active_students", activeStudents);
     } catch (err) {
       console.error("Error syncing timers:", err);
     }
