@@ -145,62 +145,187 @@ router.post("/extend-time", authenticate, async (req, res) => {
 // Force submit exam
 router.post("/force-submit", authenticate, async (req, res) => {
   const { studentId, subjectCode } = req.body;
+  let connection;
 
-  if (!studentId.match(/^\d{8}$/) || !subjectCode.match(/^[A-Za-z0-9]+$/)) {
+  console.log(`Force submit request received:`, { studentId, subjectCode });
+
+  if (!studentId?.match(/^\d{8}$/) || !subjectCode?.match(/^[A-Za-z0-9]+$/)) {
+    console.log("Invalid input:", { studentId, subjectCode });
     return res
       .status(400)
       .json({ error: "Invalid student ID or subject code" });
   }
 
+  const roomId = `${studentId}_${subjectCode}`;
+
   try {
-    // First check if exam exists and is not submitted
-    const [rows] = await db.query(
-      `SELECT id FROM results 
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? AND submitted = false`,
-      [studentId, subjectCode]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "No active exam session found" });
-    }
-
-    // Instead of marking as submitted immediately, set a force_submit flag
-    await db.query(
-      `UPDATE results SET force_submit = true, force_submit_time = NOW()
-       WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-      [studentId, subjectCode]
-    );
-
-    // Notify the client to submit their current answers
+    // Get IO instance first to fail fast if there's an issue
     const io = getIO();
-    const roomId = `${studentId}_${subjectCode}`;
-    console.log(`Sending force-submit to room: ${roomId}`);
-    io.to(roomId).emit("exam_stopped");
-    io.to(roomId).emit("force_submit");
+    console.log("Successfully got IO instance");
 
-    // Give client a short time to submit answers, then ensure exam is ended
-    setTimeout(async () => {
-      try {
-        // After grace period, mark as submitted if not already submitted
-        await db.query(
-          `UPDATE results 
-           SET submitted = true, 
-               submitted_at = COALESCE(submitted_at, NOW()),
-               score = COALESCE(score, 0),
-               total_questions = COALESCE(total_questions, 0)
-           WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ? 
-           AND submitted = false`,
-          [studentId, subjectCode]
-        );
-      } catch (err) {
-        console.error("Error in force-submit cleanup:", err);
+    // Get connection from pool
+    connection = await db.getConnection();
+    console.log("Got database connection");
+
+    // Start transaction
+    await connection.beginTransaction();
+    console.log("Transaction started");
+
+    try {
+      // Check exam status
+      const [examStatus] = await connection.query(
+        `SELECT id, submitted, force_submit, 
+                TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) AS timeLeft
+         FROM results 
+         WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+        [studentId, subjectCode]
+      );
+
+      console.log("Exam status query result:", examStatus[0]);
+
+      if (examStatus.length === 0) {
+        await connection.rollback();
+        console.log("No exam found");
+        return res.status(404).json({ error: "No exam session found" });
       }
-    }, 10000); // Give 10 seconds for client to submit
 
-    res.json({ message: `Exam force submitted for student ${studentId}` });
+      if (examStatus[0].submitted) {
+        await connection.rollback();
+        console.log("Exam already submitted");
+        return res.status(400).json({ error: "Exam is already submitted" });
+      }
+
+      if (examStatus[0].force_submit) {
+        await connection.rollback();
+        console.log("Force submit already in progress");
+        return res
+          .status(400)
+          .json({ error: "Force submit already in progress" });
+      }
+
+      // Set force submit flag
+      const updateResult = await connection.query(
+        `UPDATE results 
+         SET force_submit = 1, 
+             force_submit_time = NOW()
+         WHERE id = ? AND submitted = 0`,
+        [examStatus[0].id]
+      );
+
+      console.log("Update result:", updateResult);
+
+      // Notify student about force submit
+      io.to(roomId).emit("force_submit");
+      console.log("Sent force_submit event to room:", roomId);
+
+      // Commit transaction
+      await connection.commit();
+      console.log("Transaction committed");
+
+      // Set timeout for final submission
+      setTimeout(async () => {
+        try {
+          console.log("Starting force submit cleanup");
+          const conn = await db.getConnection();
+
+          try {
+            await conn.beginTransaction();
+
+            // Get current answers first
+            const [answers] = await conn.query(
+              `SELECT question_id, selected_option 
+               FROM answers 
+               WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+              [studentId, subjectCode]
+            );
+
+            console.log(`Found ${answers.length} answers to process`);
+
+            // Calculate score if there are answers
+            let score = 0;
+            let totalQuestions = 0;
+
+            if (answers.length > 0) {
+              const questionIds = answers.map((a) => a.question_id);
+              const [questions] = await conn.query(
+                `SELECT id, correct_option 
+                 FROM questions 
+                 WHERE id IN (?)`,
+                [questionIds]
+              );
+
+              console.log(`Found ${questions.length} questions for scoring`);
+
+              totalQuestions = answers.length;
+              score = answers.reduce((acc, ans) => {
+                const question = questions.find(
+                  (q) => q.id === ans.question_id
+                );
+                return (
+                  acc +
+                  (question && question.correct_option === ans.selected_option
+                    ? 1
+                    : 0)
+                );
+              }, 0);
+
+              console.log("Calculated score:", { score, totalQuestions });
+            }
+
+            // Update final result
+            const updateResult = await conn.query(
+              `UPDATE results 
+               SET submitted = 1, 
+                   submitted_at = NOW(),
+                   score = ?,
+                   total_questions = ?
+               WHERE id = ? AND submitted = 0`,
+              [score, totalQuestions, examStatus[0].id]
+            );
+
+            console.log("Final update result:", updateResult);
+
+            await conn.commit();
+
+            // Notify about final submission
+            io.to(roomId).emit("exam_stopped");
+            console.log("Sent exam_stopped event");
+          } catch (err) {
+            await conn.rollback();
+            console.error("Error in force-submit cleanup transaction:", err);
+            console.error("Error stack:", err.stack);
+          } finally {
+            conn.release();
+          }
+        } catch (err) {
+          console.error("Error in force-submit cleanup:", err);
+          console.error("Error stack:", err.stack);
+        }
+      }, 10000);
+
+      res.json({
+        message: `Force submit initiated for student ${studentId}`,
+        roomId,
+        graceEndTime: new Date(Date.now() + 10000).toISOString(),
+      });
+    } catch (err) {
+      console.error("Error during force submit transaction:", err);
+      console.error("Error stack:", err.stack);
+      await connection.rollback();
+      throw err;
+    }
   } catch (err) {
     console.error("Error force submitting exam:", err);
-    res.status(500).json({ error: "Failed to force submit exam" });
+    console.error("Error stack:", err.stack);
+    res.status(500).json({
+      error: "Failed to force submit exam",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
