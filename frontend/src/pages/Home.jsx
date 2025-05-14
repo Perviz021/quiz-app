@@ -127,10 +127,13 @@ const Home = () => {
                     <h3 className="text-lg font-semibold mb-2">
                       {subject.name}
                     </h3>
-                    <p className="text-sm text-gray-500">(Bitmişdir)</p>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500">
                       İmtahan vaxtı: {formatDate(subject.exam_date)}
                     </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Fənn qrupu: {subject.fenn_qrupu}
+                    </p>
+                    <p className="text-sm text-red-500 mt-2">Bitmişdir</p>
                   </div>
                 ) : isToday ? (
                   <Link
