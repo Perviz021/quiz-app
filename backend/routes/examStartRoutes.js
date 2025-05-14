@@ -30,8 +30,8 @@ router.post("/start", authenticate, async (req, res) => {
 
     // Start new exam
     await db.query(
-      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, submitted_at, extra_time)
-       VALUES (?, ?, NOW(), 0, NULL, 0)`,
+      `INSERT INTO results (Tələbə_kodu, \`Fənnin kodu\`, created_at, submitted, extra_time)
+       VALUES (?, ?, NOW(), 0, 0)`,
       [studentId, subjectCode]
     );
 
