@@ -193,18 +193,47 @@ const Exam = () => {
       console.log("Received force-submit event");
       submittedRef.current = true;
       setIsExamActive(false);
-      dispatch({ type: "FORCE_SUBMIT", payload: 0 });
-      toast.warn("İmtahan admin tərəfindən dayandırıldı.");
-      navigate(`/review/${subjectCode}`);
+
+      // Show warning to student
+      toast.warn(
+        "İmtahan admin tərəfindən dayandırıldı. Cavablarınız avtomatik təhvil verilir..."
+      );
+
+      // Submit current answers within grace period
+      const formattedAnswers = state.questions.map((q) => ({
+        questionId: q.id,
+        selectedOption: state.answers[q.id] ?? -1,
+      }));
+
+      fetch(`${API_BASE}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subjectCode,
+          answers: formattedAnswers,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) throw new Error(data.error);
+          dispatch({ type: "FORCE_SUBMIT", payload: data.score });
+        })
+        .catch((err) => {
+          console.error("Force submit failed:", err);
+          toast.error("Cavabları təhvil vermək mümkün olmadı.");
+        });
     } else {
       console.log("Ignoring force-submit, already submitted");
     }
-  }, [subjectCode, navigate, setIsExamActive]);
+  }, [subjectCode, state.questions, state.answers, setIsExamActive]);
 
   const examStoppedHandler = useCallback(() => {
     console.log("Received exam-stopped event from server");
-    forceSubmitHandler();
-  }, [forceSubmitHandler]);
+    navigate(`/review/${subjectCode}`);
+  }, [subjectCode, navigate]);
 
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
