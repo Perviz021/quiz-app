@@ -10,6 +10,10 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log(subjects);
+  }, [subjects, setSubjects]);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
     setFullname(localStorage.getItem("fullname"));
 
