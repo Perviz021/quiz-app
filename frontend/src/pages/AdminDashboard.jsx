@@ -7,7 +7,7 @@ import { io } from "socket.io-client";
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.11.163:5000";
+  : API_BASE;
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
