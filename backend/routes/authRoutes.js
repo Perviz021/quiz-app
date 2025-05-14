@@ -43,6 +43,9 @@ router.post("/login", async (req, res) => {
         studentId: student.Tələbə_kodu,
         status: student.status,
         fullname: student["Soyadı, adı və ata adı"],
+        group: student["Akademik qrup"],
+        faculty: student.Fakultə,
+        ixtisaslasma: student[`İxtisaslaşma adı`],
       },
       subjects,
     });
