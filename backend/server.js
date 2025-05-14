@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
-import examRoutes from "./routes/examRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import completedExamsRoutes from "./routes/completedExamsRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
@@ -15,6 +14,7 @@ import examStartRoutes from "./routes/examStartRoutes.js";
 import adminExamControlRoutes from "./routes/adminExamControl.js";
 import uploadQuestionRoutes from "./routes/uploadQuestionRoutes.js";
 import addQuestion from "./routes/addQuestion.js";
+import examSubmission from "./routes/examSubmission.js";
 
 const app = express();
 const server = createServer(app);
@@ -34,7 +34,6 @@ app.use("/uploads/students", express.static(path.join(__dirname, "uploads")));
 app.use("/api", authRoutes);
 app.use("/api", subjectRoutes);
 app.use("/api", questionRoutes);
-app.use("/api", examRoutes);
 app.use("/api", resultRoutes);
 app.use("/api", completedExamsRoutes);
 app.use("/api", reviewRoutes);
@@ -42,6 +41,7 @@ app.use("/api", examStartRoutes);
 app.use("/api", adminExamControlRoutes);
 app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
+app.use("/api", examSubmission);
 
 const PORT = process.env.PORT || 5000;
 
