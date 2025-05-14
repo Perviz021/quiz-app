@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useExam } from "../context/ExamContext";
 import { logo } from "../assets";
+import API_BASE from "../config/api";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const Navbar = () => {
     const subjectCode = window.location.pathname.split("/").pop();
     const token = localStorage.getItem("token");
 
-    const response = await fetch(`http://localhost:5000/api/submit`, {
+    const response = await fetch(`${API_BASE}/submit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
