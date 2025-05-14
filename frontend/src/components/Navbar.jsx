@@ -2,11 +2,19 @@ import { useNavigate } from "react-router-dom";
 import { useExam } from "../context/ExamContext";
 import { logo } from "../assets";
 import API_BASE from "../config/api";
+import { useState, useEffect } from "react";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isExamActive, setIsExamActive } = useExam();
   const status = localStorage.getItem("status");
+  const [studentInfo, setStudentInfo] = useState({
+    fullname: localStorage.getItem("fullname") || "",
+    studentId: localStorage.getItem("studentId") || "",
+    group: localStorage.getItem("group") || "",
+    faculty: localStorage.getItem("faculty") || "",
+    ixtisaslasma: localStorage.getItem("ixtisaslasma") || "",
+  });
 
   const handleNavigation = async (path) => {
     if (isExamActive) {
@@ -51,10 +59,40 @@ const Navbar = () => {
   return (
     <nav className="bg-indigo-800 text-white shadow-lg">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-6">
           <img src={logo} alt="BAAU Logo" className="size-14" />
           <h1 className="text-2xl font-bold tracking-tight">BAAU</h1>
+
+          {/* Student Info - Only show if status is student and we have a studentId */}
+          {status === "student" && studentInfo.studentId && (
+            <div className="flex items-center space-x-4">
+              <img
+                src={`${API_BASE}/uploads/students/${studentInfo.studentId}.jpg`}
+                alt="Student"
+                className="w-12 h-12 rounded-full object-cover border-2 border-white"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">
+                  {studentInfo.fullname}
+                </span>
+                <span className="text-xs opacity-75">
+                  ID: {studentInfo.studentId}
+                </span>
+                {studentInfo.group && (
+                  <span className="text-xs opacity-75">
+                    Qrup: {studentInfo.group}
+                  </span>
+                )}
+                {studentInfo.faculty && (
+                  <span className="text-xs opacity-75">
+                    Fakultə: {studentInfo.faculty}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
         <div className="flex items-center space-x-6">
           <button
             onClick={() => handleNavigation("/")}
