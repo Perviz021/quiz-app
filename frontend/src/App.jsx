@@ -15,6 +15,7 @@ import { ExamProvider } from "./context/ExamContext.jsx";
 import Review from "./pages/Review.jsx";
 import AddQuestion from "./pages/AddQuestion.jsx";
 import { ToastContainer } from "react-toastify";
+import ExportQuestions from "./pages/ExportQuestions.jsx";
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -71,6 +72,10 @@ const App = () => {
               <>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/add-question" element={<AddQuestion />} />
+                <Route
+                  path="/admin/export-questions"
+                  element={<ExportQuestions />}
+                />
               </>
             )}
 
