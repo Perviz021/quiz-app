@@ -71,25 +71,25 @@ const Navbar = () => {
               <img
                 src={`${API_BASE}/uploads/students/${studentInfo.studentId}.jpg`}
                 alt="Student"
-                className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                className="size-16 rounded-full object-cover border-2 border-white"
               />
               <div className="flex flex-col">
-                <span className="text-sm font-medium">
+                <span className="text-lg font-medium">
                   {studentInfo.fullname}
                 </span>
-                <span className="text-xs opacity-75">
-                  Tələbə kodu: {studentInfo.ixtisaslasma}
+                <span className="text-sm opacity-75">
+                  Tələbə kodu: {studentInfo.studentId}
                 </span>
-                <span className="text-xs opacity-75">
-                  İxtisaslaşma: {studentInfo.studentId}
+                <span className="text-sm opacity-75">
+                  İxtisaslaşma: {studentInfo.ixtisaslasma}
                 </span>
                 {studentInfo.group && (
-                  <span className="text-xs opacity-75">
+                  <span className="text-sm opacity-75">
                     İxtisas qrupunun kodu: {studentInfo.group}
                   </span>
                 )}
                 {studentInfo.faculty && (
-                  <span className="text-xs opacity-75">
+                  <span className="text-sm opacity-75">
                     Fakültə: {studentInfo.faculty}
                   </span>
                 )}
