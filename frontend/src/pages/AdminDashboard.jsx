@@ -146,7 +146,7 @@ const AdminDashboard = () => {
         <h2 className="text-3xl font-bold text-gray-900">Admin Panel</h2>
         <button
           onClick={handleLogout}
-          className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+          className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 cursor-pointer"
         >
           Çıxış
         </button>
