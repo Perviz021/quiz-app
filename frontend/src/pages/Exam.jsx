@@ -194,9 +194,18 @@ const Exam = () => {
       submittedRef.current = true;
       setIsExamActive(false);
 
-      // Show warning to student
+      // Show warning to student with more prominent styling
       toast.warn(
-        "İmtahan admin tərəfindən dayandırıldı. Cavablarınız avtomatik təhvil verilir..."
+        "İmtahan admin tərəfindən dayandırıldı. Cavablarınız avtomatik təhvil verilir...",
+        {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        }
       );
 
       // Submit current answers within grace period
@@ -220,10 +229,18 @@ const Exam = () => {
         .then((data) => {
           if (data.error) throw new Error(data.error);
           dispatch({ type: "FORCE_SUBMIT", payload: data.score });
+          // Show completion message
+          toast.info("Cavablarınız uğurla təhvil verildi!", {
+            position: "top-center",
+            autoClose: 3000,
+          });
         })
         .catch((err) => {
           console.error("Force submit failed:", err);
-          toast.error("Cavabları təhvil vermək mümkün olmadı.");
+          toast.error("Cavabları təhvil vermək mümkün olmadı.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
         });
     } else {
       console.log("Ignoring force-submit, already submitted");
@@ -253,7 +270,16 @@ const Exam = () => {
     const extendTimeHandler = (extraMinutes) => {
       console.log(`Exam time extended by ${extraMinutes} minutes`);
       dispatch({ type: "EXTEND_TIME", payload: extraMinutes * 60 });
-      toast.info(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı`);
+      // Show time extension notification with more prominent styling
+      toast.success(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı!`, {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     };
 
     const errorHandler = (message) => {
