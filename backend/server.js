@@ -15,6 +15,7 @@ import adminExamControlRoutes from "./routes/adminExamControl.js";
 import uploadQuestionRoutes from "./routes/uploadQuestionRoutes.js";
 import addQuestion from "./routes/addQuestion.js";
 import examSubmission from "./routes/examSubmission.js";
+import imageProcessingRoutes from "./routes/imageProcessingRoutes.js";
 
 const app = express();
 const server = createServer(app);
@@ -29,7 +30,7 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(
-  "/uploads/students",
+  "/api/uploads/students",
   express.static(path.join(__dirname, "uploads/students"))
 );
 
@@ -45,6 +46,7 @@ app.use("/api", adminExamControlRoutes);
 app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
 app.use("/api", examSubmission);
+app.use("/api", imageProcessingRoutes);
 
 const PORT = process.env.PORT || 5000;
 
