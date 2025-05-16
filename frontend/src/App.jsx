@@ -16,6 +16,7 @@ import Review from "./pages/Review.jsx";
 import AddQuestion from "./pages/AddQuestion.jsx";
 import { ToastContainer } from "react-toastify";
 import ExportQuestions from "./pages/ExportQuestions.jsx";
+import EditQuestions from "./pages/EditQuestions.jsx";
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -75,6 +76,10 @@ const App = () => {
                 <Route
                   path="/admin/export-questions"
                   element={<ExportQuestions />}
+                />
+                <Route
+                  path="/edit-questions/:subjectCode/:lang"
+                  element={<EditQuestions />}
                 />
               </>
             )}
