@@ -90,4 +90,57 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
   }
 });
 
+// Update a question
+router.put("/questions/update/:questionId", authenticate, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.student.status !== "staff") {
+      return res
+        .status(403)
+        .json({ error: "Bu əməliyyat yalnız admin tərəfindən edilə bilər" });
+    }
+
+    const { questionId } = req.params;
+    const {
+      question,
+      option1,
+      option2,
+      option3,
+      option4,
+      option5,
+      correct_option,
+    } = req.body;
+
+    // Update the question
+    await db.query(
+      `UPDATE questions 
+       SET question = ?, 
+           option1 = ?, 
+           option2 = ?, 
+           option3 = ?, 
+           option4 = ?, 
+           option5 = ?, 
+           correct_option = ?
+       WHERE id = ?`,
+      [
+        question,
+        option1,
+        option2,
+        option3,
+        option4,
+        option5,
+        correct_option,
+        questionId,
+      ]
+    );
+
+    res.json({ message: "Sual uğurla yeniləndi" });
+  } catch (error) {
+    console.error("Error updating question:", error);
+    res
+      .status(500)
+      .json({ error: "Sualı yeniləmək mümkün olmadı: " + error.message });
+  }
+});
+
 export default router;
