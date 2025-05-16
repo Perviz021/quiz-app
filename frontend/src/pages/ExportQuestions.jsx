@@ -102,6 +102,7 @@ const ExportQuestions = () => {
   const [subjectName, setSubjectName] = useState("");
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [language, setLanguage] = useState("az");
 
   const fetchQuestions = async () => {
     if (!subjectCode) {
@@ -112,7 +113,7 @@ const ExportQuestions = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_BASE}/export-questions/${subjectCode}`,
+        `${API_BASE}/export-questions/${subjectCode}?lang=${language}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -158,6 +159,14 @@ const ExportQuestions = () => {
             placeholder="Fənn kodunu daxil edin"
             className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+          >
+            <option value="az">Azərbaycan</option>
+            <option value="en">English</option>
+          </select>
           <button
             onClick={fetchQuestions}
             disabled={loading}
