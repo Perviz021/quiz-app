@@ -15,14 +15,15 @@ router.get("/export-questions/:subjectCode", authenticate, async (req, res) => {
     }
 
     const { subjectCode } = req.params;
+    const { lang = "az" } = req.query; // Default to 'az' if not specified
 
     // Set response headers for UTF-8
     res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-    // Fetch all questions for the subject
+    // Fetch all questions for the subject and specified language
     const [questions] = await db.query(
-      "SELECT q.*, sub.`Fənnin adı` as subject_name FROM questions q JOIN subjects sub ON sub.`Fənnin kodu` = q.fənnin_kodu WHERE q.`fənnin_kodu` = ? ORDER BY id ASC;",
-      [subjectCode]
+      "SELECT q.*, sub.`Fənnin adı` as subject_name FROM questions q JOIN subjects sub ON sub.`Fənnin kodu` = q.fənnin_kodu WHERE q.`fənnin_kodu` = ? AND q.lang = ? ORDER BY id ASC;",
+      [subjectCode, lang]
     );
 
     res.json(questions);
