@@ -91,10 +91,12 @@ const Navbar = () => {
           </div>
         )}
 
-        <div className="flex items-center space-x-4">
-          <img src={logo} alt="BAAU Logo" className="size-24" />
-          {/* <h1 className="text-2xl font-bold tracking-tight">BAAU</h1> */}
-        </div>
+        {status === "staff" && (
+          <div className="flex items-center space-x-4">
+            <img src={logo} alt="BAAU Logo" className="size-24" />
+            {/* <h1 className="text-2xl font-bold tracking-tight">BAAU</h1> */}
+          </div>
+        )}
 
         <div className="flex items-center space-x-6">
           <button
