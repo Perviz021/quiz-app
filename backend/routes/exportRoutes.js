@@ -21,7 +21,7 @@ router.get("/export-questions/:subjectCode", authenticate, async (req, res) => {
 
     // Fetch all questions for the subject
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? ORDER BY id ASC",
+      "SELECT q.*, sub.`Fənnin adı` as subject_name FROM questions q JOIN subjects sub ON sub.`Fənnin kodu` = q.fənnin_kodu WHERE q.`fənnin_kodu` = ? ORDER BY id ASC;",
       [subjectCode]
     );
 
