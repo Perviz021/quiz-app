@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   PDFDownloadLink,
   Document,
@@ -98,6 +99,7 @@ const QuestionsPDF = ({ questions, subjectCode, subjectName }) => (
 );
 
 const ExportQuestions = () => {
+  const navigate = useNavigate();
   const [subjectCode, setSubjectCode] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [questions, setQuestions] = useState(null);
@@ -177,7 +179,7 @@ const ExportQuestions = () => {
         </div>
 
         {questions && questions.length > 0 && (
-          <div className="mt-6">
+          <div className="mt-6 flex gap-4">
             <PDFDownloadLink
               document={
                 <QuestionsPDF
@@ -191,6 +193,15 @@ const ExportQuestions = () => {
             >
               {({ loading }) => (loading ? "PDF hazırlanır..." : "PDF-i yüklə")}
             </PDFDownloadLink>
+
+            <button
+              onClick={() =>
+                navigate(`/edit-questions/${subjectCode}/${language}`)
+              }
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+            >
+              Redaktə et
+            </button>
           </div>
         )}
       </div>
