@@ -62,10 +62,12 @@ const decodeText = (text) => {
 };
 
 // PDF Document component
-const QuestionsPDF = ({ questions, subjectCode }) => (
+const QuestionsPDF = ({ questions, subjectCode, subjectName }) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      <Text style={styles.title}>Fənn: {subjectCode} - Suallar</Text>
+      <Text style={styles.title}>
+        Fənn: {subjectName}({subjectCode}) - Suallar
+      </Text>
       {questions.map((question, index) => (
         <View key={question.id} style={styles.question}>
           <Text style={styles.questionText}>
@@ -97,6 +99,7 @@ const QuestionsPDF = ({ questions, subjectCode }) => (
 
 const ExportQuestions = () => {
   const [subjectCode, setSubjectCode] = useState("");
+  const [subjectName, setSubjectName] = useState("");
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -129,6 +132,10 @@ const ExportQuestions = () => {
       }
 
       setQuestions(data);
+      // Set the subject name from the first question
+      if (data.length > 0) {
+        setSubjectName(data[0].subject_name);
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -164,9 +171,13 @@ const ExportQuestions = () => {
           <div className="mt-6">
             <PDFDownloadLink
               document={
-                <QuestionsPDF questions={questions} subjectCode={subjectCode} />
+                <QuestionsPDF
+                  questions={questions}
+                  subjectCode={subjectCode}
+                  subjectName={subjectName}
+                />
               }
-              fileName={`${subjectCode}-questions.pdf`}
+              fileName={`${subjectCode} - ${subjectName}.pdf`}
               className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
             >
               {({ loading }) => (loading ? "PDF hazırlanır..." : "PDF-i yüklə")}
