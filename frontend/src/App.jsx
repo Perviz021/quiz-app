@@ -62,7 +62,7 @@ const App = () => {
             {status === "student" && (
               <>
                 <Route path="/" element={<Home subjects={subjects} />} />
-                <Route path="/exam/:subjectCode" element={<Exam />} />
+                <Route path="/exam/:subjectCode/:lang" element={<Exam />} />
                 <Route path="/results" element={<Results />} />
                 <Route path="/review/:subjectCode" element={<Review />} />
               </>
@@ -84,12 +84,25 @@ const App = () => {
               </>
             )}
 
+            {/* Teacher Routes */}
+            {status === "teacher" && (
+              <>
+                <Route path="/teacher" element={<Home subjects={subjects} />} />
+                <Route
+                  path="/edit-questions/:subjectCode/:lang"
+                  element={<EditQuestions />}
+                />
+              </>
+            )}
+
             {/* Redirect users based on their role */}
             <Route
               path="*"
               element={
                 status === "staff" ? (
                   <Navigate to="/admin" />
+                ) : status === "teacher" ? (
+                  <Navigate to="/teacher" />
                 ) : status === "student" ? (
                   <Navigate to="/" />
                 ) : (
