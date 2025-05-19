@@ -8,6 +8,7 @@ const Home = () => {
   const [completedExams, setCompletedExams] = useState(new Set());
   const [fullname, setFullname] = useState();
   const navigate = useNavigate();
+  const status = localStorage.getItem("status");
 
   useEffect(() => {
     console.log(subjects);
@@ -28,22 +29,58 @@ const Home = () => {
       name: subject["Fənnin adı"],
       exam_date: subject["Exam_date"],
       fenn_qrupu: subject["Stable"],
+      lang: subject["lang"] || "az", // Default to 'az' if not specified
     }));
 
     setSubjects(formattedSubjects);
 
-    fetch(`${API_BASE}/completed-exams`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setCompletedExams(new Set(data.completedExams)))
-      .catch((err) => console.error("Error fetching completed exams:", err));
-  }, [navigate]);
+    if (status === "student") {
+      fetch(`${API_BASE}/completed-exams`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => setCompletedExams(new Set(data.completedExams)))
+        .catch((err) => console.error("Error fetching completed exams:", err));
+    }
+  }, [navigate, status]);
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
     window.location.reload();
+  };
+
+  const handleSubjectClick = (subject) => {
+    console.log("Clicked subject:", subject);
+    if (status === "teacher") {
+      navigate(`/edit-questions/${subject.id}/${subject.lang}`);
+    } else {
+      // Existing student exam logic
+      const examDate = parseExamDate(subject.exam_date);
+      const today = getNormalizedCurrentDate();
+
+      console.log("Exam date:", examDate);
+      console.log("Today:", today);
+
+      if (!examDate) {
+        alert("İmtahan tarixi düzgün deyil!");
+        return;
+      }
+
+      if (examDate.getTime() === today.getTime()) {
+        if (completedExams.has(subject.id)) {
+          alert("Siz bu imtahanı artıq vermisiniz!");
+        } else {
+          console.log(
+            "Navigating to exam:",
+            `/exam/${subject.id}/${subject.lang}`
+          );
+          navigate(`/exam/${subject.id}/${subject.lang}`);
+        }
+      } else {
+        alert("Bu imtahanın tarixi gəlib çatmamışdır!");
+      }
+    }
   };
 
   const formattedString = (str) => {
@@ -55,46 +92,51 @@ const Home = () => {
   const getNormalizedCurrentDate = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0, 0); // Set to midnight
-    return today.getTime();
+    return today;
   };
 
-  // Parse exam_date (epoch or DD/MM/YYYY) and normalize to midnight
+  // Parse exam_date (DD/MM/YYYY) and normalize to midnight
   const parseExamDate = (examDate) => {
     try {
-      let date;
-      if (typeof examDate === "number" || /^\d+$/.test(examDate)) {
-        // Handle epoch time (number or string of digits)
-        date = new Date(Number(examDate));
-      } else if (
-        typeof examDate === "string" &&
-        examDate.match(/^\d{2}\/\d{2}\/\d{4}$/)
-      ) {
-        // Handle DD/MM/YYYY format
-        const [day, month, year] = examDate.split("/").map(Number);
-        date = new Date(year, month - 1, day);
-      } else {
-        throw new Error("Invalid date format");
+      if (!examDate) {
+        console.log("No exam date provided");
+        return null;
       }
+
+      console.log("Parsing exam date:", examDate);
+
+      // Handle DD/MM/YYYY format
+      const [day, month, year] = examDate.split("/").map(Number);
+      console.log("Split date parts:", { day, month, year });
+
+      if (!day || !month || !year) {
+        console.log("Invalid date parts");
+        return null;
+      }
+
+      const date = new Date(year, month - 1, day);
+      date.setHours(0, 0, 0, 0);
+
+      console.log("Parsed date:", date);
 
       if (isNaN(date.getTime())) {
-        throw new Error("Invalid date");
+        console.log("Invalid date after parsing");
+        return null;
       }
 
-      date.setHours(0, 0, 0, 0); // Normalize to midnight
-      return date.getTime();
+      return date;
     } catch (error) {
       console.error("Error parsing exam_date:", error);
-      return null; // Return null for invalid dates
+      return null;
     }
   };
 
   const isExamDateToday = (examDate) => {
     const examDateTime = parseExamDate(examDate);
-    if (examDateTime === null) {
-      return false; // Invalid dates are not today
-    }
+    if (!examDateTime) return false;
+
     const currentDate = getNormalizedCurrentDate();
-    return examDateTime === currentDate;
+    return examDateTime.getTime() === currentDate.getTime();
   };
 
   return (
@@ -120,9 +162,20 @@ const Home = () => {
             return (
               <div
                 key={subject.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                onClick={() => handleSubjectClick(subject)}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
               >
-                {isCompleted ? (
+                {status === "teacher" ? (
+                  <div className="p-6 bg-indigo-600 text-white text-center flex flex-col items-center justify-center h-full hover:bg-indigo-700 transition-all duration-300">
+                    <h3 className="text-lg font-semibold mb-2">
+                      {subject.name}
+                    </h3>
+                    <p className="text-sm">Fənnin kodu: {subject.id}</p>
+                    <p className="text-sm mt-2">
+                      Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
+                    </p>
+                  </div>
+                ) : isCompleted ? (
                   <div className="p-6 bg-gray-200 text-gray-600 text-center cursor-not-allowed opacity-75 flex flex-col items-center justify-center h-full">
                     <h3 className="text-lg font-semibold mb-2">
                       {subject.name}
@@ -133,13 +186,13 @@ const Home = () => {
                     <p className="text-sm text-gray-500 mt-1">
                       Fənn qrupu: {subject.fenn_qrupu}
                     </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
+                    </p>
                     <p className="text-sm text-red-500 mt-2">Bitmişdir</p>
                   </div>
                 ) : isToday ? (
-                  <Link
-                    to={`/exam/${subject.id}`}
-                    className="p-6 bg-indigo-600 text-white text-center flex flex-col items-center justify-center h-full hover:bg-indigo-700 transition-all duration-300"
-                  >
+                  <div className="p-6 bg-indigo-600 text-white text-center flex flex-col items-center justify-center h-full hover:bg-indigo-700 transition-all duration-300">
                     <h3 className="text-lg font-semibold mb-2">
                       {subject.name}
                     </h3>
@@ -149,9 +202,12 @@ const Home = () => {
                     <p className="text-sm mt-1">
                       Fənn qrupu: {subject.fenn_qrupu}
                     </p>
-                  </Link>
+                    <p className="text-sm mt-1">
+                      Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
+                    </p>
+                  </div>
                 ) : (
-                  <div className="p-6 bg-gray-100 text-gray-500 text-center cursor pojaw-allowed opacity-75 flex flex-col items-center justify-center h-full">
+                  <div className="p-6 bg-gray-100 text-gray-500 text-center cursor-not-allowed opacity-75 flex flex-col items-center justify-center h-full">
                     <h3 className="text-lg font-semibold mb-2">
                       {subject.name}
                     </h3>
@@ -160,6 +216,9 @@ const Home = () => {
                     </p>
                     <p className="text-sm mt-1">
                       Fənn qrupu: {subject.fenn_qrupu}
+                    </p>
+                    <p className="text-sm mt-1">
+                      Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
                     </p>
                     <p className="text-sm text-red-600 mt-2">
                       Bu imtahan bugünkü tarix üçün mövcud deyil
@@ -172,7 +231,9 @@ const Home = () => {
         </div>
       ) : (
         <p className="text-gray-600 text-center text-lg">
-          Tələbənin fənləri mövcud deyil.
+          {status === "teacher"
+            ? "Müəllimin fənləri mövcud deyil."
+            : "Tələbənin fənləri mövcud deyil."}
         </p>
       )}
     </div>
