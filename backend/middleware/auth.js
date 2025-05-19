@@ -1,18 +1,38 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import db from "../db.js";
 
 dotenv.config();
 
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ error: "Invalid token" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.student = decoded;
+    // Get the full user data from the database
+    const [users] = await db.query(
+      "SELECT * FROM students WHERE `Tələbə_kodu` = ?",
+      [decoded.studentId]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const user = users[0];
+    req.student = {
+      id: user.id,
+      studentId: user.Tələbə_kodu,
+      status: user.status,
+      fullname: user["Soyadı, adı və ata adı"],
+    };
+
     next();
-  });
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid token" });
+  }
 };
 
 // export const authorizeAdmin = (req, res, next) => {
