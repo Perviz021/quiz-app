@@ -41,6 +41,10 @@ const Login = ({ setToken, setSubjects }) => {
         navigate("/");
       } else if (data.student.status === "staff") {
         navigate("/admin");
+      } else if (data.student.status === "teacher") {
+        localStorage.setItem("subjects", JSON.stringify(data.subjects));
+        setSubjects(data.subjects);
+        navigate("/teacher");
       }
     } catch (err) {
       setError(err.message);
