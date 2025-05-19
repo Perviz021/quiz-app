@@ -68,7 +68,7 @@ const reducer = (state, action) => {
 };
 
 const Exam = () => {
-  const { subjectCode } = useParams();
+  const { subjectCode, lang } = useParams();
   const navigate = useNavigate();
   const { isExamActive, setIsExamActive } = useExam();
   const questionRefs = useRef([]);
@@ -159,9 +159,12 @@ const Exam = () => {
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(`${API_BASE}/questions/${subjectCode}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const response = await fetch(
+        `${API_BASE}/questions/${subjectCode}/${lang}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
 
       if (response.status === 403) {
         throw new Error("You have already taken this exam.");
