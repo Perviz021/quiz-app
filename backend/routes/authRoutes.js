@@ -20,13 +20,26 @@ router.post("/login", async (req, res) => {
       });
     }
     const student = students[0];
-    const [subjects] = await db.query(
-      `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date, f.Stable
-       FROM subjects s
-       JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
-       WHERE f.\`Tələbə_kodu\` = ?`,
-      [studentId]
-    );
+
+    let subjects = [];
+    if (student.status === "student") {
+      [subjects] = await db.query(
+        `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date, f.Stable, f.lang
+         FROM subjects s
+         JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+         WHERE f.\`Tələbə_kodu\` = ?`,
+        [studentId]
+      );
+    } else if (student.status === "teacher") {
+      [subjects] = await db.query(
+        `SELECT DISTINCT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.lang
+         FROM subjects s
+         JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+         WHERE f.\`teacher_code\` = ? OR f.\`Professor\` = ?`,
+        [studentId, student["Soyadı, adı və ata adı"]]
+      );
+    }
+
     const token = jwt.sign(
       {
         id: student.id,
