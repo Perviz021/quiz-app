@@ -7,9 +7,9 @@ const router = express.Router();
 // 🔁 Utility to shuffle an array
 const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
 
-router.get("/questions/:subjectCode", authenticate, async (req, res) => {
+router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
   try {
-    const { subjectCode } = req.params;
+    const { subjectCode, lang } = req.params;
     const studentId = req.student.studentId;
 
     console.log(
@@ -40,27 +40,27 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
     }
 
     // Get the language for this subject from FTP table
-    const [subjectInfo] = await db.query(
-      "SELECT lang FROM FTP WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
-      [studentId, subjectCode]
-    );
+    // const [subjectInfo] = await db.query(
+    //   "SELECT lang FROM FTP WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+    //   [studentId, subjectCode]
+    // );
 
-    console.log("Subject info from FTP:", subjectInfo);
+    // console.log("Subject info from FTP:", subjectInfo);
 
-    if (subjectInfo.length === 0) {
-      console.log("No subject info found in FTP table");
-      return res
-        .status(404)
-        .json({ error: "Subject not found for this student in FTP table." });
-    }
+    // if (subjectInfo.length === 0) {
+    //   console.log("No subject info found in FTP table");
+    //   return res
+    //     .status(404)
+    //     .json({ error: "Subject not found for this student in FTP table." });
+    // }
 
-    const language = subjectInfo[0].lang;
-    console.log("Language found:", language);
+    // const language = subjectInfo[0].lang;
+    // console.log("Language found:", language);
 
     // ✅ Fetch questions
     const [questions] = await db.query(
       "SELECT * FROM questions WHERE `fənnin_kodu` = ? AND lang = ? ORDER BY RAND() LIMIT 50",
-      [subjectCode, language]
+      [subjectCode, lang]
     );
 
     console.log(`Found ${questions.length} questions`);
@@ -68,7 +68,7 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
     if (questions.length === 0) {
       console.log("No questions found for subject and language combination");
       return res.status(404).json({
-        error: `No questions found for subject ${subjectCode} with language ${language}`,
+        error: `No questions found for subject ${subjectCode} with language ${lang}`,
       });
     }
 
@@ -93,11 +93,11 @@ router.get("/questions/:subjectCode", authenticate, async (req, res) => {
 // Update a question
 router.put("/questions/update/:questionId", authenticate, async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.student.status !== "staff") {
-      return res
-        .status(403)
-        .json({ error: "Bu əməliyyat yalnız admin tərəfindən edilə bilər" });
+    // Check if user is admin or teacher
+    if (req.student.status !== "staff" && req.student.status !== "teacher") {
+      return res.status(403).json({
+        error: "Bu əməliyyat yalnız admin və ya müəllim tərəfindən edilə bilər",
+      });
     }
 
     const { questionId } = req.params;
@@ -110,6 +110,37 @@ router.put("/questions/update/:questionId", authenticate, async (req, res) => {
       option5,
       correct_option,
     } = req.body;
+
+    // If user is teacher, verify they teach this subject
+    if (req.student.status === "teacher") {
+      const [questionInfo] = await db.query(
+        "SELECT fənnin_kodu FROM questions WHERE id = ?",
+        [questionId]
+      );
+
+      if (questionInfo.length === 0) {
+        return res.status(404).json({ error: "Sual tapılmadı" });
+      }
+
+      const [teacherSubjects] = await db.query(
+        `SELECT DISTINCT s.\`Fənnin kodu\`
+         FROM subjects s
+         JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+         WHERE (f.\`teacher_code\` = ? OR f.\`Professor\` = ?)
+         AND s.\`Fənnin kodu\` = ?`,
+        [
+          req.student.studentId,
+          req.student.fullname,
+          questionInfo[0].fənnin_kodu,
+        ]
+      );
+
+      if (teacherSubjects.length === 0) {
+        return res
+          .status(403)
+          .json({ error: "Bu fənn üzrə sual düzəltmək üçün icazəniz yoxdur" });
+      }
+    }
 
     // Update the question
     await db.query(
