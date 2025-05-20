@@ -4,26 +4,35 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import Exam from "./pages/Exam";
-import Results from "./pages/Results";
-import Login from "./pages/Login";
-import AdminDashboard from "./pages/AdminDashboard"; // Import the admin page
 import { ExamProvider } from "./context/ExamContext.jsx";
-import Review from "./pages/Review.jsx";
-import AddQuestion from "./pages/AddQuestion.jsx";
 import { ToastContainer } from "react-toastify";
-import ExportQuestions from "./pages/ExportQuestions.jsx";
-import EditQuestions from "./pages/EditQuestions.jsx";
+
+// Lazy load components
+const Home = lazy(() => import("./pages/Home"));
+const Exam = lazy(() => import("./pages/Exam"));
+const Results = lazy(() => import("./pages/Results"));
+const Login = lazy(() => import("./pages/Login"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Review = lazy(() => import("./pages/Review"));
+const AddQuestion = lazy(() => import("./pages/AddQuestion"));
+const ExportQuestions = lazy(() => import("./pages/ExportQuestions"));
+const EditQuestions = lazy(() => import("./pages/EditQuestions"));
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [subjects, setSubjects] = useState(
     JSON.parse(localStorage.getItem("subjects")) || []
   );
-  const [status, setStatus] = useState(localStorage.getItem("status")); // New state for status
+  const [status, setStatus] = useState(localStorage.getItem("status"));
 
   useEffect(() => {
     setToken(localStorage.getItem("token"));
@@ -51,66 +60,73 @@ const App = () => {
             draggable
             pauseOnHover
           />
-          <Routes>
-            {/* Common Routes */}
-            <Route
-              path="/login"
-              element={<Login setToken={setToken} setSubjects={setSubjects} />}
-            />
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {/* Common Routes */}
+              <Route
+                path="/login"
+                element={
+                  <Login setToken={setToken} setSubjects={setSubjects} />
+                }
+              />
 
-            {/* Students Routes */}
-            {status === "student" && (
-              <>
-                <Route path="/" element={<Home subjects={subjects} />} />
-                <Route path="/exam/:subjectCode/:lang" element={<Exam />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/review/:subjectCode" element={<Review />} />
-              </>
-            )}
+              {/* Students Routes */}
+              {status === "student" && (
+                <>
+                  <Route path="/" element={<Home subjects={subjects} />} />
+                  <Route path="/exam/:subjectCode/:lang" element={<Exam />} />
+                  <Route path="/results" element={<Results />} />
+                  <Route path="/review/:subjectCode" element={<Review />} />
+                </>
+              )}
 
-            {/* Admin Routes */}
-            {status === "staff" && (
-              <>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/add-question" element={<AddQuestion />} />
-                <Route
-                  path="/admin/export-questions"
-                  element={<ExportQuestions />}
-                />
-                <Route
-                  path="/edit-questions/:subjectCode/:lang"
-                  element={<EditQuestions />}
-                />
-              </>
-            )}
+              {/* Admin Routes */}
+              {status === "staff" && (
+                <>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/add-question" element={<AddQuestion />} />
+                  <Route
+                    path="/admin/export-questions"
+                    element={<ExportQuestions />}
+                  />
+                  <Route
+                    path="/edit-questions/:subjectCode/:lang"
+                    element={<EditQuestions />}
+                  />
+                </>
+              )}
 
-            {/* Teacher Routes */}
-            {status === "teacher" && (
-              <>
-                <Route path="/teacher" element={<Home subjects={subjects} />} />
-                <Route
-                  path="/edit-questions/:subjectCode/:lang"
-                  element={<EditQuestions />}
-                />
-              </>
-            )}
+              {/* Teacher Routes */}
+              {status === "teacher" && (
+                <>
+                  <Route
+                    path="/teacher"
+                    element={<Home subjects={subjects} />}
+                  />
+                  <Route
+                    path="/edit-questions/:subjectCode/:lang"
+                    element={<EditQuestions />}
+                  />
+                </>
+              )}
 
-            {/* Redirect users based on their role */}
-            <Route
-              path="*"
-              element={
-                status === "staff" ? (
-                  <Navigate to="/admin" />
-                ) : status === "teacher" ? (
-                  <Navigate to="/teacher" />
-                ) : status === "student" ? (
-                  <Navigate to="/" />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-          </Routes>
+              {/* Redirect users based on their role */}
+              <Route
+                path="*"
+                element={
+                  status === "staff" ? (
+                    <Navigate to="/admin" />
+                  ) : status === "teacher" ? (
+                    <Navigate to="/teacher" />
+                  ) : status === "student" ? (
+                    <Navigate to="/" />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+            </Routes>
+          </Suspense>
         </div>
       </Router>
     </ExamProvider>
