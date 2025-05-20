@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
+import TimeExtensionModal from "../components/TimeExtensionModal";
 
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
@@ -21,6 +22,8 @@ const socket = io(SOCKET_SERVER_URL, {
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
   const navigate = useNavigate();
+  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     // Fetch initial active students
@@ -87,28 +90,45 @@ const AdminDashboard = () => {
       });
   };
 
-  const handleAddTime = (studentId, subjectCode, minutes) => {
-    fetch(`${API_BASE}/extend-time`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        studentId,
-        subjectCode,
-        minutes,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        toast.success("Vaxt əlavə edildi.");
+  const handleExtendTime = (studentId) => {
+    setSelectedStudent(studentId);
+    setIsTimeModalOpen(true);
+  };
+
+  const handleTimeConfirm = (minutes) => {
+    if (selectedStudent) {
+      // Find the student to get their subjectCode
+      const student = activeStudents.find((s) => s.id === selectedStudent);
+      if (!student) return;
+
+      // Make API call to persist the time extension
+      fetch(`${API_BASE}/extend-time`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          studentId: selectedStudent,
+          subjectCode: student.subjectCode,
+          minutes: minutes,
+        }),
       })
-      .catch((err) => {
-        console.error("Extend time error:", err);
-        toast.error(`Vaxt əlavə etmək mümkün olmadı: ${err.message}`);
-      });
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) throw new Error(data.error);
+          // Emit socket event to notify the student
+          socket.emit("extend_time", {
+            roomId: selectedStudent,
+            minutes: minutes,
+          });
+          toast.success(`${minutes} dəqiqə əlavə edildi!`);
+        })
+        .catch((err) => {
+          console.error("Extend time error:", err);
+          toast.error(`Vaxt əlavə etmək mümkün olmadı: ${err.message}`);
+        });
+    }
   };
 
   const handleLogout = () => {
@@ -238,17 +258,7 @@ const AdminDashboard = () => {
                           İmtahanı Bitir
                         </button>
                         <button
-                          onClick={() => {
-                            const minutes = prompt(
-                              "Neçə dəqiqə əlavə etmək istəyirsiniz?"
-                            );
-                            if (minutes)
-                              handleAddTime(
-                                student.id,
-                                student.subjectCode,
-                                parseInt(minutes)
-                              );
-                          }}
+                          onClick={() => handleExtendTime(student.id)}
                           className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
                         >
                           Vaxt Əlavə Et
@@ -262,6 +272,11 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+      <TimeExtensionModal
+        isOpen={isTimeModalOpen}
+        onClose={() => setIsTimeModalOpen(false)}
+        onConfirm={handleTimeConfirm}
+      />
     </div>
   );
 };
