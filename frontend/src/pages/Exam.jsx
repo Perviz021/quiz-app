@@ -435,7 +435,7 @@ const Exam = () => {
               disabled={!acceptedRules}
               className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
                 acceptedRules
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
                   : "bg-gray-400 text-gray-200 cursor-not-allowed"
               }`}
             >
