@@ -104,7 +104,7 @@ const Review = () => {
             </h2>
             <button
               onClick={() => setShowSummary(!showSummary)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200 cursor-pointer"
             >
               {showSummary ? "Detallı Baxış" : "Xülasə"}
             </button>
