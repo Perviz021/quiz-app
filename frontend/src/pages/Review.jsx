@@ -75,9 +75,8 @@ const Review = () => {
     return questions.map((q, index) => {
       const options = [q.option1, q.option2, q.option3, q.option4, q.option5];
       const correctAnswer = getOptionLetter(q.correct_option - 1);
-      const studentAnswer = q.selected_option
-        ? getOptionLetter(q.selected_option - 1)
-        : "-";
+      const studentAnswer =
+        q.selected_option === -1 ? "-" : getOptionLetter(q.selected_option - 1);
       const isCorrect = q.selected_option === q.correct_option;
 
       return {
@@ -110,6 +109,21 @@ const Review = () => {
             </button>
           </div>
 
+          <div className="bg-white rounded-lg p-4 mb-6 flex gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-100 border border-green-500 rounded"></div>
+              <span>Düzgün cavab</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-100 border border-red-500 rounded"></div>
+              <span>Yanlış cavab</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-100 border border-yellow-500 rounded"></div>
+              <span>Cavablanmamış sual</span>
+            </div>
+          </div>
+
           {showSummary ? (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
               <table className="w-full">
@@ -134,7 +148,9 @@ const Review = () => {
                       <td className="py-3 px-4">
                         <span
                           className={`inline-block px-3 py-1 rounded-full ${
-                            item.isCorrect
+                            item.studentAnswer === "-"
+                              ? "bg-yellow-100 text-yellow-700 border border-yellow-500"
+                              : item.isCorrect
                               ? "bg-green-100 text-green-700 border border-green-500"
                               : "bg-red-100 text-red-700 border border-red-500"
                           }`}
