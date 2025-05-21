@@ -25,6 +25,7 @@ const initialState = {
   answers: {},
   submitted: false,
   score: 0,
+  preExam: 0,
   timeLeft: 5400,
   examStarted: false,
   isSubmitting: false,
@@ -67,6 +68,8 @@ const reducer = (state, action) => {
       return { ...state, showConfirmModal: true };
     case "HIDE_CONFIRM_MODAL":
       return { ...state, showConfirmModal: false };
+    case "SET_PRE_EXAM":
+      return { ...state, preExam: action.payload };
     default:
       return state;
   }
@@ -114,6 +117,14 @@ const Exam = () => {
         if (data.error) throw new Error(data.error);
         console.log("Submission successful, score:", data.score);
         dispatch({ type: "SET_SCORE", payload: data.score });
+
+        // Get pre-exam score from localStorage
+        const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+        const currentSubject = subjects.find(
+          (s) => s["Fənnin kodu"] === subjectCode
+        );
+        const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
+        dispatch({ type: "SET_PRE_EXAM", payload: preExam });
       })
       .catch((err) => {
         console.error("Submission error:", err);
@@ -585,6 +596,7 @@ const Exam = () => {
       {state.showPopup && (
         <Popup
           score={state.score}
+          preExam={state.preExam}
           onClose={() => navigate(`/review/${subjectCode}`)}
         />
       )}
