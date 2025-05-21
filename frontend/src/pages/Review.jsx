@@ -125,50 +125,94 @@ const Review = () => {
           </div>
 
           {showSummary ? (
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4">Sual №</th>
-                    <th className="text-left py-3 px-4">Düzgün Cavab</th>
-                    <th className="text-left py-3 px-4">Sizin Cavabınız</th>
-                    <th className="text-left py-3 px-4">Nəticə</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getAnswerSummary().map((item) => (
-                    <tr
-                      key={item.questionNumber}
-                      className="border-b border-gray-100 hover:bg-gray-50"
-                    >
-                      <td className="py-3 px-4">{item.questionNumber}</td>
-                      <td className="py-3 px-4 font-medium text-green-600">
-                        {item.correctAnswer}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full ${
-                            item.studentAnswer === "-"
-                              ? "bg-yellow-100 text-yellow-700 border border-yellow-500"
-                              : item.isCorrect
-                              ? "bg-green-100 text-green-700 border border-green-500"
-                              : "bg-red-100 text-red-700 border border-red-500"
-                          }`}
-                        >
-                          {item.studentAnswer}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {item.isCorrect ? (
-                          <span className="text-green-600">✓</span>
-                        ) : (
-                          <span className="text-red-600">✗</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="bg-white rounded-2xl shadow-lg p-3 mb-4">
+              {Array.from({
+                length: Math.ceil(getAnswerSummary().length / 10),
+              }).map((_, blockIdx) => {
+                const block = getAnswerSummary().slice(
+                  blockIdx * 10,
+                  blockIdx * 10 + 10
+                );
+                return (
+                  <table
+                    key={blockIdx}
+                    className="min-w-max border-separate border-spacing-y-0 mb-2 w-full text-xs border border-gray-300 rounded-lg shadow-sm pl-[10px]"
+                  >
+                    <tbody>
+                      {/* Row 1: Question Numbers */}
+                      <tr>
+                        <td className="text-gray-500 font-medium pr-2 py-1 text-left align-middle">
+                          №
+                        </td>
+                        {block.map((item) => (
+                          <td
+                            key={`num-${item.questionNumber}`}
+                            className="text-center font-medium px-1 py-1 text-black align-middle"
+                          >
+                            {item.questionNumber}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Row 2: Correct Answers */}
+                      <tr>
+                        <td className="text-gray-500 font-medium pr-2 py-1 text-left align-middle">
+                          Düzgün cavab
+                        </td>
+                        {block.map((item) => (
+                          <td
+                            key={`correct-${item.questionNumber}`}
+                            className="text-center font-medium text-green-600 px-1 py-1 align-middle"
+                          >
+                            {item.correctAnswer}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Row 3: Student Answers */}
+                      <tr>
+                        <td className="text-gray-500 font-medium pr-2 py-1 text-left align-middle">
+                          Sizin cavabınız
+                        </td>
+                        {block.map((item) => (
+                          <td
+                            key={`student-${item.questionNumber}`}
+                            className="text-center px-1 py-1 align-middle"
+                          >
+                            <span
+                              className={`inline-block w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-medium border ${
+                                item.studentAnswer === "-"
+                                  ? "bg-yellow-100 text-yellow-700 border-yellow-500"
+                                  : item.isCorrect
+                                  ? "bg-green-100 text-green-700 border-green-500"
+                                  : "bg-red-100 text-red-700 border-red-500"
+                              }`}
+                            >
+                              {item.studentAnswer}
+                            </span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Row 4: Result */}
+                      <tr>
+                        <td className="text-gray-500 font-medium pr-2 py-1 text-left align-middle">
+                          Nəticə
+                        </td>
+                        {block.map((item) => (
+                          <td
+                            key={`result-${item.questionNumber}`}
+                            className="text-center px-1 py-1 text-base align-middle"
+                          >
+                            {item.isCorrect ? (
+                              <span className="text-green-600">✓</span>
+                            ) : (
+                              <span className="text-red-600">✗</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })}
             </div>
           ) : (
             questions.map((q, index) => (
