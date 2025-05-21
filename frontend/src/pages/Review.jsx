@@ -178,7 +178,7 @@ const Review = () => {
                             className="text-center px-1 py-1 align-middle"
                           >
                             <span
-                              className={`inline-block w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-medium border ${
+                              className={`inline-block w-5 h-5 rounded-full text-[11px] font-medium border ${
                                 item.studentAnswer === "-"
                                   ? "bg-yellow-100 text-yellow-700 border-yellow-500"
                                   : item.isCorrect
