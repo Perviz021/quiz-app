@@ -19,6 +19,7 @@ const Review = lazy(() => import("./pages/Review"));
 const AddQuestion = lazy(() => import("./pages/AddQuestion"));
 const ExportQuestions = lazy(() => import("./pages/ExportQuestions"));
 const EditQuestions = lazy(() => import("./pages/EditQuestions"));
+const Protocol = lazy(() => import("./pages/Protocol"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -89,6 +90,7 @@ const App = () => {
                     path="/admin/export-questions"
                     element={<ExportQuestions />}
                   />
+                  <Route path="/admin/protocol" element={<Protocol />} />
                   <Route
                     path="/edit-questions/:subjectCode/:lang"
                     element={<EditQuestions />}
