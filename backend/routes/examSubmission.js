@@ -125,4 +125,27 @@ router.post("/submit", authenticate, async (req, res) => {
   }
 });
 
+router.get("/pre-exam/:subjectCode", authenticate, async (req, res) => {
+  const { subjectCode } = req.params;
+  const studentId = req.student.studentId;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT \`Pre-Exam\` as preExam 
+       FROM ftp 
+       WHERE \`Tələbə_kodu\` = ? AND \`Fənnin kodu\` = ?`,
+      [studentId, subjectCode]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Pre-exam score not found" });
+    }
+
+    res.json({ preExam: rows[0].preExam });
+  } catch (error) {
+    console.error("Error fetching pre-exam score:", error);
+    res.status(500).json({ error: "Failed to fetch pre-exam score" });
+  }
+});
+
 export default router;
