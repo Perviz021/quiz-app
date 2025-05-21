@@ -60,30 +60,18 @@ const Home = () => {
     if (status === "teacher") {
       navigate(`/edit-questions/${subject.id}/${subject.lang}`);
     } else {
-      // Existing student exam logic
+      // Only handle clicks for today's exams
       const examDate = parseExamDate(subject.exam_date);
       const today = getNormalizedCurrentDate();
 
-      console.log("Exam date:", examDate);
-      console.log("Today:", today);
-
-      if (!examDate) {
-        alert("İmtahan tarixi düzgün deyil!");
-        return;
-      }
-
-      if (examDate.getTime() === today.getTime()) {
-        if (completedExams.has(subject.id)) {
-          alert("Siz bu imtahanı artıq vermisiniz!");
-        } else {
+      if (examDate && examDate.getTime() === today.getTime()) {
+        if (!completedExams.has(subject.id)) {
           console.log(
             "Navigating to exam:",
             `/exam/${subject.id}/${subject.lang}`
           );
           navigate(`/exam/${subject.id}/${subject.lang}`);
         }
-      } else {
-        alert("Bu imtahanın tarixi gəlib çatmamışdır!");
       }
     }
   };
