@@ -60,7 +60,7 @@ const Protocol = () => {
           <button
             type="submit"
             disabled={loading}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? "Yüklənir..." : "Axtar"}
           </button>
@@ -82,7 +82,6 @@ const Protocol = () => {
                   <th className="p-4 text-left">Ad Soyad</th>
                   <th className="p-4 text-left">Fənn</th>
                   <th className="p-4 text-left">Bal</th>
-                  <th className="p-4 text-left">Ümumi Suallar</th>
                   <th className="p-4 text-left">Tarix</th>
                   <th className="p-4 text-left">Akademik Qrup</th>
                 </tr>
@@ -96,9 +95,16 @@ const Protocol = () => {
                     <td className="p-4">{result["Soyadı, adı və ata adı"]}</td>
                     <td className="p-4">{result["Fənnin adı"]}</td>
                     <td className="p-4">{result.score}</td>
-                    <td className="p-4">{result.total_questions}</td>
                     <td className="p-4">
-                      {new Date(result.submitted_at).toLocaleString()}
+                      {new Date(result.submitted_at).toLocaleString("en-GB", {
+                        year: "numeric",
+                        month: "numeric",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                      })}
                     </td>
                     <td className="p-4">{result["Akademik qrup"]}</td>
                   </tr>
