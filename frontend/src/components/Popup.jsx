@@ -1,5 +1,6 @@
 const Popup = ({ score, preExam, onClose }) => {
   const finalScore = Number(score) + Number(preExam || 0);
+  const examScore = Number(score);
 
   const getLetterGrade = (score) => {
     if (score >= 91 && score <= 100) return "A";
@@ -11,7 +12,31 @@ const Popup = ({ score, preExam, onClose }) => {
   };
 
   const letterGrade = getLetterGrade(finalScore);
-  const isPassing = letterGrade !== "F";
+  const isExamPassing = examScore >= 17;
+  const isPassing = isExamPassing && letterGrade !== "F";
+
+  const getMessage = () => {
+    if (!isExamPassing) {
+      return "Təəssüf ki, imtahandan kəsildiniz. İmtahan balı 17-dən azdır.";
+    }
+    if (!isPassing) {
+      return "Təəssüf ki, imtahandan kəsildiniz. Yekun bal kifayət qədər deyil.";
+    }
+    switch (letterGrade) {
+      case "A":
+        return "Təbrik edirik! Əla nəticə göstərdiniz!";
+      case "B":
+        return "Təbrik edirik! Çox yaxşı nəticə göstərdiniz!";
+      case "C":
+        return "Təbrik edirik! Yaxşı nəticə göstərdiniz!";
+      case "D":
+        return "Təbrik edirik! Qənaətbəxş nəticə göstərdiniz!";
+      case "E":
+        return "Təbrik edirik! İmtahandan keçdiniz!";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center backdrop-blur-2xl bg-opacity-50">
@@ -20,7 +45,13 @@ const Popup = ({ score, preExam, onClose }) => {
         <div className="space-y-4">
           <p className="text-lg text-gray-700">
             İmtahan balı:{" "}
-            <span className="font-semibold text-indigo-600">{score}</span>
+            <span
+              className={`font-semibold ${
+                isExamPassing ? "text-indigo-600" : "text-red-600"
+              }`}
+            >
+              {score}
+            </span>
           </p>
           <p className="text-lg text-gray-700">
             Giriş balı:{" "}
@@ -30,7 +61,13 @@ const Popup = ({ score, preExam, onClose }) => {
           </p>
           <p className="text-lg text-gray-700">
             Yekun bal:{" "}
-            <span className="font-semibold text-indigo-600">{finalScore}</span>
+            <span
+              className={`font-semibold ${
+                isPassing ? "text-indigo-600" : "text-red-600"
+              }`}
+            >
+              {finalScore}
+            </span>
           </p>
           <p className="text-lg text-gray-700">
             Qiymət:{" "}
@@ -42,11 +79,13 @@ const Popup = ({ score, preExam, onClose }) => {
               {letterGrade}
             </span>
           </p>
-          {!isPassing && (
-            <p className="text-red-600 font-medium">
-              Təəssüf ki, imtahandan kəsildiniz
-            </p>
-          )}
+          <p
+            className={`text-lg font-medium ${
+              isPassing ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {getMessage()}
+          </p>
         </div>
         <button
           onClick={onClose}
