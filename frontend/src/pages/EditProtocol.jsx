@@ -1,6 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import API_BASE from "../config/api";
+import { useParams } from "react-router-dom";
+
+function splitScore(score) {
+  // Split score into 5 parts, each max 10
+  let parts = [];
+  let remaining = Number(score);
+  for (let i = 0; i < 5; i++) {
+    if (remaining >= 10) {
+      parts.push(10);
+      remaining -= 10;
+    } else if (remaining > 0) {
+      parts.push(remaining);
+      remaining = 0;
+    } else {
+      parts.push("");
+    }
+  }
+  return parts;
+}
 
 const EditProtocol = () => {
+  const { fennQrupu } = useParams();
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const res = await fetch(
+        `${API_BASE}/results/group/${encodeURIComponent(fennQrupu)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setStudents(data);
+      setLoading(false);
+    }
+    fetchData();
+  }, [fennQrupu]);
+
+  if (loading) return <div>Yüklənir...</div>;
+
   return (
     <div className="font-[Times_New_Roman] m-5">
       <h2 className="text-center">Bakı Avrasiya Universiteti</h2>
@@ -9,34 +53,55 @@ const EditProtocol = () => {
       <table className="w-full border-collapse mt-5">
         <tbody>
           <tr>
-            <td className="border border-black p-1 text-center">Fənn:</td>
-            <td className="border border-black p-1 text-center">Fənnin kodu</td>
-            <td className="border border-black p-1 text-center">FA</td>
-            <td className="border border-black p-1 text-center"></td>
-          </tr>
-          <tr>
-            <td className="border border-black p-1 text-center">(kod)</td>
-            <td className="border border-black p-1 text-center"></td>
-            <td className="border border-black p-1 text-center">(ad)</td>
+            <td
+              className="border border-black p-1 text-center"
+              style={{ width: "20%" }}
+            >
+              Fənn:
+            </td>
+            <td
+              className="border border-black p-1 text-center"
+              style={{ width: "20%" }}
+            >
+              (kod)
+            </td>
+            <td
+              className="border border-black p-1 text-center"
+              style={{ width: "20%" }}
+            >
+              Fənnin kodu
+            </td>
+            <td
+              className="border border-black p-1 text-center"
+              style={{ width: "20%" }}
+            >
+              FA
+            </td>
+            <td
+              className="border border-black p-1 text-center"
+              style={{ width: "20%" }}
+            >
+              (ad)
+            </td>
           </tr>
           <tr>
             <td className="border border-black p-1 text-center">Fənn qrupu:</td>
             <td className="border border-black p-1 text-center">Stable</td>
             <td className="border border-black p-1 text-center"></td>
-            <td className="border border-black p-1 text-center">
+            <td className="border border-black p-1 text-center" colSpan={2}>
               Tədris ili: 2024 / 2025
             </td>
           </tr>
           <tr>
-            <td className="border border-black p-1 text-center">(kod)</td>
             <td className="border border-black p-1 text-center"></td>
             <td className="border border-black p-1 text-center"></td>
-            <td className="border border-black p-1 text-center">
+            <td className="border border-black p-1 text-center"></td>
+            <td className="border border-black p-1 text-center" colSpan={2}>
               Semestr: Yaz
             </td>
           </tr>
           <tr>
-            <td colSpan="4" className="border border-black p-1 text-center">
+            <td className="border border-black p-1 text-center" colSpan={5}>
               Tarix: "_____" ________________ 2025-ci il
             </td>
           </tr>
@@ -46,68 +111,63 @@ const EditProtocol = () => {
       <table className="w-full border-collapse mt-5">
         <thead>
           <tr>
-            {[
-              "Sıra №",
-              "T ə h s i l a l a n",
-              "",
-              "İştirak parametri",
-              "İ.q.g.",
-              "",
-              "Nəticə",
-              "",
-              "",
-              "",
-              "",
-            ].map((text, idx) => (
-              <th
-                key={idx}
-                className="border border-black p-1 text-center"
-                colSpan={
-                  text === "T ə h s i l a l a n" ||
-                  text === "İ.q.g." ||
-                  text === "Nəticə"
-                    ? 2
-                    : 1
-                }
-              >
-                {text}
-              </th>
-            ))}
+            <th rowSpan={2} className="border border-black p-1 text-center">
+              Sıra №
+            </th>
+            <th colSpan={2} className="border border-black p-1 text-center">
+              T ə h s i l a l a n
+            </th>
+            <th rowSpan={2} className="border border-black p-1 text-center">
+              İştirak parametri
+            </th>
+            <th colSpan={2} className="border border-black p-1 text-center">
+              İ.q.g.
+            </th>
+            <th colSpan={5} className="border border-black p-1 text-center">
+              Nəticə
+            </th>
           </tr>
           <tr>
-            {[
-              "",
-              "Kod",
-              "S.A.A.",
-              "",
-              "CQN",
-              "Qaib",
-              "1",
-              "2",
-              "3",
-              "4",
-              "5",
-            ].map((text, idx) => (
-              <th key={idx} className="border border-black p-1 text-center">
-                {text}
+            <th className="border border-black p-1 text-center">Kod</th>
+            <th className="border border-black p-1 text-center">S.A.A.</th>
+            <th className="border border-black p-1 text-center">CQN</th>
+            <th className="border border-black p-1 text-center">Qaib</th>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <th key={n} className="border border-black p-1 text-center">
+                {n}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td className="border border-black p-1 text-center">1</td>
-            <td className="border border-black p-1 text-center">Tələbə_kodu</td>
-            <td className="border border-black p-1 text-center">
-              Student Tabledan Tələbə adı
-            </td>
-            <td className="border border-black p-1 text-center">EP</td>
-            <td className="border border-black p-1 text-center">Pre-Exam</td>
-            <td className="border border-black p-1 text-center">Qaib</td>
-            {[...Array(5)].map((_, i) => (
-              <td key={i} className="border border-black p-1 text-center"></td>
-            ))}
-          </tr>
+          {students.map((student, idx) => {
+            const scoreParts = splitScore(student.score);
+            return (
+              <tr key={student.Tələbə_kodu}>
+                <td className="border border-black p-1 text-center">
+                  {idx + 1}
+                </td>
+                <td className="border border-black p-1 text-center">
+                  {student.Tələbə_kodu}
+                </td>
+                <td className="border border-black p-1 text-center">
+                  {student["Soyadı, adı və ata adı"]}
+                </td>
+                <td className="border border-black p-1 text-center">EP</td>
+                <td className="border border-black p-1 text-center">
+                  {student["Pre-Exam"]}
+                </td>
+                <td className="border border-black p-1 text-center">
+                  {student["Qaib"]}
+                </td>
+                {scoreParts.map((part, i) => (
+                  <td key={i} className="border border-black p-1 text-center">
+                    {part}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
