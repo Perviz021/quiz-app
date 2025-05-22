@@ -127,17 +127,17 @@ const Navbar = () => {
           {status === "staff" && (
             <>
               <button
-                onClick={() => handleNavigation("/admin/protocol")}
-                className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
-              >
-                Protokol
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
-              </button>
-              <button
                 onClick={() => handleNavigation("/admin/export-questions")}
                 className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
               >
                 Sualları Yüklə
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+              </button>
+              <button
+                onClick={() => handleNavigation("/admin/protocol")}
+                className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
+              >
+                Protokol
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
               </button>
             </>
