@@ -1,11 +1,13 @@
 import { useState } from "react";
 import API_BASE from "../config/api";
+import { useNavigate } from "react-router-dom";
 
 const Protocol = () => {
   const [fennQrupu, setFennQrupu] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +37,40 @@ const Protocol = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/edit-protocol/${encodeURIComponent(fennQrupu)}`);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const encodedFennQrupu = encodeURIComponent(fennQrupu);
+      const response = await fetch(
+        `${API_BASE}/results/group/${encodedFennQrupu}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to download results");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `results_${fennQrupu.replace("/", "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -75,6 +111,20 @@ const Protocol = () => {
 
       {results.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-4 flex justify-end gap-4 border-b border-gray-200">
+            <button
+              onClick={handleEdit}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
+            >
+              Düzəliş Et
+            </button>
+            <button
+              onClick={handleDownload}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
+            >
+              PDF Yüklə
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
