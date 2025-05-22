@@ -182,22 +182,16 @@ const Home = () => {
                     <p className="text-sm text-gray-500 mt-1">
                       Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Giriş balı: {subject.pre_exam}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Müəllim: {subject.professor}
-                    </p>
-                    <p className="mt-1 space-x-2">
+                    <p className="text-sm text-gray-500 mt-1 space-x-2">
                       <span className="text-sm text-gray-500">
-                        Fənnin semestr kodu: {subject.fsk}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        Kredit: {subject.fk}
+                        Giriş balı: {subject.pre_exam}
                       </span>
                       <span className="text-sm text-gray-500">
                         Q/b: {subject.qaib}
                       </span>
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Müəllim: {subject.professor}
                     </p>
                     <p className="text-sm text-red-500 mt-2">Bitmişdir</p>
                   </div>
@@ -215,17 +209,13 @@ const Home = () => {
                     <p className="text-sm mt-1">
                       Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
                     </p>
-                    <p className="text-sm mt-1">
-                      Giriş balı: {subject.pre_exam}
-                    </p>
-                    <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
-                    <p className="mt-1 space-x-2">
+                    <p className="text-sm mt-1 space-x-2">
                       <span className="text-sm">
-                        Fənnin semestr kodu: {subject.fsk}
+                        Giriş balı: {subject.pre_exam}
                       </span>
-                      <span className="text-sm">Kredit: {subject.fk}</span>
                       <span className="text-sm">Q/b: {subject.qaib}</span>
                     </p>
+                    <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
                   </div>
                 ) : (
                   <div className="p-6 bg-gray-100 text-gray-500 text-center cursor-not-allowed opacity-75 flex flex-col items-center justify-center h-full">
@@ -241,18 +231,13 @@ const Home = () => {
                     <p className="text-sm mt-1">
                       Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
                     </p>
-                    <p className="text-sm mt-1">
-                      Giriş balı: {subject.pre_exam}
-                    </p>
-                    <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
-                    <p className="text-sm mt-1"></p>
-                    <p className="mt-1 space-x-2">
+                    <p className="text-sm mt-1 space-x-2">
                       <span className="text-sm">
-                        Fənnin semestr kodu: {subject.fsk}
+                        Giriş balı: {subject.pre_exam}
                       </span>
-                      <span className="text-sm">Kredit: {subject.fk}</span>
                       <span className="text-sm">Q/b: {subject.qaib}</span>
                     </p>
+                    <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
                     <p className="text-sm text-red-600 mt-2">
                       Bu imtahan bugünkü tarix üçün mövcud deyil
                     </p>
