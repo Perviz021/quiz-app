@@ -46,14 +46,20 @@ router.get("/results/group/:fenn_qrupu", async (req, res) => {
         s.\`Soyadı, adı və ata adı\`,
         s.\`Akademik qrup\`,
         sub.\`Fənnin adı\`,
-        f.Stable as fenn_qrupu
+        f.Stable as fenn_qrupu,
+        f.\`Pre-Exam\`,
+        f.\`Qaib\`,
+        f.FA,
+        f.teacher_code,
+        f.Professor,
+        f.Exam_date
       FROM results r
       JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
       JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
       JOIN ftp f ON r.\`Tələbə_kodu\` = f.\`Tələbə_kodu\` AND r.\`Fənnin kodu\` = f.\`Fənnin kodu\`
-      WHERE f.Stable = ?
+      WHERE f.Stable LIKE ?
       ORDER BY r.submitted_at DESC`,
-      [fenn_qrupu]
+      [`${fenn_qrupu}%`]
     );
 
     res.json(results);
@@ -167,6 +173,31 @@ router.get("/results/group/:fenn_qrupu/download", async (req, res) => {
       });
   } catch (error) {
     console.error("Error fetching results:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/results/groups/:fenn_qrupu
+router.get("/results/groups/:fenn_qrupu", async (req, res) => {
+  const fenn_qrupu = decodeURIComponent(req.params.fenn_qrupu);
+
+  try {
+    const [groups] = await pool.query(
+      `SELECT DISTINCT f.Stable as fenn_qrupu, 
+              sub.\`Fənnin adı\`,
+              f.Professor,
+              f.Exam_date
+       FROM ftp f
+       JOIN subjects sub ON f.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
+       JOIN results r ON f.\`Tələbə_kodu\` = r.\`Tələbə_kodu\` AND f.\`Fənnin kodu\` = r.\`Fənnin kodu\`
+       WHERE f.Stable LIKE ?
+       ORDER BY f.Stable`,
+      [`${fenn_qrupu}%`]
+    );
+
+    res.json(groups);
+  } catch (error) {
+    console.error("Error fetching fenn groups:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
