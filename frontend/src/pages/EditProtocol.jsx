@@ -22,7 +22,7 @@ function splitScore(score) {
 
 const EditProtocol = () => {
   const { fennQrupu } = useParams();
-  const [students, setStudents] = useState([]);
+  const [protocolData, setProtocolData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const EditProtocol = () => {
         }
       );
       const data = await res.json();
-      setStudents(data);
+      setProtocolData(data);
       setLoading(false);
     }
     fetchData();
@@ -47,55 +47,43 @@ const EditProtocol = () => {
 
   return (
     <div className="font-[Times_New_Roman] m-5">
-      <h2 className="text-center">Bakı Avrasiya Universiteti</h2>
-      <h3 className="text-center underline">MÜVƏFFƏQİYYƏT VƏRƏQİ</h3>
+      <h2 className="text-center font-bold text-lg">
+        Bakı Avrasiya Universiteti
+      </h2>
+      <h3 className="text-center underline font-semibold text-base mb-2">
+        MÜVƏFFƏQİYYƏT VƏRƏQİ
+      </h3>
 
       <table className="w-full border-collapse mt-5">
         <tbody>
           <tr>
             <td
               className="border border-black p-1 text-center"
-              style={{ width: "20%" }}
+              style={{ width: "15%" }}
             >
-              Fənn:
+              Fənn: {protocolData[0]["Fənnin kodu"]}
             </td>
             <td
               className="border border-black p-1 text-center"
-              style={{ width: "20%" }}
+              style={{ width: "10%" }}
             >
-              (kod)
-            </td>
-            <td
-              className="border border-black p-1 text-center"
-              style={{ width: "20%" }}
-            >
-              Fənnin kodu
-            </td>
-            <td
-              className="border border-black p-1 text-center"
-              style={{ width: "20%" }}
-            >
-              FA
-            </td>
-            <td
-              className="border border-black p-1 text-center"
-              style={{ width: "20%" }}
-            >
-              (ad)
+              {protocolData[0]["Fənnin adı"]}
             </td>
           </tr>
           <tr>
-            <td className="border border-black p-1 text-center">Fənn qrupu:</td>
-            <td className="border border-black p-1 text-center">Stable</td>
+            <td className="border border-black p-1 text-center">
+              Fənn qrupu: {protocolData[0]["fenn_qrupu"]}
+            </td>
             <td className="border border-black p-1 text-center"></td>
             <td className="border border-black p-1 text-center" colSpan={2}>
               Tədris ili: 2024 / 2025
             </td>
           </tr>
           <tr>
-            <td className="border border-black p-1 text-center"></td>
-            <td className="border border-black p-1 text-center"></td>
-            <td className="border border-black p-1 text-center"></td>
+            <td
+              className="border border-black p-1 text-center"
+              colSpan={3}
+            ></td>
             <td className="border border-black p-1 text-center" colSpan={2}>
               Semestr: Yaz
             </td>
@@ -140,7 +128,7 @@ const EditProtocol = () => {
           </tr>
         </thead>
         <tbody>
-          {students.map((student, idx) => {
+          {protocolData.map((student, idx) => {
             const scoreParts = splitScore(student.score);
             return (
               <tr key={student.Tələbə_kodu}>
