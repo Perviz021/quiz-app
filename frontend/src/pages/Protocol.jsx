@@ -1,25 +1,31 @@
 import { useState } from "react";
 import API_BASE from "../config/api";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Protocol = () => {
   const [fennQrupu, setFennQrupu] = useState("");
-  const [results, setResults] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [day, month, year] = dateStr.split("/");
+    return `${day}.${month}.${year}`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setResults([]);
+    setGroups([]);
 
     try {
-      // URL encode the fenn_qrupu to handle the slash
       const encodedFennQrupu = encodeURIComponent(fennQrupu);
       const response = await fetch(
-        `${API_BASE}/results/group/${encodedFennQrupu}`,
+        `${API_BASE}/results/groups/${encodedFennQrupu}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -32,46 +38,20 @@ const Protocol = () => {
       }
 
       const data = await response.json();
-      setResults(data);
+      if (data.length === 0) {
+        toast.error("Bu fənn qrupu üzrə nəticə tapılmadı!");
+      }
+      setGroups(data);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = (fennQrupu) => {
     navigate(`/edit-protocol/${encodeURIComponent(fennQrupu)}`);
-  };
-
-  const handleDownload = async () => {
-    try {
-      const encodedFennQrupu = encodeURIComponent(fennQrupu);
-      const response = await fetch(
-        `${API_BASE}/results/group/${encodedFennQrupu}/download`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to download results");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `results_${fennQrupu.replace("/", "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      setError(err.message);
-    }
   };
 
   return (
@@ -109,54 +89,37 @@ const Protocol = () => {
         </div>
       )}
 
-      {results.length > 0 && (
+      {groups.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-4 flex justify-end gap-4 border-b border-gray-200">
-            <button
-              onClick={handleEdit}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
-            >
-              Düzəliş Et
-            </button>
-            <button
-              onClick={handleDownload}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
-            >
-              PDF Yüklə
-            </button>
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-indigo-600 text-white">
-                  <th className="p-4 text-left">Ad Soyad</th>
+                  <th className="p-4 text-left">Fənn Qrupu</th>
                   <th className="p-4 text-left">Fənn</th>
-                  <th className="p-4 text-left">Bal</th>
-                  <th className="p-4 text-left">Tarix</th>
-                  <th className="p-4 text-left">Akademik Qrup</th>
+                  <th className="p-4 text-left">Professor</th>
+                  <th className="p-4 text-left">İmtahan Tarixi</th>
+                  <th className="p-4 text-left">Əməliyyatlar</th>
                 </tr>
               </thead>
               <tbody>
-                {results.map((result) => (
+                {groups.map((group) => (
                   <tr
-                    key={result.id}
+                    key={group.fenn_qrupu}
                     className="border-b border-gray-200 hover:bg-indigo-50"
                   >
-                    <td className="p-4">{result["Soyadı, adı və ata adı"]}</td>
-                    <td className="p-4">{result["Fənnin adı"]}</td>
-                    <td className="p-4">{result.score}</td>
+                    <td className="p-4">{group.fenn_qrupu}</td>
+                    <td className="p-4">{group["Fənnin adı"]}</td>
+                    <td className="p-4">{group.Professor}</td>
+                    <td className="p-4">{formatDate(group.Exam_date)}</td>
                     <td className="p-4">
-                      {new Date(result.submitted_at).toLocaleString("en-GB", {
-                        year: "numeric",
-                        month: "numeric",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: false,
-                      })}
+                      <button
+                        onClick={() => handleEdit(group.fenn_qrupu)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
+                      >
+                        Baxış
+                      </button>
                     </td>
-                    <td className="p-4">{result["Akademik qrup"]}</td>
                   </tr>
                 ))}
               </tbody>
