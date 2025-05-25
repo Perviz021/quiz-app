@@ -14,7 +14,7 @@ export const initializeSocket = (server) => {
         "http://localhost:5173",
         "http://192.168.9.30:3000",
         "http://192.168.9.31:3000",
-        "http://192.168.1.69:3000",
+        "http://192.168.1.68:3000",
       ],
       methods: ["GET", "POST"],
       credentials: true,
