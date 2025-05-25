@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import API_BASE from "../config/api";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 // You need to install html2pdf.js: npm install html2pdf.js
 import html2pdf from "html2pdf.js";
 
@@ -24,6 +24,7 @@ function splitScore(score) {
 
 const EditProtocol = () => {
   const { fennQrupu } = useParams();
+  const navigate = useNavigate();
   const [protocolData, setProtocolData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editedData, setEditedData] = useState([]);
@@ -70,9 +71,16 @@ const EditProtocol = () => {
     });
   };
 
-  const handleDownloadPDF = ({ fennQrupu }) => {
+  const handleDownloadPDF = (fennQrupu) => {
     if (pageRef.current) {
-      html2pdf(pageRef.current, { filename: `${fennQrupu}.pdf` });
+      const opt = {
+        margin: [0.5, 0.5, 0.5, 0.5], // top, left, bottom, right in inches
+        filename: `${fennQrupu}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+      };
+      html2pdf().set(opt).from(pageRef.current).save();
     }
   };
 
@@ -80,14 +88,46 @@ const EditProtocol = () => {
 
   return (
     <div className="font-[Times_New_Roman] m-5">
-      <button
-        className="mb-4 bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 cursor-pointer"
-        onClick={() =>
-          handleDownloadPDF(protocolData[0].fenn_qrupu || "protokol")
-        }
-      >
-        PDF Yüklə
-      </button>
+      <div className="flex gap-4 mb-4">
+        <button
+          className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 cursor-pointer"
+          onClick={() => {
+            if (
+              protocolData &&
+              protocolData.length > 0 &&
+              protocolData[0].fenn_qrupu
+            ) {
+              handleDownloadPDF(protocolData[0].fenn_qrupu);
+            } else {
+              alert("Məlumatlar yüklənməyib. Zəhmət olmasa gözləyin.");
+            }
+          }}
+        >
+          PDF Yüklə
+        </button>
+        <button
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
+          onClick={() => {
+            console.log("protocolData:", protocolData); // Debug
+            console.log("fenn_qrupu:", protocolData[0]?.fenn_qrupu); // Debug
+            if (
+              protocolData &&
+              protocolData.length > 0 &&
+              protocolData[0].fenn_qrupu
+            ) {
+              const targetUrl = `/admin/export-protocol/${encodeURIComponent(
+                protocolData[0].fenn_qrupu
+              )}`;
+              console.log("Navigating to:", targetUrl);
+              navigate(targetUrl);
+            } else {
+              alert("Məlumatlar yüklənməyib. Zəhmət olmasa gözləyin.");
+            }
+          }}
+        >
+          Excel-ə Export Et
+        </button>
+      </div>
       <div ref={pageRef}>
         <h2 className="text-center font-bold text-lg">
           Bakı Avrasiya Universiteti
