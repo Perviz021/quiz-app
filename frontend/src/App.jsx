@@ -21,6 +21,7 @@ const ExportQuestions = lazy(() => import("./pages/ExportQuestions"));
 const EditQuestions = lazy(() => import("./pages/EditQuestions"));
 const Protocol = lazy(() => import("./pages/Protocol"));
 const EditProtocol = lazy(() => import("./pages/EditProtocol"));
+const ExportProtocol = lazy(() => import("./pages/ExportProtocol"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -99,6 +100,10 @@ const App = () => {
                   <Route
                     path="/edit-protocol/:fennQrupu"
                     element={<EditProtocol />}
+                  />
+                  <Route
+                    path="/admin/export-protocol/:fennQrupu"
+                    element={<ExportProtocol />}
                   />
                 </>
               )}
