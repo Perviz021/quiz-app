@@ -1,8 +1,14 @@
 import express from "express";
 import pool from "../db.js"; // Import your MySQL connection
 import htmlPdf from "html-pdf-node";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // GET /api/results/:studentId
 router.get("/results/:studentId", async (req, res) => {
@@ -235,6 +241,108 @@ router.post("/results/update", async (req, res) => {
     console.error("Error updating results:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// POST /api/results/export-excel-python
+router.post("/results/export-excel-python", async (req, res) => {
+  const protocolData = req.body;
+
+  // Path to the Python script
+  const pythonScriptPath = path.join(
+    __dirname,
+    "../scripts/generate_protocol_excel.py"
+  );
+  // Path to the Excel template (relative to the Python script)
+  const templatePath = path.join(__dirname, "../templates/ProtocolForm.xlsx");
+
+  // Check if template exists
+  if (!fs.existsSync(templatePath)) {
+    console.error(`Error: Template file not found at ${templatePath}`);
+    return res
+      .status(500)
+      .json({ error: "Excel template not found on server." });
+  }
+
+  // Spawn the Python process with UTF-8 encoding
+  const pythonProcess = spawn("python", [pythonScriptPath], {
+    stdio: ["pipe", "pipe", "pipe"], // Use pipes for stdin, stdout, stderr
+    // Default encoding is usually utf8, but explicitly setting can help
+    // This primarily affects the Node.js side's interpretation of the pipes.
+    // The Python script handles its internal encoding.
+    encoding: "utf8",
+  });
+
+  let outputData = ""; // To capture both path and filename
+  let errorOutput = "";
+
+  // Send data to Python script via stdin
+  // Explicitly write as UTF-8 string
+  pythonProcess.stdin.write(JSON.stringify(protocolData), "utf8");
+  pythonProcess.stdin.end();
+
+  // Capture stdout from Python script (should be file path and filename, each on a new line)
+  pythonProcess.stdout.on("data", (data) => {
+    outputData += data.toString("utf8"); // Read as UTF-8
+  });
+
+  // Capture stderr from Python script
+  pythonProcess.stderr.on("data", (data) => {
+    errorOutput += data.toString("utf8"); // Read as UTF-8
+    console.error(`Python script stderr: ${data.toString("utf8").trim()}`);
+  });
+
+  // Handle Python process exit
+  pythonProcess.on("close", (code) => {
+    if (code === 0 && outputData) {
+      // Split the output data to get path and filename
+      const [outputFilePath, filename] = outputData
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line);
+
+      if (outputFilePath && filename) {
+        // Python script succeeded, send the generated file
+        res.download(outputFilePath, filename, (err) => {
+          if (err) {
+            console.error("Error sending file:", err);
+            // If download fails, make sure to still try to delete the temp file
+          }
+          // Clean up the temporary file
+          fs.unlink(outputFilePath, (unlinkErr) => {
+            if (unlinkErr) {
+              console.error("Error deleting temp file:", unlinkErr);
+            }
+          });
+        });
+      } else {
+        console.error(
+          `Python script output format error. Expected path and filename, got:\n${outputData}`
+        );
+        res.status(500).json({
+          error: "Failed to generate Excel file.",
+          details: `Python script output format error.`,
+        });
+      }
+    } else {
+      // Python script failed
+      console.error(
+        `Python script exited with code ${code}. Error output:\n${errorOutput}`
+      );
+      res.status(500).json({
+        error: "Failed to generate Excel file.",
+        details: errorOutput,
+      });
+    }
+  });
+
+  // Handle process spawn errors
+  pythonProcess.on("error", (err) => {
+    console.error("Failed to start Python process:", err);
+    res.status(500).json({
+      error: "Failed to execute Excel generation script.",
+      details: err.message,
+    });
+  });
 });
 
 export default router;
