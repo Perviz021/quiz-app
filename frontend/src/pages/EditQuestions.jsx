@@ -102,7 +102,7 @@ const EditQuestions = () => {
       </div>
 
       <div className="space-y-6">
-        {questions.map((question) => (
+        {questions.map((question, index) => (
           <div
             key={question.id}
             className="bg-white rounded-xl shadow-md p-6 space-y-4"
@@ -110,7 +110,7 @@ const EditQuestions = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sual
+                  Sual {index + 1}
                 </label>
                 <textarea
                   value={editedQuestions[question.id]?.question || ""}
