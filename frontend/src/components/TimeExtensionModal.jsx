@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 
 const TimeExtensionModal = ({ isOpen, onClose, onConfirm }) => {
   const [minutes, setMinutes] = useState("");
