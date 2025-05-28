@@ -2,6 +2,7 @@ import express from "express";
 import db from "../db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { authenticate } from "../middleware/auth.js";
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ router.post("/login", async (req, res) => {
     let subjects = [];
     if (student.status === "student") {
       [subjects] = await db.query(
-        `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date, f.Stable, f.lang, f.\`Pre-Exam\`, f.Professor, f.FSK, f.FK, f.Qaib
+        `SELECT s.\`Fənnin kodu\`, s.\`Fənnin adı\`, f.Exam_date, f.Stable, f.lang, f.\`Pre-Exam\`, f.Professor, f.FSK, f.FK, f.Qaib, f.EP
          FROM subjects s
          JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
          WHERE f.\`Tələbə_kodu\` = ?`,
@@ -65,6 +66,34 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+router.post("/update-exam-parameter", authenticate, async (req, res) => {
+  const { studentId, subjectGroup, newEP } = req.body;
+
+  try {
+    if (req.student.status !== "staff") {
+      return res
+        .status(403)
+        .json({ error: "Only staff can update exam parameters" });
+    }
+
+    const [result] = await db.query(
+      "UPDATE ftp SET EP = ? WHERE `Tələbə_kodu` = ? AND `Stable` = ?",
+      [newEP, studentId, subjectGroup]
+    );
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ error: "Student or subject group not found" });
+    }
+
+    res.json({ message: "Exam parameter updated successfully" });
+  } catch (error) {
+    console.error("Update exam parameter error:", error);
+    res.status(500).json({ error: "Failed to update exam parameter" });
   }
 });
 
