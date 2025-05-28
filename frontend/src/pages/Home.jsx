@@ -35,6 +35,7 @@ const Home = () => {
       fsk: subject["FSK"],
       fk: subject["FK"],
       qaib: subject["Qaib"],
+      ep: subject["EP"], // Add EP parameter
     }));
 
     setSubjects(formattedSubjects);
@@ -66,6 +67,22 @@ const Home = () => {
 
       if (examDate && examDate.getTime() === today.getTime()) {
         if (!completedExams.has(subject.id)) {
+          // Check EP parameter
+          if (subject.ep === 31) {
+            alert(
+              "Qayıb limitini keçdiyinizə görə imtahanda iştirak edə bilməzsiniz."
+            );
+            return;
+          } else if (subject.ep === 32) {
+            alert("İmtahana qatıla bilməzsiniz. Təhsil haqqı ödənilməyib.");
+            return;
+          } else if (subject.ep !== 10) {
+            alert(
+              "İmtahana qatıla bilməzsiniz. İmtahan parametri uyğun deyil."
+            );
+            return;
+          }
+
           console.log(
             "Navigating to exam:",
             `/exam/${subject.id}/${subject.lang}`
@@ -151,12 +168,17 @@ const Home = () => {
           {subjects.map((subject) => {
             const isToday = isExamDateToday(subject.exam_date);
             const isCompleted = completedExams.has(subject.id);
+            const isEligible = subject.ep === 10;
 
             return (
               <div
                 key={subject.id}
-                onClick={() => handleSubjectClick(subject)}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+                onClick={() => isEligible && handleSubjectClick(subject)}
+                className={`bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 ${
+                  isEligible
+                    ? "hover:scale-105 hover:shadow-xl cursor-pointer"
+                    : "cursor-not-allowed opacity-75"
+                }`}
               >
                 {status === "teacher" ? (
                   <div className="p-6 bg-indigo-600 text-white text-center flex flex-col items-center justify-center h-full hover:bg-indigo-700 transition-all duration-300">
@@ -194,6 +216,35 @@ const Home = () => {
                       Müəllim: {subject.professor}
                     </p>
                     <p className="text-sm text-red-500 mt-2">Bitmişdir</p>
+                  </div>
+                ) : !isEligible ? (
+                  <div className="p-6 bg-gray-100 text-gray-500 text-center cursor-not-allowed opacity-75 flex flex-col items-center justify-center h-full">
+                    <h3 className="text-lg font-semibold mb-2">
+                      {subject.name}
+                    </h3>
+                    <p className="text-sm">
+                      İmtahan vaxtı: {formatDate(subject.exam_date)}
+                    </p>
+                    <p className="text-sm mt-1">
+                      Fənn qrupu: {subject.fenn_qrupu}
+                    </p>
+                    <p className="text-sm mt-1">
+                      Dil: {subject.lang === "az" ? "Azərbaycan" : "English"}
+                    </p>
+                    <p className="text-sm mt-1 space-x-2">
+                      <span className="text-sm">
+                        Giriş balı: {subject.pre_exam}
+                      </span>
+                      <span className="text-sm">Q/b: {subject.qaib}</span>
+                    </p>
+                    <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
+                    <p className="text-sm text-red-600 mt-2">
+                      {subject.ep === 31
+                        ? "Qayıb limitini keçdiyinizə görə imtahanda iştirak edə bilməzsiniz."
+                        : subject.ep === 32
+                        ? "Təhsil haqqı ödənilmədiyinə görə imtahanda iştirak edə bilməzsiniz."
+                        : "İmtahan parametri uyğun olmadığı üçün iştirak edə bilməzsiniz."}
+                    </p>
                   </div>
                 ) : isToday ? (
                   <div className="p-6 bg-indigo-600 text-white text-center flex flex-col items-center justify-center h-full hover:bg-indigo-700 transition-all duration-300">
