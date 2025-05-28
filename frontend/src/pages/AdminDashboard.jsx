@@ -4,6 +4,7 @@ import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import TimeExtensionModal from "../components/TimeExtensionModal";
+import ForceSubmitModal from "../components/ForceSubmitModal";
 
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
@@ -23,7 +24,13 @@ const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
   const navigate = useNavigate();
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
+  const [isForceSubmitModalOpen, setIsForceSubmitModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [examParamForm, setExamParamForm] = useState({
+    studentId: "",
+    subjectGroup: "",
+    newEP: "10",
+  });
 
   useEffect(() => {
     // Fetch initial active students
@@ -67,27 +74,40 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  const handleForceSubmit = (studentId, subjectCode) => {
-    fetch(`${API_BASE}/force-submit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ studentId, subjectCode }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        toast.success("İmtahan bitirildi.");
-        setActiveStudents((prev) =>
-          prev.filter((student) => student.id !== studentId)
-        );
-      })
-      .catch((err) => {
-        console.error("Force submit error:", err);
-        toast.error(`İmtahanı bitirmək mümkün olmadı: ${err.message}`);
+  const handleForceSubmitClick = (student) => {
+    setSelectedStudent(student);
+    setIsForceSubmitModalOpen(true);
+  };
+
+  const handleForceSubmitConfirm = async () => {
+    if (!selectedStudent) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/force-submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          studentId: selectedStudent.id,
+          subjectCode: selectedStudent.subjectCode,
+        }),
       });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      toast.success("İmtahan bitirildi.");
+      setActiveStudents((prev) =>
+        prev.filter((student) => student.id !== selectedStudent.id)
+      );
+      setIsForceSubmitModalOpen(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      console.error("Force submit error:", err);
+      toast.error(`İmtahanı bitirmək mümkün olmadı: ${err.message}`);
+    }
   };
 
   const handleExtendTime = (studentId) => {
@@ -137,28 +157,34 @@ const AdminDashboard = () => {
     window.location.reload();
   };
 
-  // const handleUpload = async (e) => {
-  //   e.preventDefault();
-  //   const formData = new FormData();
-  //   formData.append("file", e.target.docxFile.files[0]);
-  //   formData.append("subjectCode", e.target.subjectCode.value);
+  const handleExamParamUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_BASE}/update-exam-parameter`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(examParamForm),
+      });
 
-  //   try {
-  //     const res = await fetch(`${API_BASE}/upload-questions`, {
-  //       method: "POST",
-  //       headers: {
-  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //       },
-  //       body: formData,
-  //     });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
 
-  //     const result = await res.json();
-  //     alert(result.message || "Test yükləndi.");
-  //   } catch (err) {
-  //     alert("Xəta baş verdi.");
-  //     console.error(err);
-  //   }
-  // };
+      toast.success("İmtahan parametri yeniləndi!");
+      setExamParamForm({
+        studentId: "",
+        subjectGroup: "",
+        newEP: "10",
+      });
+    } catch (error) {
+      console.error("Update exam parameter error:", error);
+      toast.error(
+        `İmtahan parametrini yeniləmək mümkün olmadı: ${error.message}`
+      );
+    }
+  };
 
   const formattedString = (str) => {
     if (!str) return "";
@@ -179,31 +205,79 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      {/* <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Test Yüklə (.docx)</h3>
-        <form onSubmit={handleUpload} className="flex items-center gap-4">
-          <input
-            type="file"
-            name="docxFile"
-            accept=".docx"
-            required
-            className="border p-2 rounded"
-          />
-          <input
-            type="text"
-            name="subjectCode"
-            placeholder="Fənn kodu"
-            required
-            className="border p-2 rounded"
-          />
+      {/* Exam Parameter Management Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          İmtahan Parametrini Yenilə
+        </h3>
+        <form onSubmit={handleExamParamUpdate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tələbə Kodu
+              </label>
+              <input
+                type="text"
+                value={examParamForm.studentId}
+                onChange={(e) =>
+                  setExamParamForm((prev) => ({
+                    ...prev,
+                    studentId: e.target.value,
+                  }))
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fənn Qrupu
+              </label>
+              <input
+                type="text"
+                value={examParamForm.subjectGroup}
+                onChange={(e) =>
+                  setExamParamForm((prev) => ({
+                    ...prev,
+                    subjectGroup: e.target.value,
+                  }))
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                İmtahan Parametri
+              </label>
+              <input
+                type="number"
+                value={examParamForm.newEP}
+                onChange={(e) =>
+                  setExamParamForm((prev) => ({
+                    ...prev,
+                    newEP: e.target.value,
+                  }))
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+                min="0"
+                placeholder="İmtahan parametrini daxil edin"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Məlum parametrlər: 10 (icazə var), 31 (qayıb limiti), 32 (təhsil
+                haqqı)
+              </p>
+            </div>
+          </div>
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
           >
-            Yüklə
+            Yenilə
           </button>
         </form>
-      </div> */}
+      </div>
 
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">
@@ -250,9 +324,7 @@ const AdminDashboard = () => {
                     <td className="p-4">
                       <div className="flex gap-3">
                         <button
-                          onClick={() =>
-                            handleForceSubmit(student.id, student.subjectCode)
-                          }
+                          onClick={() => handleForceSubmitClick(student)}
                           className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
                         >
                           İmtahanı Bitir
@@ -276,6 +348,15 @@ const AdminDashboard = () => {
         isOpen={isTimeModalOpen}
         onClose={() => setIsTimeModalOpen(false)}
         onConfirm={handleTimeConfirm}
+      />
+      <ForceSubmitModal
+        isOpen={isForceSubmitModalOpen}
+        onClose={() => {
+          setIsForceSubmitModalOpen(false);
+          setSelectedStudent(null);
+        }}
+        onConfirm={handleForceSubmitConfirm}
+        studentName={selectedStudent?.fullname}
       />
     </div>
   );
