@@ -104,14 +104,11 @@ router.post("/extend-time", authenticate, async (req, res) => {
   const { studentId, subjectCode, minutes } = req.body;
 
   if (
-    !studentId.match(/^\d{8}$/) ||
-    !subjectCode.match(/^[A-Za-z0-9]+$/) ||
+    !subjectCode?.match(/^[A-Za-z0-9]+$/) ||
     !Number.isInteger(minutes) ||
     minutes <= 0
   ) {
-    return res
-      .status(400)
-      .json({ error: "Invalid student ID, subject code, or minutes" });
+    return res.status(400).json({ error: "Invalid subject code or minutes" });
   }
 
   try {
@@ -149,11 +146,9 @@ router.post("/force-submit", authenticate, async (req, res) => {
 
   console.log(`Force submit request received:`, { studentId, subjectCode });
 
-  if (!studentId?.match(/^\d{8}$/) || !subjectCode?.match(/^[A-Za-z0-9]+$/)) {
+  if (!subjectCode?.match(/^[A-Za-z0-9]+$/)) {
     console.log("Invalid input:", { studentId, subjectCode });
-    return res
-      .status(400)
-      .json({ error: "Invalid student ID or subject code" });
+    return res.status(400).json({ error: "Invalid subject code" });
   }
 
   const roomId = `${studentId}_${subjectCode}`;
