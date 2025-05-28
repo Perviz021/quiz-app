@@ -12,7 +12,7 @@ export const initializeSocket = (server) => {
     cors: {
       origin: [
         "http://localhost:5173",
-        "http://192.168.9.30:3000",
+        "http://192.168.9.20:3000",
         "http://192.168.9.31:3000",
         "http://192.168.1.68:3000",
       ],
