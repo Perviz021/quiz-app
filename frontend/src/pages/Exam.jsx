@@ -64,6 +64,8 @@ const reducer = (state, action) => {
         showPopup: true,
         score: action.payload || 0,
       };
+    case "SHOW_POPUP":
+      return { ...state, showPopup: true };
     case "SHOW_CONFIRM_MODAL":
       return { ...state, showConfirmModal: true };
     case "HIDE_CONFIRM_MODAL":
@@ -207,15 +209,16 @@ const Exam = () => {
     submittedRef.current = state.submitted;
   }, [state.submitted]);
 
-  const forceSubmitHandler = useCallback(() => {
+  const forceSubmitHandler = () => {
+    console.log("Received force-submit event");
     if (!submittedRef.current) {
-      console.log("Received force-submit event");
+      console.log("Processing force submit...");
       submittedRef.current = true;
       setIsExamActive(false);
 
-      // Show warning to student with more prominent styling
+      // Show warning to student
       toast.warn(
-        "İmtahan admin tərəfindən dayandırıldı. Cavablarınız avtomatik təhvil verilir...",
+        "İmtahan admin tərəfindən dayandırıldı. İmtahan 0 bal ilə təhvil verildi.",
         {
           position: "top-center",
           autoClose: 5000,
@@ -227,49 +230,25 @@ const Exam = () => {
         }
       );
 
-      // Submit current answers within grace period
-      const formattedAnswers = state.questions.map((q) => ({
-        questionId: q.id,
-        selectedOption: state.answers[q.id] ?? -1,
-      }));
+      // Immediately mark as submitted with 0 points and show popup
+      console.log("Dispatching FORCE_SUBMIT action");
+      dispatch({ type: "FORCE_SUBMIT", payload: 0 });
+      console.log("Dispatching SET_SCORE action");
+      dispatch({ type: "SET_SCORE", payload: 0 });
 
-      fetch(`${API_BASE}/submit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          subjectCode: subjectCode,
-          answers: formattedAnswers,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.error) throw new Error(data.error);
-          dispatch({ type: "FORCE_SUBMIT", payload: data.score });
-          // Show completion message
-          toast.info("Cavablarınız uğurla təhvil verildi!", {
-            position: "top-center",
-            autoClose: 3000,
-          });
-        })
-        .catch((err) => {
-          console.error("Force submit failed:", err);
-          toast.error("Cavabları təhvil vermək mümkün olmadı.", {
-            position: "top-center",
-            autoClose: 5000,
-          });
-        });
+      // Show popup immediately
+      dispatch({ type: "SHOW_POPUP" });
+
+      // Navigate to review page after a short delay
+      console.log("Setting up navigation timeout");
+      setTimeout(() => {
+        console.log("Navigating to review page");
+        navigate(`/review/${subjectCode}`);
+      }, 2000);
     } else {
       console.log("Ignoring force-submit, already submitted");
     }
-  }, [subjectCode, state.questions, state.answers, setIsExamActive]);
-
-  const examStoppedHandler = useCallback(() => {
-    console.log("Received exam-stopped event from server");
-    navigate(`/review/${subjectCode}`);
-  }, [subjectCode, navigate]);
+  };
 
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
@@ -289,7 +268,6 @@ const Exam = () => {
     const extendTimeHandler = (extraMinutes) => {
       console.log(`Exam time extended by ${extraMinutes} minutes`);
       dispatch({ type: "EXTEND_TIME", payload: extraMinutes * 60 });
-      // Show time extension notification with more prominent styling
       toast.success(`İmtahan vaxtı ${extraMinutes} dəqiqə artırıldı!`, {
         position: "top-center",
         autoClose: 5000,
@@ -313,7 +291,8 @@ const Exam = () => {
       console.log("🟢 Socket connected:", socket.id);
       if (state.examStarted) {
         console.log("Joining exam room:", roomId.current);
-        socket.emit("join_exam", { roomId: roomId.current });
+        // Join the room using the room ID
+        socket.emit("join_room", roomId.current);
       }
     };
 
@@ -321,12 +300,14 @@ const Exam = () => {
       console.log("Socket reconnected!");
       if (state.examStarted) {
         console.log("Rejoining exam room after reconnect:", roomId.current);
-        socket.emit("join_exam", { roomId: roomId.current });
+        // Join the room using the room ID
+        socket.emit("join_room", roomId.current);
         toast.info("İmtahan bağlantısı bərpa olundu.");
       }
     };
 
     // Set up socket listeners
+    console.log("Setting up socket listeners");
     socket.on("connect", connectHandler);
     socket.on("reconnect", reconnectHandler);
     socket.on("reconnect_error", (error) => {
@@ -334,16 +315,28 @@ const Exam = () => {
       toast.error("Bağlantı bərpa edilə bilmədi.");
     });
     socket.on("error", errorHandler);
+
+    // Remove any existing listeners first
+    socket.off("force_submit");
+    // Add the force submit listener
     socket.on("force_submit", forceSubmitHandler);
-    socket.on("exam_stopped", examStoppedHandler);
+
     socket.on("extend_time", extendTimeHandler);
     socket.on("update_time", updateTimeHandler);
 
     // Join exam room on mount
     if (state.examStarted && socket.connected) {
       console.log("Initially joining exam room:", roomId.current);
-      socket.emit("join_exam", { roomId: roomId.current });
+      // Join the room using the room ID
+      socket.emit("join_room", roomId.current);
     }
+
+    // Debug socket connection
+    console.log("Socket connection status:", {
+      connected: socket.connected,
+      id: socket.id,
+      roomId: roomId.current,
+    });
 
     return () => {
       console.log("Cleaning up socket listeners");
@@ -352,17 +345,31 @@ const Exam = () => {
       socket.off("reconnect_error");
       socket.off("error", errorHandler);
       socket.off("force_submit", forceSubmitHandler);
-      socket.off("exam_stopped", examStoppedHandler);
       socket.off("extend_time", extendTimeHandler);
       socket.off("update_time", updateTimeHandler);
     };
-  }, [
-    subjectCode,
-    navigate,
-    state.examStarted,
-    forceSubmitHandler,
-    examStoppedHandler,
-  ]);
+  }, [subjectCode, navigate, state.examStarted, setIsExamActive]);
+
+  // Add socket connection status check
+  useEffect(() => {
+    if (state.examStarted) {
+      const checkConnection = () => {
+        console.log("Socket connection check:", {
+          connected: socket.connected,
+          id: socket.id,
+          roomId: roomId.current,
+        });
+      };
+
+      // Check immediately
+      checkConnection();
+
+      // And every 5 seconds
+      const interval = setInterval(checkConnection, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [state.examStarted]);
 
   const handleAnswer = (questionId, optionIndex) => {
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
@@ -469,7 +476,6 @@ const Exam = () => {
               <p>7. Stol, stul və divarlara yazı yazmaq qadağandır.</p>
               <p>8. Digər tələbə yoldaşına kömək etmək qadağandır.</p>
               <p>9. Kompüterdə başqa səhifə açmak qadağandır.</p>
-              <p>10. Qaydalara riayət etməmək cəzalandırılır.</p>
             </div>
 
             <div className="flex items-center mt-6">
