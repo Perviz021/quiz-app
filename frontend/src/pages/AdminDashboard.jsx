@@ -92,13 +92,15 @@ const AdminDashboard = () => {
         body: JSON.stringify({
           studentId: selectedStudent.id,
           subjectCode: selectedStudent.subjectCode,
+          forceSubmit: true,
+          answers: [],
         }),
       });
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      toast.success("İmtahan bitirildi.");
+      toast.success("İmtahan bitirildi və tələbə 0 bal aldı.");
       setActiveStudents((prev) =>
         prev.filter((student) => student.id !== selectedStudent.id)
       );
