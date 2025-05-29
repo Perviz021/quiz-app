@@ -173,9 +173,13 @@ const Home = () => {
             return (
               <div
                 key={subject.id}
-                onClick={() => isEligible && handleSubjectClick(subject)}
+                onClick={() =>
+                  status === "teacher"
+                    ? handleSubjectClick(subject)
+                    : isEligible && handleSubjectClick(subject)
+                }
                 className={`bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-300 ${
-                  isEligible
+                  status === "teacher" || isEligible
                     ? "hover:scale-105 hover:shadow-xl cursor-pointer"
                     : "cursor-not-allowed opacity-75"
                 }`}
