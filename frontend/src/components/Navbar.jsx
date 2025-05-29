@@ -6,7 +6,7 @@ import { useState } from "react";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isExamActive, setIsExamActive } = useExam();
+  const { isExamActive } = useExam();
   const status = localStorage.getItem("status");
   const [studentInfo, setStudentInfo] = useState({
     fullname: localStorage.getItem("fullname") || "",
@@ -16,43 +16,9 @@ const Navbar = () => {
     ixtisaslasma: localStorage.getItem("ixtisaslasma") || "",
   });
 
-  const handleNavigation = async (path) => {
-    if (isExamActive) {
-      const confirmLeave = window.confirm(
-        "Siz imtahanı tərk edirsiniz! Əgər çıxarsanız, 0 bal alacaqsınız!"
-      );
-      if (confirmLeave) {
-        try {
-          await submitZeroScore();
-          setIsExamActive(false);
-          navigate(path);
-        } catch (error) {
-          console.log("Force submit failed:", error);
-        }
-      }
-    } else {
+  const handleNavigation = (path) => {
+    if (!isExamActive) {
       navigate(path);
-    }
-  };
-
-  const submitZeroScore = async () => {
-    const subjectCode = window.location.pathname.split("/").pop();
-    const token = localStorage.getItem("token");
-
-    const response = await fetch(`${API_BASE}/submit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        subjectCode: subjectCode,
-        answers: [],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to force submit");
     }
   };
 
@@ -91,7 +57,7 @@ const Navbar = () => {
           </div>
         )}
 
-        {status === "staff" && (
+        {(status === "staff" || status === "teacher") && (
           <div className="flex items-center space-x-4">
             <img src={logo} alt="BAAU Logo" className="size-24" />
             {/* <h1 className="text-2xl font-bold tracking-tight">BAAU</h1> */}
@@ -101,18 +67,38 @@ const Navbar = () => {
         <div className="flex items-center space-x-6">
           <button
             onClick={() => handleNavigation("/")}
-            className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
+            disabled={isExamActive}
+            className={`relative px-3 py-2 font-medium transition-colors duration-200 group ${
+              isExamActive
+                ? "text-gray-500 cursor-not-allowed"
+                : "text-gray-200 hover:text-white cursor-pointer"
+            }`}
           >
             Ana Səhifə
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+            <span
+              className={`absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform ${
+                isExamActive ? "scale-x-0" : "scale-x-0 group-hover:scale-x-100"
+              } transition-transform duration-300 origin-center`}
+            ></span>
           </button>
           {status === "student" && (
             <button
               onClick={() => handleNavigation("/results")}
-              className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
+              disabled={isExamActive}
+              className={`relative px-3 py-2 font-medium transition-colors duration-200 group ${
+                isExamActive
+                  ? "text-gray-500 cursor-not-allowed"
+                  : "text-gray-200 hover:text-white cursor-pointer"
+              }`}
             >
               Nəticələr
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+              <span
+                className={`absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform ${
+                  isExamActive
+                    ? "scale-x-0"
+                    : "scale-x-0 group-hover:scale-x-100"
+                } transition-transform duration-300 origin-center`}
+              ></span>
             </button>
           )}
           {/* {status === "staff" && (
@@ -128,17 +114,39 @@ const Navbar = () => {
             <>
               <button
                 onClick={() => handleNavigation("/admin/export-questions")}
-                className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
+                disabled={isExamActive}
+                className={`relative px-3 py-2 font-medium transition-colors duration-200 group ${
+                  isExamActive
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-gray-200 hover:text-white cursor-pointer"
+                }`}
               >
                 Sualları Yüklə
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform ${
+                    isExamActive
+                      ? "scale-x-0"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  } transition-transform duration-300 origin-center`}
+                ></span>
               </button>
               <button
                 onClick={() => handleNavigation("/admin/protocol")}
-                className="relative px-3 py-2 text-gray-200 font-medium hover:text-white transition-colors duration-200 group cursor-pointer"
+                disabled={isExamActive}
+                className={`relative px-3 py-2 font-medium transition-colors duration-200 group ${
+                  isExamActive
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-gray-200 hover:text-white cursor-pointer"
+                }`}
               >
                 Protokol
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform ${
+                    isExamActive
+                      ? "scale-x-0"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  } transition-transform duration-300 origin-center`}
+                ></span>
               </button>
             </>
           )}
