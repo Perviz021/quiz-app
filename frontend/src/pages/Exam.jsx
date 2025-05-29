@@ -374,14 +374,43 @@ const Exam = () => {
     useCallback(
       (e) => {
         if (state.examStarted && !state.submitted) {
-          handleSubmit();
+          // Show warning toast instead of submitting
+          toast.warning("İmtahan səhifəsindən çıxmaq istədiyinizə əminsiniz?", {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           e.preventDefault();
           e.returnValue = "Are you sure you want to leave?";
         }
       },
-      [state.examStarted, state.submitted, handleSubmit]
+      [state.examStarted, state.submitted]
     )
   );
+
+  // Add visibility change handler
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (state.examStarted && !state.submitted && document.hidden) {
+        toast.warning("İmtahan səhifəsindən çıxmaq qadağandır!", {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [state.examStarted, state.submitted]);
 
   useEffect(() => {
     let timer;
