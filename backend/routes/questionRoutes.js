@@ -39,24 +39,6 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
         .json({ error: "You have already taken this exam." });
     }
 
-    // Get the language for this subject from FTP table
-    // const [subjectInfo] = await db.query(
-    //   "SELECT lang FROM FTP WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
-    //   [studentId, subjectCode]
-    // );
-
-    // console.log("Subject info from FTP:", subjectInfo);
-
-    // if (subjectInfo.length === 0) {
-    //   console.log("No subject info found in FTP table");
-    //   return res
-    //     .status(404)
-    //     .json({ error: "Subject not found for this student in FTP table." });
-    // }
-
-    // const language = subjectInfo[0].lang;
-    // console.log("Language found:", language);
-
     // ✅ Fetch questions
     const [questions] = await db.query(
       "SELECT * FROM questions WHERE `fənnin_kodu` = ? AND lang = ? ORDER BY RAND() LIMIT 50",
