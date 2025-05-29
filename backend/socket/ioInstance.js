@@ -4,6 +4,11 @@ import db from "../db.js";
 let io;
 
 export const initSocket = (server) => {
+  if (io) {
+    console.log("Socket.IO already initialized");
+    return io;
+  }
+
   io = new Server(server, {
     cors: {
       origin: process.env.CLIENT_URL || "http://localhost:5173",
@@ -14,6 +19,12 @@ export const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     console.log("🔌 New socket connection:", socket.id);
+
+    socket.on("join_room", (roomId) => {
+      console.log(`Socket ${socket.id} joining room:`, roomId);
+      socket.join(roomId);
+      console.log(`Socket ${socket.id} joined room:`, roomId);
+    });
 
     socket.on("join_exam", async ({ roomId }) => {
       if (!roomId) {
