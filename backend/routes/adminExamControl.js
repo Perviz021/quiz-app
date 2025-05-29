@@ -5,6 +5,32 @@ import { getIO } from "../socket/ioInstance.js";
 
 const router = express.Router();
 
+// Set up socket event handlers
+const setupSocketHandlers = (io) => {
+  io.on("connection", (socket) => {
+    console.log("New socket connection:", socket.id);
+
+    socket.on("join_room", (roomId) => {
+      console.log(`Socket ${socket.id} joining room:`, roomId);
+      socket.join(roomId);
+      console.log(`Socket ${socket.id} joined room:`, roomId);
+    });
+
+    socket.on("join_exam", ({ roomId }) => {
+      console.log(`Socket ${socket.id} joining exam room:`, roomId);
+      socket.join(roomId);
+      console.log(`Socket ${socket.id} joined exam room:`, roomId);
+    });
+  });
+};
+
+// Initialize socket handlers when the server starts
+let io;
+export const initAdminSocket = (socketIO) => {
+  io = socketIO;
+  setupSocketHandlers(io);
+};
+
 router.get("/active-students", authenticate, async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -198,10 +224,14 @@ router.post("/force-submit", authenticate, async (req, res) => {
           .json({ error: "Force submit already in progress" });
       }
 
-      // Set force submit flag
+      // Immediately update result with 0 points
       const updateResult = await connection.query(
         `UPDATE results 
-         SET force_submit = 1, 
+         SET submitted = 1, 
+             submitted_at = NOW(),
+             score = 0,
+             total_questions = 0,
+             force_submit = 1,
              force_submit_time = NOW()
          WHERE id = ? AND submitted = 0`,
         [examStatus[0].id]
@@ -210,98 +240,49 @@ router.post("/force-submit", authenticate, async (req, res) => {
       console.log("Update result:", updateResult);
 
       // Notify student about force submit
-      io.to(roomId).emit("force_submit");
-      console.log("Sent force_submit event to room:", roomId);
+      console.log("Emitting force_submit event to room:", roomId);
+      try {
+        // First check if the room exists
+        const room = io.sockets.adapter.rooms.get(roomId);
+        console.log("Room exists:", !!room);
+        if (room) {
+          console.log("Number of clients in room:", room.size);
+        }
+
+        // Emit to specific room
+        io.to(roomId).emit("force_submit");
+        console.log("Force submit event emitted");
+
+        // Also try emitting to all sockets in the room
+        const sockets = await io.in(roomId).fetchSockets();
+        console.log("Number of sockets in room:", sockets.length);
+        sockets.forEach((socket) => {
+          console.log("Emitting to socket:", socket.id);
+          socket.emit("force_submit");
+        });
+
+        // If no sockets found, try to find the socket by student ID
+        if (sockets.length === 0) {
+          const allSockets = await io.fetchSockets();
+          const studentSocket = allSockets.find(
+            (s) => s.handshake.auth.studentId === studentId
+          );
+          if (studentSocket) {
+            console.log("Found student socket directly, emitting force_submit");
+            studentSocket.emit("force_submit");
+          }
+        }
+      } catch (err) {
+        console.error("Error emitting force_submit event:", err);
+      }
 
       // Commit transaction
       await connection.commit();
       console.log("Transaction committed");
 
-      // Set timeout for final submission
-      setTimeout(async () => {
-        try {
-          console.log("Starting force submit cleanup");
-          const conn = await db.getConnection();
-
-          try {
-            await conn.beginTransaction();
-
-            // Get current answers first
-            const [answers] = await conn.query(
-              `SELECT question_id, selected_option 
-               FROM answers 
-               WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-              [studentId, subjectCode]
-            );
-
-            console.log(`Found ${answers.length} answers to process`);
-
-            // Calculate score if there are answers
-            let score = 0;
-            let totalQuestions = 0;
-
-            if (answers.length > 0) {
-              const questionIds = answers.map((a) => a.question_id);
-              const [questions] = await conn.query(
-                `SELECT id, correct_option 
-                 FROM questions 
-                 WHERE id IN (?)`,
-                [questionIds]
-              );
-
-              console.log(`Found ${questions.length} questions for scoring`);
-
-              totalQuestions = answers.length;
-              score = answers.reduce((acc, ans) => {
-                const question = questions.find(
-                  (q) => q.id === ans.question_id
-                );
-                return (
-                  acc +
-                  (question && question.correct_option === ans.selected_option
-                    ? 1
-                    : 0)
-                );
-              }, 0);
-
-              console.log("Calculated score:", { score, totalQuestions });
-            }
-
-            // Update final result
-            const updateResult = await conn.query(
-              `UPDATE results 
-               SET submitted = 1, 
-                   submitted_at = NOW(),
-                   score = ?,
-                   total_questions = ?
-               WHERE id = ? AND submitted = 0`,
-              [score, totalQuestions, examStatus[0].id]
-            );
-
-            console.log("Final update result:", updateResult);
-
-            await conn.commit();
-
-            // Notify about final submission
-            io.to(roomId).emit("exam_stopped");
-            console.log("Sent exam_stopped event");
-          } catch (err) {
-            await conn.rollback();
-            console.error("Error in force-submit cleanup transaction:", err);
-            console.error("Error stack:", err.stack);
-          } finally {
-            conn.release();
-          }
-        } catch (err) {
-          console.error("Error in force-submit cleanup:", err);
-          console.error("Error stack:", err.stack);
-        }
-      }, 10000);
-
       res.json({
-        message: `Force submit initiated for student ${studentId}`,
+        message: `Force submit completed for student ${studentId}`,
         roomId,
-        graceEndTime: new Date(Date.now() + 10000).toISOString(),
       });
     } catch (err) {
       console.error("Error during force submit transaction:", err);
