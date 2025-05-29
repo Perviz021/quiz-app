@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import API_BASE from "../config/api";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     try {
       const response = await fetch(`${API_BASE}/login`, {
@@ -47,7 +47,14 @@ const Login = ({ setToken, setSubjects }) => {
         navigate("/teacher");
       }
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -57,12 +64,6 @@ const Login = ({ setToken, setSubjects }) => {
         <h1 className="text-4xl font-bold text-center text-gray-900 mb-8 tracking-tight">
           Xoş Gəlmisiniz
         </h1>
-
-        {error && (
-          <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg mb-6 text-center animate-fade-in">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
