@@ -76,7 +76,7 @@ router.post("/update-exam-parameter", authenticate, async (req, res) => {
     if (req.student.status !== "staff") {
       return res
         .status(403)
-        .json({ error: "Only staff can update exam parameters" });
+        .json({ error: "Yalnız admin imtahan parametrlərini yeniləyə bilər!" });
     }
 
     const [result] = await db.query(
@@ -87,13 +87,15 @@ router.post("/update-exam-parameter", authenticate, async (req, res) => {
     if (result.affectedRows === 0) {
       return res
         .status(404)
-        .json({ error: "Student or subject group not found" });
+        .json({ error: "Tələbə və ya fənn qrupu tapılmadı" });
     }
 
-    res.json({ message: "Exam parameter updated successfully" });
+    res.json({ message: "İmtahan parametri uğurla yeniləndi" });
   } catch (error) {
-    console.error("Update exam parameter error:", error);
-    res.status(500).json({ error: "Failed to update exam parameter" });
+    console.error("İmtahan parametrini yeniləmək mümkün olmadı:", error);
+    res
+      .status(500)
+      .json({ error: "İmtahan parametrini yeniləmək mümkün olmadı" });
   }
 });
 
