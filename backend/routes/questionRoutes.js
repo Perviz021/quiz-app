@@ -41,7 +41,12 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
 
     // ✅ Fetch questions
     const [questions] = await db.query(
-      "SELECT * FROM questions WHERE `fənnin_kodu` = ? AND lang = ? ORDER BY RAND() LIMIT 50",
+      `SELECT DISTINCT id, question, option1, option2, option3, option4, option5, correct_option 
+       FROM questions 
+       WHERE \`fənnin_kodu\` = ? AND lang = ? 
+       GROUP BY id 
+       ORDER BY RAND() 
+       LIMIT 50`,
       [subjectCode, lang]
     );
 
