@@ -245,7 +245,14 @@ router.post("/results/update", async (req, res) => {
 
 // POST /api/results/export-excel-python
 router.post("/results/export-excel-python", async (req, res) => {
-  const protocolData = req.body;
+  const protocolData = {
+    students: Array.isArray(req.body) ? req.body : req.body.students || [],
+    // Optionally, add other header fields if needed
+    ...(!Array.isArray(req.body) ? req.body : {}),
+  };
+
+  // Log the data sent to Python for debugging
+  console.log("Export protocolData:", JSON.stringify(protocolData, null, 2));
 
   // Path to the Python script
   const pythonScriptPath = path.join(
@@ -266,9 +273,6 @@ router.post("/results/export-excel-python", async (req, res) => {
   // Spawn the Python process with UTF-8 encoding
   const pythonProcess = spawn("python", [pythonScriptPath], {
     stdio: ["pipe", "pipe", "pipe"], // Use pipes for stdin, stdout, stderr
-    // Default encoding is usually utf8, but explicitly setting can help
-    // This primarily affects the Node.js side's interpretation of the pipes.
-    // The Python script handles its internal encoding.
     encoding: "utf8",
   });
 
@@ -276,7 +280,6 @@ router.post("/results/export-excel-python", async (req, res) => {
   let errorOutput = "";
 
   // Send data to Python script via stdin
-  // Explicitly write as UTF-8 string
   pythonProcess.stdin.write(JSON.stringify(protocolData), "utf8");
   pythonProcess.stdin.end();
 
@@ -302,10 +305,17 @@ router.post("/results/export-excel-python", async (req, res) => {
 
       if (outputFilePath && filename) {
         // Python script succeeded, send the generated file
-        res.download(outputFilePath, filename, (err) => {
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`
+        );
+        res.setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8"
+        );
+        res.sendFile(outputFilePath, (err) => {
           if (err) {
             console.error("Error sending file:", err);
-            // If download fails, make sure to still try to delete the temp file
           }
           // Clean up the temporary file
           fs.unlink(outputFilePath, (unlinkErr) => {
