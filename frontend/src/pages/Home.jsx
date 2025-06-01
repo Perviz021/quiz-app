@@ -105,7 +105,7 @@ const Home = () => {
     return today;
   };
 
-  // Parse exam_date (DD/MM/YYYY) and normalize to midnight
+  // Parse exam_date (YYYY-MM-DD HH:mm:ss) and normalize to midnight
   const parseExamDate = (examDate) => {
     try {
       if (!examDate) {
@@ -115,9 +115,10 @@ const Home = () => {
 
       console.log("Parsing exam date:", examDate);
 
-      // Handle DD/MM/YYYY format
-      const [day, month, year] = examDate.split("/").map(Number);
-      console.log("Split date parts:", { day, month, year });
+      // Handle YYYY-MM-DD HH:mm:ss format
+      const [datePart] = examDate.split(" "); // Split to get just the date part
+      const [year, month, day] = datePart.split("-").map(Number);
+      console.log("Split date parts:", { year, month, day });
 
       if (!day || !month || !year) {
         console.log("Invalid date parts");
