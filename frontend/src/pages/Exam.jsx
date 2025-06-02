@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.9.31:5000";
+  : "http://192.168.1.66:5000";
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
@@ -606,7 +606,23 @@ const Exam = () => {
       </div>
 
       {state.examStarted && state.questions.length > 0 && (
-        <div className="fixed top-20 right-4 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-2xl">
+        <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-2xl transition-all duration-300 hover:right-4 group">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 bg-white p-2 rounded-l-lg shadow-lg border border-gray-200 border-r-0">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">
             Sual Naviqasiyası
           </h3>
