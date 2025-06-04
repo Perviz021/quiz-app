@@ -16,6 +16,7 @@ import uploadQuestionRoutes from "./routes/uploadQuestionRoutes.js";
 import addQuestion from "./routes/addQuestion.js";
 import examSubmission from "./routes/examSubmission.js";
 import exportRoutes from "./routes/exportRoutes.js";
+import examRequestsRoutes from "./routes/examRequests.js";
 
 const app = express();
 const server = createServer(app);
@@ -47,6 +48,7 @@ app.use("/api", uploadQuestionRoutes);
 app.use("/api", addQuestion);
 app.use("/api", examSubmission);
 app.use("/api", exportRoutes);
+app.use("/api", examRequestsRoutes);
 
 const PORT = process.env.PORT || 5000;
 
