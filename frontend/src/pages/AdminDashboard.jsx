@@ -254,6 +254,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveAll = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/approve-all-exam-requests`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setExamRequests([]); // clear requests from UI
+      toast.success(data.message || "Bütün sorğular təsdiqləndi!");
+    } catch (error) {
+      console.error("Error approving all requests:", error);
+      toast.error("Bütün sorğuları təsdiqləmək mümkün olmadı.");
+    }
+  };
+
   const formattedString = (str) => {
     if (!str) return "";
     return str.slice(0, str.lastIndexOf(" ") + 1).trim();
@@ -284,6 +304,16 @@ const AdminDashboard = () => {
           </p>
         ) : (
           <div className="overflow-x-auto">
+            {/* ✅ Add Approve All Button above the table */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={handleApproveAll}
+                className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Təsdiqlə Hamısını
+              </button>
+            </div>
+
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-indigo-600 text-white">
