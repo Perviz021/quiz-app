@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../db.js";
 import { authenticate } from "../middleware/auth.js";
+import { getIO } from "../socket/ioInstance.js";
 
 const router = express.Router();
 
@@ -54,12 +55,12 @@ router.post("/request-exam", authenticate, async (req, res) => {
       [studentId]
     );
     const [subjectInfo] = await db.query(
-      "SELECT name FROM subjects WHERE id = ?",
+      "SELECT `Fənnin adı` as name FROM subjects WHERE `Fənnin kodu` = ?",
       [subjectId]
     );
 
     // Emit socket event for new request
-    req.app.get("io").emit("new_exam_request", {
+    getIO().emit("new_exam_request", {
       id: result.insertId,
       studentId,
       studentName: studentInfo[0].fullname,
@@ -88,7 +89,7 @@ router.get("/pending-exam-requests", authenticate, async (req, res) => {
               s.\`Soyadı, adı və ata adı\` as studentName, sub.\`Fənnin adı\` as subjectName
        FROM exam_requests er
        JOIN students s ON er.student_id = s.\`Tələbə_kodu\`
-       JOIN subjects sub ON er.subject_id = sub.\`Fənn kodu\`
+       JOIN subjects sub ON er.subject_id = sub.\`Fənnin kodu\`
        WHERE er.status = 'pending'
        ORDER BY er.created_at DESC`
     );
@@ -126,7 +127,7 @@ router.post("/handle-exam-request", authenticate, async (req, res) => {
     ]);
 
     // Emit socket event for request response
-    req.app.get("io").emit("exam_request_response", {
+    getIO().emit("exam_request_response", {
       studentId: request[0].student_id,
       subjectId: request[0].subject_id,
       status: action === "approve" ? "approved" : "rejected",
@@ -141,6 +142,47 @@ router.post("/handle-exam-request", authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error("Error handling exam request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/approve-all-exam-requests", authenticate, async (req, res) => {
+  try {
+    if (req.student.status !== "staff") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const [pendingRequests] = await db.query(
+      `SELECT id, student_id, subject_id FROM exam_requests WHERE status = 'pending'`
+    );
+
+    if (pendingRequests.length === 0) {
+      return res.json({ message: "No pending requests to approve." });
+    }
+
+    // Update all requests to 'approved'
+    const requestIds = pendingRequests.map((r) => r.id);
+    await db.query(
+      `UPDATE exam_requests SET status = 'approved' WHERE id IN (?)`,
+      [requestIds]
+    );
+
+    // Emit socket events for each
+    const io = getIO();
+    pendingRequests.forEach((request) => {
+      io.emit("exam_request_response", {
+        studentId: request.student_id,
+        subjectId: request.subject_id,
+        status: "approved",
+      });
+    });
+
+    res.json({
+      message: `${pendingRequests.length} request(s) approved.`,
+      approvedRequests: requestIds,
+    });
+  } catch (error) {
+    console.error("Error approving all requests:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
