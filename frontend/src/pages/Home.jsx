@@ -166,12 +166,9 @@ const Home = () => {
         return null;
       }
 
-      console.log("Parsing exam date:", examDate);
-
       // Handle YYYY-MM-DD HH:mm:ss format
       const [datePart] = examDate.split(" "); // Split to get just the date part
       const [year, month, day] = datePart.split("-").map(Number);
-      console.log("Split date parts:", { year, month, day });
 
       if (!day || !month || !year) {
         console.log("Invalid date parts");
@@ -180,8 +177,6 @@ const Home = () => {
 
       const date = new Date(year, month - 1, day);
       date.setHours(0, 0, 0, 0);
-
-      console.log("Parsed date:", date);
 
       if (isNaN(date.getTime())) {
         console.log("Invalid date after parsing");
