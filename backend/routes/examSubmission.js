@@ -32,7 +32,7 @@ router.post("/submit", authenticate, async (req, res) => {
 
       if (examStatus.length === 0) {
         await connection.rollback();
-        return res.status(404).json({ error: "No active exam session found" });
+        return res.status(404).json({ error: "Aktiv imtahan tapılmadı" });
       }
 
       const exam = examStatus[0];
@@ -40,13 +40,13 @@ router.post("/submit", authenticate, async (req, res) => {
       // Check various submission conditions
       if (exam.submitted) {
         await connection.rollback();
-        return res.status(403).json({ error: "Exam already submitted" });
+        return res.status(403).json({ error: "Imtahan artıq bitmişdir" });
       }
 
       // For normal submission, check if time is up
       if (!exam.force_submit && exam.timeLeft <= 0) {
         await connection.rollback();
-        return res.status(403).json({ error: "Exam time has expired" });
+        return res.status(403).json({ error: "Imtahan vaxtı bitmişdir" });
       }
 
       // For force submit, check if within grace period (10 seconds)
@@ -108,7 +108,7 @@ router.post("/submit", authenticate, async (req, res) => {
       await connection.commit();
 
       res.json({
-        message: "Exam submitted successfully",
+        message: "Imtahan uğurla göndərildi",
         score,
         totalQuestions: questions.length,
       });
@@ -118,7 +118,7 @@ router.post("/submit", authenticate, async (req, res) => {
     }
   } catch (error) {
     console.error("Error submitting exam:", error);
-    res.status(500).json({ error: "Failed to submit exam" });
+    res.status(500).json({ error: "Imtahan göndərmə baş tutmadı" });
   } finally {
     // Release the connection back to the pool
     connection.release();
@@ -138,13 +138,13 @@ router.get("/pre-exam/:subjectCode", authenticate, async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Pre-exam score not found" });
+      return res.status(404).json({ error: "Pre-exam balı tapılmadı" });
     }
 
     res.json({ preExam: rows[0].preExam });
   } catch (error) {
     console.error("Error fetching pre-exam score:", error);
-    res.status(500).json({ error: "Failed to fetch pre-exam score" });
+    res.status(500).json({ error: "Pre-exam balını almaq baş tutmadı" });
   }
 });
 
