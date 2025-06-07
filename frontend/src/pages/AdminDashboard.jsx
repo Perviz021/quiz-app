@@ -22,6 +22,7 @@ const socket = io(SOCKET_SERVER_URL, {
 
 const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
+  const [examRequests, setExamRequests] = useState([]);
   const navigate = useNavigate();
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isForceSubmitModalOpen, setIsForceSubmitModalOpen] = useState(false);
@@ -49,6 +50,24 @@ const AdminDashboard = () => {
         toast.error(`Tələbələri yükləmək mümkün olmadı: ${err.message}`);
       });
 
+    // Fetch exam requests
+    fetch(`${API_BASE}/pending-exam-requests`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setExamRequests(data.requests || []);
+      })
+      .catch((err) => {
+        console.error("Error fetching exam requests:", err);
+        toast.error(
+          `İmtahan sorğularını yükləmək mümkün olmadı: ${err.message}`
+        );
+      });
+
     // Socket.IO listeners
     socket.on("connect", () =>
       console.log("🟢 Admin socket connected:", socket.id)
@@ -56,6 +75,10 @@ const AdminDashboard = () => {
     socket.on("update_active_students", (students) => {
       console.log("Received active students update:", students);
       setActiveStudents(students || []);
+    });
+    socket.on("new_exam_request", (request) => {
+      setExamRequests((prev) => [...prev, request]);
+      toast.info("Yeni imtahan sorğusu gəldi!");
     });
     socket.on("student_disconnected", ({ studentId }) => {
       console.log(`Student ${studentId} disconnected`);
@@ -69,6 +92,7 @@ const AdminDashboard = () => {
     return () => {
       socket.off("connect");
       socket.off("update_active_students");
+      socket.off("new_exam_request");
       socket.off("student_disconnected");
       socket.off("error");
     };
@@ -188,6 +212,68 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleExamRequest = async (requestId, action) => {
+    try {
+      const response = await fetch(`${API_BASE}/handle-exam-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          requestId,
+          action, // "approve" or "reject"
+        }),
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      // Remove the handled request from the list
+      setExamRequests((prev) => prev.filter((req) => req.id !== requestId));
+
+      // Notify the student through socket
+      socket.emit("exam_request_response", {
+        studentId: data.studentId,
+        subjectId: data.subjectId,
+        status: action === "approve" ? "approved" : "rejected",
+      });
+
+      toast.success(
+        action === "approve"
+          ? "İmtahan sorğusu təsdiqləndi!"
+          : "İmtahan sorğusu rədd edildi!"
+      );
+    } catch (error) {
+      console.error("Handle exam request error:", error);
+      toast.error(
+        `İmtahan sorğusunu ${
+          action === "approve" ? "təsdiqləmək" : "rədd etmək"
+        } mümkün olmadı: ${error.message}`
+      );
+    }
+  };
+
+  const handleApproveAll = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/approve-all-exam-requests`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setExamRequests([]); // clear requests from UI
+      toast.success(data.message || "Bütün sorğular təsdiqləndi!");
+    } catch (error) {
+      console.error("Error approving all requests:", error);
+      toast.error("Bütün sorğuları təsdiqləmək mümkün olmadı.");
+    }
+  };
+
   const formattedString = (str) => {
     if (!str) return "";
     return str.slice(0, str.lastIndexOf(" ") + 1).trim();
@@ -205,6 +291,75 @@ const AdminDashboard = () => {
         >
           Çıxış
         </button>
+      </div>
+
+      {/* Exam Requests Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          İmtahan Sorğuları
+        </h3>
+        {examRequests.length === 0 ? (
+          <p className="text-gray-600 text-center">
+            Hal-hazırda gözləyən imtahan sorğusu yoxdur.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            {/* ✅ Add Approve All Button above the table */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={handleApproveAll}
+                className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Təsdiqlə Hamısını
+              </button>
+            </div>
+
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-indigo-600 text-white">
+                  <th className="p-4 text-left font-semibold">Tələbə</th>
+                  <th className="p-4 text-left font-semibold">Fənn</th>
+                  <th className="p-4 text-left font-semibold">Sorğu Vaxtı</th>
+                  <th className="p-4 text-left font-semibold">Əməliyyat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-b border-gray-200 hover:bg-indigo-50 transition-colors duration-200"
+                  >
+                    <td className="p-4 text-gray-800">{request.studentName}</td>
+                    <td className="p-4 text-gray-800">{request.subjectName}</td>
+                    <td className="p-4 text-gray-800">
+                      {new Date(request.requestTime).toLocaleString()}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() =>
+                            handleExamRequest(request.id, "approve")
+                          }
+                          className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
+                        >
+                          Təsdiqlə
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleExamRequest(request.id, "reject")
+                          }
+                          className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
+                        >
+                          Rədd Et
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Exam Parameter Management Section */}

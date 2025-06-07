@@ -10,7 +10,7 @@ import html2pdf from "html2pdf.js";
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.1.66:5000";
+  : "http://192.168.8.232:5000";
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,

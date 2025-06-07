@@ -2,11 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { formatDate } from "../utils/dateFormatter";
 import API_BASE from "../config/api";
+import { toast } from "react-toastify";
 
 const Home = () => {
   const [subjects, setSubjects] = useState([]);
   const [completedExams, setCompletedExams] = useState(new Set());
   const [fullname, setFullname] = useState();
+  const [examRequests, setExamRequests] = useState({});
   const navigate = useNavigate();
   const status = localStorage.getItem("status");
 
@@ -41,12 +43,27 @@ const Home = () => {
     setSubjects(formattedSubjects);
 
     if (status === "student") {
+      // Fetch completed exams
       fetch(`${API_BASE}/completed-exams`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
         .then((data) => setCompletedExams(new Set(data.completedExams)))
         .catch((err) => console.error("Error fetching completed exams:", err));
+
+      // Fetch exam requests
+      fetch(`${API_BASE}/exam-requests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const requestsMap = {};
+          data.requests.forEach((request) => {
+            requestsMap[request.subjectId] = request.status;
+          });
+          setExamRequests(requestsMap);
+        })
+        .catch((err) => console.error("Error fetching exam requests:", err));
     }
   }, [navigate, status]);
 
@@ -54,6 +71,34 @@ const Home = () => {
     localStorage.clear();
     navigate("/login");
     window.location.reload();
+  };
+
+  const handleRequestExam = async (subjectId) => {
+    try {
+      const response = await fetch(`${API_BASE}/request-exam`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ subjectId }),
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setExamRequests((prev) => ({
+        ...prev,
+        [subjectId]: "pending",
+      }));
+
+      toast.success(
+        "İmtahan üçün sorğu göndərildi. Admin təsdiqlədikdən sonra imtahana başlaya bilərsiniz."
+      );
+    } catch (error) {
+      console.error("Error requesting exam:", error);
+      toast.error("İmtahan sorğusu göndərilmədi. Xəta baş verdi.");
+    }
   };
 
   const handleSubjectClick = (subject) => {
@@ -79,6 +124,14 @@ const Home = () => {
           } else if (subject.ep !== 10) {
             alert(
               "İmtahana qatıla bilməzsiniz. İmtahan parametri uyğun deyil."
+            );
+            return;
+          }
+
+          // Check if exam request is approved
+          if (examRequests[subject.id] !== "approved") {
+            toast.error(
+              "İmtahana başlamaq üçün admin təsdiqi lazımdır. Zəhmət olmasa sorğu göndərin."
             );
             return;
           }
@@ -113,12 +166,9 @@ const Home = () => {
         return null;
       }
 
-      console.log("Parsing exam date:", examDate);
-
       // Handle YYYY-MM-DD HH:mm:ss format
       const [datePart] = examDate.split(" "); // Split to get just the date part
       const [year, month, day] = datePart.split("-").map(Number);
-      console.log("Split date parts:", { year, month, day });
 
       if (!day || !month || !year) {
         console.log("Invalid date parts");
@@ -127,8 +177,6 @@ const Home = () => {
 
       const date = new Date(year, month - 1, day);
       date.setHours(0, 0, 0, 0);
-
-      console.log("Parsed date:", date);
 
       if (isNaN(date.getTime())) {
         console.log("Invalid date after parsing");
@@ -170,6 +218,7 @@ const Home = () => {
             const isToday = isExamDateToday(subject.exam_date);
             const isCompleted = completedExams.has(subject.id);
             const isEligible = subject.ep === 10;
+            const requestStatus = examRequests[subject.id];
 
             return (
               <div
@@ -272,6 +321,24 @@ const Home = () => {
                       <span className="text-sm">Q/b: {subject.qaib}</span>
                     </p>
                     <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
+
+                    {requestStatus === "approved" ? (
+                      <button
+                        onClick={() => handleSubjectClick(subject)}
+                        className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200"
+                      >
+                        İmtahana Başla
+                      </button>
+                    ) : requestStatus === "pending" ? (
+                      <p className="mt-4 text-yellow-300">Sorğu gözləyir...</p>
+                    ) : (
+                      <button
+                        onClick={() => handleRequestExam(subject.id)}
+                        className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200"
+                      >
+                        İmtahan Sorğusu Göndər
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="p-6 bg-gray-100 text-gray-500 text-center cursor-not-allowed opacity-75 flex flex-col items-center justify-center h-full">

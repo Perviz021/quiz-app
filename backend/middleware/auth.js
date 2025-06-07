@@ -23,7 +23,6 @@ export const authenticate = async (req, res, next) => {
 
     const user = users[0];
     req.student = {
-      id: user.id,
       studentId: user.Tələbə_kodu,
       status: user.status,
       fullname: user["Soyadı, adı və ata adı"],
