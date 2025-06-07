@@ -38,8 +38,15 @@ const Popup = ({ score, preExam, onClose }) => {
     }
   };
 
+  const handleClose = () => {
+    console.log("Popup closed clicked");
+    if (typeof onClose === "function") {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-2xl bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-2xl bg-opacity-50 z-50">
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center transform transition-all duration-300 scale-100">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">İmtahan Bitdi</h2>
         <div className="space-y-4">
@@ -88,7 +95,7 @@ const Popup = ({ score, preExam, onClose }) => {
           </p>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="mt-6 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 cursor-pointer"
         >
           Bağla
