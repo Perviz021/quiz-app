@@ -10,6 +10,7 @@ const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
 router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
   try {
     const { subjectCode, lang } = req.params;
+    const { questionIds } = req.query;
     const studentId = req.student.studentId;
 
     console.log(
@@ -40,15 +41,30 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
     }
 
     // ✅ Fetch questions
-    const [questions] = await db.query(
-      `SELECT DISTINCT id, question, option1, option2, option3, option4, option5, correct_option 
-       FROM questions 
-       WHERE \`fənnin_kodu\` = ? AND lang = ? 
-       GROUP BY id 
-       ORDER BY RAND() 
-       LIMIT 50`,
-      [subjectCode, lang]
-    );
+    let questions;
+    if (questionIds) {
+      // If questionIds are provided, fetch those specific questions
+      const ids = questionIds.split(",").map((id) => parseInt(id));
+      [questions] = await db.query(
+        `SELECT DISTINCT id, question, option1, option2, option3, option4, option5, correct_option 
+         FROM questions 
+         WHERE \`fənnin_kodu\` = ? AND lang = ? AND id IN (?) 
+         GROUP BY id
+         ORDER BY FIELD(id, ?)`,
+        [subjectCode, lang, ids, ids]
+      );
+    } else {
+      // Otherwise fetch random questions as before
+      [questions] = await db.query(
+        `SELECT DISTINCT id, question, option1, option2, option3, option4, option5, correct_option 
+         FROM questions 
+         WHERE \`fənnin_kodu\` = ? AND lang = ? 
+         GROUP BY id 
+         ORDER BY RAND() 
+         LIMIT 50`,
+        [subjectCode, lang]
+      );
+    }
 
     console.log(`Found ${questions.length} questions`);
 
@@ -73,7 +89,7 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
     );
   } catch (error) {
     console.error("Error fetching questions:", error);
-    res.status(500).json({ error: "Internal Server Error: " + error.message });
+    res.status(500).json({ error: "Failed to fetch questions" });
   }
 });
 
