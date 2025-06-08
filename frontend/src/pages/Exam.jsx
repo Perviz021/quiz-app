@@ -10,7 +10,7 @@ import html2pdf from "html2pdf.js";
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.8.232:5000";
+  : "http://192.168.1.69:5000";
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
@@ -87,6 +87,75 @@ const Exam = () => {
   const [acceptedRules, setAcceptedRules] = useState(false);
   const roomId = useRef(null);
   const examContentRef = useRef(null);
+
+  // Add function to save answers to localStorage
+  const saveAnswersToLocalStorage = useCallback(
+    (answers) => {
+      try {
+        localStorage.setItem(
+          `exam_answers_${subjectCode}`,
+          JSON.stringify(answers)
+        );
+      } catch (error) {
+        console.error("Error saving answers to localStorage:", error);
+      }
+    },
+    [subjectCode]
+  );
+
+  // Add function to save question IDs to localStorage
+  const saveQuestionIdsToLocalStorage = useCallback(
+    (questions) => {
+      try {
+        const questionIds = questions.map((q) => q.id);
+        localStorage.setItem(
+          `exam_questions_${subjectCode}`,
+          JSON.stringify(questionIds)
+        );
+      } catch (error) {
+        console.error("Error saving question IDs to localStorage:", error);
+      }
+    },
+    [subjectCode]
+  );
+
+  // Add function to load question IDs from localStorage
+  const loadQuestionIdsFromLocalStorage = useCallback(() => {
+    try {
+      const savedQuestionIds = localStorage.getItem(
+        `exam_questions_${subjectCode}`
+      );
+      return savedQuestionIds ? JSON.parse(savedQuestionIds) : null;
+    } catch (error) {
+      console.error("Error loading question IDs from localStorage:", error);
+      return null;
+    }
+  }, [subjectCode]);
+
+  // Add function to clear saved answers and questions
+  const clearSavedExamData = useCallback(() => {
+    try {
+      localStorage.removeItem(`exam_answers_${subjectCode}`);
+      localStorage.removeItem(`exam_questions_${subjectCode}`);
+    } catch (error) {
+      console.error("Error clearing saved exam data:", error);
+    }
+  }, [subjectCode]);
+
+  // Add function to load answers from localStorage
+  const loadAnswersFromLocalStorage = useCallback(() => {
+    try {
+      const savedAnswers = localStorage.getItem(`exam_answers_${subjectCode}`);
+      if (savedAnswers) {
+        const parsedAnswers = JSON.parse(savedAnswers);
+        dispatch({ type: "SET_ANSWER", payload: parsedAnswers });
+        return true;
+      }
+    } catch (error) {
+      console.error("Error loading answers from localStorage:", error);
+    }
+    return false;
+  }, [subjectCode]);
 
   const downloadExamAsPDF = useCallback(() => {
     if (!examContentRef.current) return;
@@ -310,6 +379,7 @@ const Exam = () => {
           if (data.error) throw new Error(data.error);
           console.log("Submission successful, score:", data.score);
           dispatch({ type: "SET_SCORE", payload: data.score });
+          clearSavedExamData(); // Clear both answers and question IDs after successful submission
 
           // Get pre-exam score from localStorage
           const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
@@ -326,7 +396,7 @@ const Exam = () => {
         })
         .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
     });
-  }, [state, subjectCode, setIsExamActive]);
+  }, [state, subjectCode, setIsExamActive, clearSavedExamData]);
 
   const handleStartExam = async () => {
     try {
@@ -356,7 +426,16 @@ const Exam = () => {
       }
 
       // Fetch questions after starting the exam
-      fetchQuestions();
+      fetchQuestions().then(() => {
+        // Try to load saved answers after questions are fetched
+        const hasSavedAnswers = loadAnswersFromLocalStorage();
+        if (hasSavedAnswers) {
+          toast.info("Əvvəlki cavablarınız yükləndi.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        }
+      });
     } catch (error) {
       console.error("Failed to start exam:", error);
       dispatch({
@@ -369,12 +448,28 @@ const Exam = () => {
 
   const fetchQuestions = async () => {
     try {
-      const response = await fetch(
-        `${API_BASE}/questions/${subjectCode}/${lang}`,
-        {
+      // Try to get saved question IDs first
+      const savedQuestionIds = loadQuestionIdsFromLocalStorage();
+
+      let response;
+      if (savedQuestionIds) {
+        // If we have saved question IDs, fetch those specific questions
+        response = await fetch(
+          `${API_BASE}/questions/${subjectCode}/${lang}?questionIds=${savedQuestionIds.join(
+            ","
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+      } else {
+        // Otherwise fetch random questions as usual
+        response = await fetch(`${API_BASE}/questions/${subjectCode}/${lang}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+        });
+      }
 
       if (response.status === 403) {
         throw new Error("You have already taken this exam.");
@@ -385,6 +480,11 @@ const Exam = () => {
 
       const data = await response.json();
       dispatch({ type: "SET_QUESTIONS", payload: data });
+
+      // Save question IDs if this is a new exam session
+      if (!savedQuestionIds) {
+        saveQuestionIdsToLocalStorage(data);
+      }
     } catch (err) {
       dispatch({ type: "SET_ERROR", payload: err.message });
     }
@@ -565,7 +665,9 @@ const Exam = () => {
 
   const handleAnswer = (questionId, optionIndex) => {
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
+      const newAnswers = { ...state.answers, [questionId]: optionIndex };
       dispatch({ type: "SET_ANSWER", payload: { [questionId]: optionIndex } });
+      saveAnswersToLocalStorage(newAnswers);
     }
   };
 
