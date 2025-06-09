@@ -12,7 +12,9 @@ const Protocol = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
-    const [day, month, year] = dateStr.split("/");
+    // Split the date string to get only the date part (before the space)
+    const datePart = dateStr.split(" ")[0];
+    const [year, month, day] = datePart.split("-");
     return `${day}.${month}.${year}`;
   };
 
