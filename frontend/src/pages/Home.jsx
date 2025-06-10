@@ -73,7 +73,8 @@ const Home = () => {
     window.location.reload();
   };
 
-  const handleRequestExam = async (subjectId) => {
+  const handleRequestExam = async (subjectId, event) => {
+    event.stopPropagation(); // Stop event from bubbling up
     try {
       const response = await fetch(`${API_BASE}/request-exam`, {
         method: "POST",
@@ -293,11 +294,8 @@ const Home = () => {
                     </p>
                     <p className="text-sm mt-1">Müəllim: {subject.professor}</p>
                     <p className="text-sm text-red-600 mt-2">
-                      {subject.ep === 31
-                        ? "Qayıb limitini keçdiyinizə görə imtahanda iştirak edə bilməzsiniz."
-                        : subject.ep === 32
-                        ? "Təhsil haqqı ödənilmədiyinə görə imtahanda iştirak edə bilməzsiniz."
-                        : "İmtahan parametri uyğun olmadığı üçün iştirak edə bilməzsiniz."}
+                      İmtahan parametri uyğun olmadığı üçün iştirak edə
+                      bilməzsiniz.
                     </p>
                   </div>
                 ) : isToday ? (
@@ -333,7 +331,7 @@ const Home = () => {
                       <p className="mt-4 text-yellow-300">Sorğu gözləyir...</p>
                     ) : (
                       <button
-                        onClick={() => handleRequestExam(subject.id)}
+                        onClick={(e) => handleRequestExam(subject.id, e)}
                         className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200"
                       >
                         İmtahan Sorğusu Göndər
