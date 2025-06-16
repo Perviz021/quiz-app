@@ -732,10 +732,78 @@ const Exam = () => {
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
       timer = setInterval(() => dispatch({ type: "DECREMENT_TIME" }), 1000);
     } else if (state.timeLeft <= 0 && state.examStarted && !state.submitted) {
-      handleSubmit();
+      // Show warning toast
+      toast.warning(
+        "İmtahan vaxtı bitdi! Cavablarınız avtomatik olaraq yadda saxlanılır...",
+        {
+          position: "top-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
+      );
+
+      // Set exam as inactive immediately
+      setIsExamActive(false);
+
+      // Submit the exam normally
+      const formattedAnswers = state.questions.map((q) => ({
+        questionId: q.id,
+        selectedOption: state.answers[q.id] ?? -1,
+      }));
+
+      fetch(`${API_BASE}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subjectCode,
+          answers: formattedAnswers,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) throw new Error(data.error);
+          console.log("Time expired submission successful, score:", data.score);
+          dispatch({ type: "SET_SCORE", payload: data.score });
+          dispatch({ type: "SHOW_POPUP" });
+          clearSavedExamData();
+
+          // Get pre-exam score from localStorage
+          const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+          const currentSubject = subjects.find(
+            (s) => s["Fənnin kodu"] === subjectCode
+          );
+          const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
+          dispatch({ type: "SET_PRE_EXAM", payload: preExam });
+
+          // Navigate to review page after a short delay
+          setTimeout(() => {
+            navigate(`/review/${subjectCode}`);
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error("Time expired submission error:", err);
+          toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
+          dispatch({ type: "SET_ERROR", payload: err.message });
+        });
     }
     return () => clearInterval(timer);
-  }, [state.examStarted, state.timeLeft, state.submitted, handleSubmit]);
+  }, [
+    state.examStarted,
+    state.timeLeft,
+    state.submitted,
+    state.questions,
+    state.answers,
+    subjectCode,
+    navigate,
+    clearSavedExamData,
+    setIsExamActive,
+  ]);
 
   const scrollToQuestion = (index) => {
     questionRefs.current[index]?.scrollIntoView({
