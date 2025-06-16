@@ -263,21 +263,58 @@ export const initializeSocket = (server) => {
           console.log(`Regular exam time expired for ${exam.studentId}`);
 
           try {
-            // Mark as submitted
+            // Get current answers
+            const [answers] = await db.query(
+              `SELECT question_id, selected_option 
+               FROM answers 
+               WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
+              [exam.studentId, exam.subjectCode]
+            );
+
+            // Calculate score
+            let score = 0;
+            let totalQuestions = answers.length;
+
+            if (answers.length > 0) {
+              const [questions] = await db.query(
+                `SELECT id, correct_option 
+                 FROM questions 
+                 WHERE id IN (?)`,
+                [answers.map((a) => a.question_id)]
+              );
+
+              score = answers.reduce((acc, ans) => {
+                const question = questions.find(
+                  (q) => q.id === ans.question_id
+                );
+                return (
+                  acc +
+                  (question && question.correct_option === ans.selected_option
+                    ? 1
+                    : 0)
+                );
+              }, 0);
+            }
+
+            // Update final result
             await db.query(
               `UPDATE results 
                SET submitted = 1,
-                   submitted_at = NOW()
+                   submitted_at = NOW(),
+                   score = ?,
+                   total_questions = ?
                WHERE id = ? AND submitted = 0`,
-              [exam.id]
+              [score, totalQuestions, exam.id]
             );
 
-            // Notify client
-            io.to(roomId).emit("force_submit");
+            // Notify client about submission
             io.to(roomId).emit("exam_stopped");
+            console.log(
+              `Time expired submission completed for ${exam.studentId}, score: ${score}/${totalQuestions}`
+            );
           } catch (err) {
             console.error(
-              `Error processing exam expiration for ${exam.studentId}:`,
+              `Error processing time expiration for ${exam.studentId}:`,
               err
             );
           }
