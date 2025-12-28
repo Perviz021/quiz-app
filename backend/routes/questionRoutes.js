@@ -177,4 +177,74 @@ router.put("/questions/update/:questionId", authenticate, async (req, res) => {
   }
 });
 
+// Delete a question
+router.delete(
+  "/questions/delete/:questionId",
+  authenticate,
+  async (req, res) => {
+    try {
+      // Check if user is admin or teacher
+      if (req.student.status !== "staff" && req.student.status !== "teacher") {
+        return res.status(403).json({
+          error:
+            "Bu əməliyyat yalnız admin və ya müəllim tərəfindən edilə bilər",
+        });
+      }
+
+      const { questionId } = req.params;
+
+      // If user is teacher, verify they teach this subject
+      if (req.student.status === "teacher") {
+        const [questionInfo] = await db.query(
+          "SELECT fənnin_kodu FROM questions WHERE id = ?",
+          [questionId]
+        );
+
+        if (questionInfo.length === 0) {
+          return res.status(404).json({ error: "Sual tapılmadı" });
+        }
+
+        const [teacherSubjects] = await db.query(
+          `SELECT DISTINCT s.\`Fənnin kodu\`
+         FROM subjects s
+         JOIN ftp f ON f.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+         WHERE (f.\`teacher_code\` = ? OR f.\`Professor\` = ?)
+         AND s.\`Fənnin kodu\` = ?`,
+          [
+            req.student.studentId,
+            req.student.fullname,
+            questionInfo[0].fənnin_kodu,
+          ]
+        );
+
+        if (teacherSubjects.length === 0) {
+          return res
+            .status(403)
+            .json({ error: "Bu fənn üzrə sual silmək üçün icazəniz yoxdur" });
+        }
+      }
+
+      // Check if question exists
+      const [questionExists] = await db.query(
+        "SELECT id FROM questions WHERE id = ?",
+        [questionId]
+      );
+
+      if (questionExists.length === 0) {
+        return res.status(404).json({ error: "Sual tapılmadı" });
+      }
+
+      // Delete the question
+      await db.query("DELETE FROM questions WHERE id = ?", [questionId]);
+
+      res.json({ message: "Sual uğurla silindi" });
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res
+        .status(500)
+        .json({ error: "Sualı silmək mümkün olmadı: " + error.message });
+    }
+  }
+);
+
 export default router;
