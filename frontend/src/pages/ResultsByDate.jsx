@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
 
 const ResultsByDate = () => {
   const [selectedDate, setSelectedDate] = useState("");
@@ -82,6 +83,61 @@ const ResultsByDate = () => {
     return `${year}-${month}-${day}`;
   };
 
+  const downloadExcel = () => {
+    if (results.length === 0) {
+      toast.warning("Yüklənəcək nəticə yoxdur");
+      return;
+    }
+
+    try {
+      // Map the results data to match table headers
+      const excelData = results.map((result) => ({
+        "Tələbə Kodu": result["Tələbə_kodu"],
+        "Ad Soyad": result["Soyadı, adı və ata adı"],
+        "Akademik Qrup": result["Akademik qrup"] || "-",
+        Fənn: result["Fənnin adı"],
+        "Fənnin Kodu": result["Fənnin kodu"],
+        "Fənn Qrupu": result.fenn_qrupu || "-",
+        Bal: result.score,
+        "Təqdim Edilmə Vaxtı": formatDateTime(result.submitted_at),
+      }));
+
+      // Create a new workbook
+      const wb = XLSX.utils.book_new();
+
+      // Convert data to worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths for better readability
+      const colWidths = [
+        { wch: 15 }, // Tələbə Kodu
+        { wch: 30 }, // Ad Soyad
+        { wch: 15 }, // Akademik Qrup
+        { wch: 30 }, // Fənn
+        { wch: 15 }, // Fənnin Kodu
+        { wch: 15 }, // Fənn Qrupu
+        { wch: 10 }, // Bal
+        { wch: 25 }, // Təqdim Edilmə Vaxtı
+      ];
+      ws["!cols"] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Nəticələr");
+
+      // Generate filename with date
+      const formattedDate = selectedDate.replace(/-/g, "_");
+      const filename = `imtahan_neticeeleri_${formattedDate}.xlsx`;
+
+      // Write file and trigger download
+      XLSX.writeFile(wb, filename);
+
+      toast.success("Excel faylı uğurla yükləndi!");
+    } catch (error) {
+      console.error("Error generating Excel file:", error);
+      toast.error(`Excel faylını yaratmaq mümkün olmadı: ${error.message}`);
+    }
+  };
+
   if (status !== "staff") {
     return null;
   }
@@ -132,7 +188,31 @@ const ResultsByDate = () => {
             <h3 className="text-xl font-semibold text-gray-900">
               Nəticələr ({results.length})
             </h3>
-            <span className="text-sm text-gray-600">Tarix: {selectedDate}</span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Tarix: {selectedDate}
+              </span>
+              <button
+                onClick={downloadExcel}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 cursor-pointer flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Excel-ə Yüklə
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
