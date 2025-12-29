@@ -13,7 +13,7 @@ export const initializeSocket = (server) => {
       origin: [
         "http://localhost:5173",
         "http://192.168.11.236:3000",
-        "http://192.168.8.232:3000",
+        "http://192.168.8.215:3000",
         "http://192.168.1.66:3000",
       ],
       methods: ["GET", "POST"],
