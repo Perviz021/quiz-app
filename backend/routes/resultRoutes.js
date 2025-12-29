@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -353,6 +354,59 @@ router.post("/results/export-excel-python", async (req, res) => {
       details: err.message,
     });
   });
+});
+
+// GET /api/results/by-date/:date - Get exam results by date (staff only)
+router.get("/results/by-date/:date", authenticate, async (req, res) => {
+  // Check if user is staff
+  if (req.student.status !== "staff") {
+    return res.status(403).json({
+      error: "Bu səhifəyə yalnız inzibati işçilər daxil ola bilər",
+    });
+  }
+
+  const { date } = req.params; // Expected format: YYYY-MM-DD
+
+  try {
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        error: "Tarix formatı düzgün deyil. Format: YYYY-MM-DD",
+      });
+    }
+
+    // Use LIKE to match date part (ignoring time)
+    const [results] = await pool.query(
+      `SELECT 
+        r.id,
+        r.\`Tələbə_kodu\`,
+        r.\`Fənnin kodu\`,
+        r.score,
+        r.total_questions,
+        r.created_at,
+        r.submitted_at,
+        r.submitted,
+        r.extra_time,
+        r.force_submit,
+        r.force_submit_time,
+        s.\`Soyadı, adı və ata adı\`,
+        s.\`Akademik qrup\`,
+        sub.\`Fənnin adı\`,
+        f.Stable as fenn_qrupu
+      FROM results r
+      JOIN students s ON r.\`Tələbə_kodu\` = s.\`Tələbə_kodu\`
+      JOIN subjects sub ON r.\`Fənnin kodu\` = sub.\`Fənnin kodu\`
+      JOIN ftp f ON r.\`Tələbə_kodu\` = f.\`Tələbə_kodu\` AND r.\`Fənnin kodu\` = f.\`Fənnin kodu\`
+      WHERE r.submitted_at LIKE ?
+      ORDER BY r.submitted_at DESC`,
+      [`${date}%`]
+    );
+
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching results by date:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;

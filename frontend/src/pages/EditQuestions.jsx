@@ -9,6 +9,8 @@ const EditQuestions = () => {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editedQuestions, setEditedQuestions] = useState({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState(null);
 
   useEffect(() => {
     fetchQuestions();
@@ -77,6 +79,46 @@ const EditQuestions = () => {
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const handleDeleteClick = (questionId) => {
+    setQuestionToDelete(questionId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!questionToDelete) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/questions/delete/${questionToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete question");
+      }
+
+      toast.success("Sual uğurla silindi");
+      setShowDeleteModal(false);
+      setQuestionToDelete(null);
+      fetchQuestions(); // Refresh questions after deletion
+    } catch (error) {
+      toast.error(error.message);
+      setShowDeleteModal(false);
+      setQuestionToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setQuestionToDelete(null);
   };
 
   if (loading) {
@@ -166,17 +208,74 @@ const EditQuestions = () => {
                   </select>
                 </div>
 
-                <button
-                  onClick={() => handleQuestionUpdate(question.id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-                >
-                  Yenilə
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleQuestionUpdate(question.id)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                  >
+                    Yenilə
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(question.id)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                  >
+                    Sil
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-200 scale-100">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Sualı Silmək
+              </h3>
+              <p className="text-gray-600 text-lg">
+                Bu sualı silmək istədiyinizə əminsiniz?
+              </p>
+              <p className="text-gray-500 text-sm mt-2">
+                Bu əməliyyat geri alına bilməz.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={handleDeleteCancel}
+                className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 cursor-pointer"
+              >
+                Ləğv et
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer"
+              >
+                Bəli, Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

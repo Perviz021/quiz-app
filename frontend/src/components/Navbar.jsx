@@ -148,6 +148,24 @@ const Navbar = () => {
                   } transition-transform duration-300 origin-center`}
                 ></span>
               </button>
+              <button
+                onClick={() => handleNavigation("/admin/results-by-date")}
+                disabled={isExamActive}
+                className={`relative px-3 py-2 font-medium transition-colors duration-200 group ${
+                  isExamActive
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-gray-200 hover:text-white cursor-pointer"
+                }`}
+              >
+                Nəticələri Yüklə
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-indigo-400 transform ${
+                    isExamActive
+                      ? "scale-x-0"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  } transition-transform duration-300 origin-center`}
+                ></span>
+              </button>
             </>
           )}
         </div>
