@@ -99,7 +99,8 @@ const ResultsByDate = () => {
         "Fənnin Kodu": result["Fənnin kodu"],
         "Fənn Qrupu": result.fenn_qrupu || "-",
         Bal: result.score,
-        "Təqdim Edilmə Vaxtı": formatDateTime(result.submitted_at),
+        "Başlama Vaxtı": formatDateTime(result.created_at),
+        "Bitmə Vaxtı": formatDateTime(result.submitted_at),
       }));
 
       // Create a new workbook
@@ -117,7 +118,8 @@ const ResultsByDate = () => {
         { wch: 15 }, // Fənnin Kodu
         { wch: 15 }, // Fənn Qrupu
         { wch: 10 }, // Bal
-        { wch: 25 }, // Təqdim Edilmə Vaxtı
+        { wch: 25 }, // Başlama Vaxtı
+        { wch: 25 }, // Bitmə Vaxtı
       ];
       ws["!cols"] = colWidths;
 
@@ -225,9 +227,8 @@ const ResultsByDate = () => {
                   <th className="p-4 text-left font-semibold">Fənnin Kodu</th>
                   <th className="p-4 text-left font-semibold">Fənn Qrupu</th>
                   <th className="p-4 text-left font-semibold">Bal</th>
-                  <th className="p-4 text-left font-semibold">
-                    Təqdim Edilmə Vaxtı
-                  </th>
+                  <th className="p-4 text-left font-semibold">Başlama Vaxtı</th>
+                  <th className="p-4 text-left font-semibold">Bitmə Vaxtı</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,6 +257,9 @@ const ResultsByDate = () => {
                     </td>
                     <td className="p-4 text-gray-800 font-semibold">
                       {result.score}
+                    </td>
+                    <td className="p-4 text-gray-800">
+                      {formatDateTime(result.created_at)}
                     </td>
                     <td className="p-4 text-gray-800">
                       {formatDateTime(result.submitted_at)}
