@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
 
 const EditQuestions = () => {
   const { subjectCode, lang } = useParams();
@@ -22,6 +23,10 @@ const EditQuestions = () => {
     correct_option: 1,
   });
   const [isAdding, setIsAdding] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   // Navigation states
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,6 +193,146 @@ const EditQuestions = () => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+      setImportFile(file);
+    } else {
+      toast.error("Yalnız Excel faylları (.xlsx, .xls) dəstəklənir");
+      setImportFile(null);
+    }
+  };
+
+  const variantLetterToNumber = (value) => {
+    const map = { A: 1, B: 2, C: 3, D: 4, E: 5 };
+    return (
+      map[
+        String(value || "")
+          .trim()
+          .toUpperCase()
+      ] || null
+    );
+  };
+
+  const handleImportQuestions = async () => {
+    if (!importFile) {
+      toast.error("Zəhmət olmasa bir fayl seçin");
+      return;
+    }
+
+    setIsImporting(true);
+    setImportResult(null);
+
+    try {
+      const fileBuffer = await importFile.arrayBuffer();
+      const workbook = XLSX.read(fileBuffer);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (!rows.length) {
+        throw new Error("Excel faylında məlumat tapılmadı");
+      }
+
+      const questionsData = rows.map((row, index) => {
+        const rowNumber = index + 2; // Excel row number (header = row 1)
+
+        const getCell = (key) => {
+          const value = row[key];
+          if (value === undefined || value === null) return "";
+          return String(value).trim();
+        };
+
+        const question = getCell("sual");
+        const option1 = getCell("variant A");
+        const option2 = getCell("variant B");
+        const option3 = getCell("variant C");
+        const option4 = getCell("variant D");
+        const option5 = getCell("variant E");
+
+        // ✅ STRICT mandatory check
+        if (
+          !question ||
+          !option1 ||
+          !option2 ||
+          !option3 ||
+          !option4 ||
+          !option5
+        ) {
+          throw new Error(
+            `Sətir ${rowNumber}: sual və bütün variantlar mütləq doldurulmalıdır`
+          );
+        }
+
+        const correctOption = variantLetterToNumber(getCell("düzgün_variant"));
+
+        if (!correctOption) {
+          throw new Error(
+            `Sətir ${rowNumber}: düzgün_variant A, B, C, D və ya E olmalıdır`
+          );
+        }
+
+        return {
+          question,
+          option1,
+          option2,
+          option3,
+          option4,
+          option5,
+          correct_option: correctOption,
+        };
+      });
+
+      if (!questionsData.length) {
+        throw new Error("Excel faylında sual tapılmadı");
+      }
+
+      const response = await fetch(`${API_BASE}/questions/import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          questions: questionsData,
+          subjectCode,
+          lang: lang || "az",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Import xətası");
+      }
+
+      setImportResult(result);
+      toast.success(
+        `${result.successCount} sual uğurla əlavə edildi${
+          result.errorCount > 0
+            ? `. ${result.errorCount} sual xəta ilə qarşılaşdı`
+            : ""
+        }`
+      );
+
+      // Refresh questions list
+      fetchQuestions();
+
+      // Close modal after a delay
+      setTimeout(() => {
+        setShowImportModal(false);
+        setImportFile(null);
+        setImportResult(null);
+      }, 3000);
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error(error.message || "Import xətası");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Filter questions based on search query
   const filteredQuestions = questions.filter((q) => {
     if (!searchQuery) return true;
@@ -273,6 +418,12 @@ const EditQuestions = () => {
           Sualları Redaktə Et - {subjectCode} ({lang})
         </h2>
         <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200"
+          >
+            📥 JSON-dan Import
+          </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-200"
@@ -667,6 +818,94 @@ const EditQuestions = () => {
           </div>
         )}
       </div>
+
+      {/* Import Questions Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl transform transition-all duration-200 scale-100 max-h-[90vh] overflow-y-auto">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Excel Faylından Sualları Import Et
+              </h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Excel Faylı Seçin
+                </label>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="w-full p-2 border border-gray-300 rounded-md cursor-pointer"
+                  disabled={isImporting}
+                />
+                {importFile && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Seçilmiş fayl: {importFile.name}
+                  </p>
+                )}
+              </div>
+
+              {importResult && (
+                <div
+                  className={`p-4 rounded-lg ${
+                    importResult.errorCount > 0
+                      ? "bg-yellow-50 border border-yellow-200"
+                      : "bg-green-50 border border-green-200"
+                  }`}
+                >
+                  <h4 className="font-semibold mb-2">Import Nəticəsi:</h4>
+                  <p className="text-sm">
+                    ✅ Uğurlu: {importResult.successCount} sual
+                    {importResult.errorCount > 0 && (
+                      <>
+                        <br />❌ Xəta: {importResult.errorCount} sual
+                      </>
+                    )}
+                    <br />
+                    📊 Cəmi: {importResult.total} sual
+                  </p>
+                  {importResult.errors && importResult.errors.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-semibold">Xətalar:</p>
+                      <ul className="text-xs list-disc list-inside mt-1">
+                        {importResult.errors.map((error, idx) => (
+                          <li key={idx} className="text-red-600">
+                            {error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportFile(null);
+                    setImportResult(null);
+                  }}
+                  disabled={isImporting}
+                  className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 cursor-pointer disabled:opacity-50"
+                >
+                  Ləğv et
+                </button>
+                <button
+                  onClick={handleImportQuestions}
+                  disabled={!importFile || isImporting}
+                  className="flex-1 py-3 px-6 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isImporting ? "Import edilir..." : "Import Et"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
