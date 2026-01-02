@@ -218,11 +218,9 @@ router.post("/questions/create", authenticate, async (req, res) => {
       );
 
       if (teacherSubjects.length === 0) {
-        return res
-          .status(403)
-          .json({
-            error: "Bu fənn üzrə sual əlavə etmək üçün icazəniz yoxdur",
-          });
+        return res.status(403).json({
+          error: "Bu fənn üzrə sual əlavə etmək üçün icazəniz yoxdur",
+        });
       }
     }
 
@@ -234,10 +232,10 @@ router.post("/questions/create", authenticate, async (req, res) => {
       [
         question,
         option1,
-        option2 || null,
-        option3 || null,
-        option4 || null,
-        option5 || null,
+        option2,
+        option3,
+        option4,
+        option5,
         correct_option,
         subjectCode,
         lang,
@@ -253,6 +251,146 @@ router.post("/questions/create", authenticate, async (req, res) => {
     res
       .status(500)
       .json({ error: "Sual əlavə etmək mümkün olmadı: " + error.message });
+  }
+});
+
+// Import questions from JSON (converted from Excel in frontend)
+router.post("/questions/import", authenticate, async (req, res) => {
+  let connection;
+
+  try {
+    // Permission check
+    if (req.student.status !== "staff" && req.student.status !== "teacher") {
+      return res.status(403).json({
+        error: "Bu əməliyyat yalnız admin və ya müəllim tərəfindən edilə bilər",
+      });
+    }
+
+    const { questions: questionsData, subjectCode, lang = "az" } = req.body;
+
+    if (!questionsData || !Array.isArray(questionsData)) {
+      return res.status(400).json({
+        error: "Sual məlumatları düzgün formatda deyil. JSON array gözlənilir.",
+      });
+    }
+
+    if (!subjectCode) {
+      return res.status(400).json({
+        error: "Fənnin kodu mütləqdir",
+      });
+    }
+
+    // Teacher subject check
+    if (req.student.status === "teacher") {
+      const [teacherSubjects] = await db.query(
+        `SELECT 1
+         FROM ftp
+         WHERE (\`teacher_code\` = ? OR \`Professor\` = ?)
+         AND \`Fənnin kodu\` = ?
+         LIMIT 1`,
+        [req.student.studentId, req.student.fullname, subjectCode]
+      );
+
+      if (teacherSubjects.length === 0) {
+        return res.status(403).json({
+          error: "Bu fənn üzrə sual əlavə etmək üçün icazəniz yoxdur",
+        });
+      }
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    // 🔒 START TRANSACTION
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    for (const [i, q] of questionsData.entries()) {
+      try {
+        const {
+          question,
+          option1,
+          option2,
+          option3,
+          option4,
+          option5,
+          correct_option,
+        } = q;
+
+        const correctOptionInt = Number(correct_option);
+
+        if (![1, 2, 3, 4, 5].includes(correctOptionInt)) {
+          errorCount++;
+          errors.push(`Sıra ${i + 1}: düzgün cavab 1–5 aralığında olmalıdır`);
+          continue;
+        }
+
+        const cleanQuestion = String(question).trim();
+        const cleanOption1 = String(option1).trim();
+        const cleanOption2 = String(option2).trim();
+        const cleanOption3 = String(option3).trim();
+        const cleanOption4 = String(option4).trim();
+        const cleanOption5 = String(option5).trim();
+
+        // All fields mandatory
+        if (
+          !cleanQuestion ||
+          !cleanOption1 ||
+          !cleanOption2 ||
+          !cleanOption3 ||
+          !cleanOption4 ||
+          !cleanOption5
+        ) {
+          errorCount++;
+          errors.push(`Sıra ${i + 1}: Sual və bütün variantlar mütləqdir`);
+          continue;
+        }
+
+        await connection.query(
+          `INSERT INTO questions
+           (question, option1, option2, option3, option4, option5, correct_option, fənnin_kodu, lang)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            cleanQuestion,
+            cleanOption1,
+            cleanOption2,
+            cleanOption3,
+            cleanOption4,
+            cleanOption5,
+            correctOptionInt,
+            subjectCode,
+            lang,
+          ]
+        );
+
+        successCount++;
+      } catch (err) {
+        console.error(`Error inserting row ${i + 1}:`, err);
+        errorCount++;
+        errors.push(`Sıra ${i + 1}: ${err.message}`);
+      }
+    }
+
+    // ✅ COMMIT ONLY IF NO UNEXPECTED ERROR
+    await connection.commit();
+
+    res.json({
+      message: "İmport tamamlandı",
+      successCount,
+      errorCount,
+      total: questionsData.length,
+      errors: errors.slice(0, 10),
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+
+    console.error("Import failed:", error);
+    res.status(500).json({
+      error: "Sualları import etmək mümkün olmadı: " + error.message,
+    });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
