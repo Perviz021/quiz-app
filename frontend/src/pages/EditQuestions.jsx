@@ -410,7 +410,6 @@ const EditQuestions = () => {
               <div key={num}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Variant {String.fromCharCode(64 + num)}
-                  {num === 1 && " *"}
                 </label>
                 <input
                   type="text"
