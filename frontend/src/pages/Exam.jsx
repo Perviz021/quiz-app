@@ -6,12 +6,11 @@ import { useExam } from "../context/ExamContext";
 import API_BASE from "../config/api";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
-import html2pdf from "html2pdf.js";
 
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.1.70:5000";
+  : "http://192.168.1.72:5000";
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
@@ -158,72 +157,6 @@ const Exam = () => {
     return false;
   }, [subjectCode]);
 
-  const downloadExamAsPDF = useCallback(() => {
-    if (!examContentRef.current) return;
-
-    const element = examContentRef.current;
-    const studentName = localStorage.getItem("fullname") || "Unknown Student";
-    const currentSubjectCode = subjectCode;
-    const timestamp = new Date().toLocaleString();
-
-    // Create a clone of the element to modify for PDF
-    const clone = element.cloneNode(true);
-
-    // Add header information
-    const header = document.createElement("div");
-    header.innerHTML = `
-      <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
-        <h2 style="margin: 0;">Tələbə: ${studentName}</h2>
-        <p style="margin: 5px 0;">Fənnin kodu: ${currentSubjectCode}</p>
-        <p style="margin: 5px 0;">Bitirmə vaxtı: ${timestamp}</p>
-      </div>
-    `;
-    clone.insertBefore(header, clone.firstChild);
-
-    // Configure PDF options
-    const opt = {
-      margin: 1,
-      filename: `exam_${currentSubjectCode}_${studentName}_${new Date()
-        .toLocaleString("tr-TR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        })
-        .replace(/[/:]/g, "-")}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: "#ffffff",
-      },
-      jsPDF: {
-        unit: "in",
-        format: "letter",
-        orientation: "portrait",
-        compress: true,
-      },
-      enableLinks: true,
-      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-    };
-
-    // Generate PDF
-    html2pdf()
-      .from(clone)
-      .set(opt)
-      .save()
-      .then(() => {
-        console.log("PDF generated successfully");
-      })
-      .catch((error) => {
-        console.error("PDF generation error:", error);
-      });
-  }, [subjectCode]);
-
   const handleSubmit = useCallback(() => {
     if (state.submitted) {
       console.log("Exam already submitted, preventing resubmission");
@@ -234,169 +167,47 @@ const Exam = () => {
     dispatch({ type: "SUBMIT_EXAM" });
     setIsExamActive(false);
 
-    // Create a promise for PDF generation
-    const generatePDF = new Promise((resolve) => {
-      try {
-        const element = examContentRef.current;
-        const studentName =
-          localStorage.getItem("fullname") || "Unknown Student";
-        const currentSubjectCode = subjectCode;
-        const timestamp = new Date().toLocaleString();
+    // Format answers for submission
+    const formattedAnswers = state.questions.map((q) => ({
+      questionId: q.id,
+      selectedOption: state.answers[q.id] ?? -1,
+    }));
 
-        // Create a new div for PDF content
-        const pdfContent = document.createElement("div");
-        pdfContent.style.padding = "20px";
-        pdfContent.style.fontFamily = "Arial, sans-serif";
-        pdfContent.style.color = "#000000";
-        pdfContent.style.backgroundColor = "#ffffff";
+    console.log("Formatted answers for submission:", formattedAnswers);
 
-        // Add header
-        const header = document.createElement("div");
-        header.style.marginBottom = "20px";
-        header.style.borderBottom = "1px solid #000000";
-        header.style.paddingBottom = "10px";
-        header.innerHTML = `
-          <h2 style="margin: 0; font-size: 18px;">Student: ${studentName}</h2>
-          <p style="margin: 5px 0; font-size: 14px;">Subject Code: ${currentSubjectCode}</p>
-          <p style="margin: 5px 0; font-size: 14px;">Submission Time: ${timestamp}</p>
-        `;
-        pdfContent.appendChild(header);
+    // Submit exam directly without PDF generation
+    fetch(`${API_BASE}/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        subjectCode: subjectCode,
+        answers: formattedAnswers,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        console.log("Submission successful, score:", data.score);
+        dispatch({ type: "SET_SCORE", payload: data.score });
+        clearSavedExamData(); // Clear both answers and question IDs after successful submission
 
-        // Add questions and answers
-        state.questions.forEach((q, index) => {
-          const questionDiv = document.createElement("div");
-          questionDiv.style.marginBottom = "20px";
-          questionDiv.style.padding = "10px";
-          questionDiv.style.border = "1px solid #cccccc";
-          questionDiv.style.borderRadius = "5px";
-
-          // Add question text
-          const questionText = document.createElement("p");
-          questionText.style.fontWeight = "bold";
-          questionText.style.marginBottom = "10px";
-          questionText.innerHTML = `${index + 1}. ${q.question}`;
-          questionDiv.appendChild(questionText);
-
-          // Add options
-          const options = [
-            q.option1,
-            q.option2,
-            q.option3,
-            q.option4,
-            q.option5,
-          ];
-          options.forEach((option, optIndex) => {
-            if (option) {
-              const optionDiv = document.createElement("div");
-              optionDiv.style.marginLeft = "20px";
-              optionDiv.style.marginBottom = "5px";
-
-              const isSelected = state.answers[q.id] === optIndex + 1;
-              optionDiv.innerHTML = `
-                <span style="color: ${isSelected ? "#0000ff" : "#000000"}">
-                  ${String.fromCharCode(65 + optIndex)}. ${option}
-                  ${isSelected ? " ✓" : ""}
-                </span>
-              `;
-              questionDiv.appendChild(optionDiv);
-            }
-          });
-
-          pdfContent.appendChild(questionDiv);
-        });
-
-        // Configure PDF options
-        const opt = {
-          margin: 1,
-          filename: `exam_${currentSubjectCode}_${studentName}_${new Date()
-            .toLocaleString("tr-TR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: false,
-            })
-            .replace(/[/:]/g, "-")}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: true,
-            backgroundColor: "#ffffff",
-          },
-          jsPDF: {
-            unit: "in",
-            format: "letter",
-            orientation: "portrait",
-            compress: true,
-          },
-          enableLinks: true,
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        };
-
-        // Generate PDF
-        html2pdf()
-          .from(pdfContent)
-          .set(opt)
-          .save()
-          .then(() => {
-            console.log("PDF generated successfully");
-            resolve();
-          })
-          .catch((error) => {
-            console.error("PDF generation error:", error);
-            resolve(); // Resolve anyway to continue with submission
-          });
-      } catch (error) {
-        console.error("PDF generation error:", error);
-        resolve(); // Resolve anyway to continue with submission
-      }
-    });
-
-    // Wait for PDF generation before making the API call
-    generatePDF.then(() => {
-      const formattedAnswers = state.questions.map((q) => ({
-        questionId: q.id,
-        selectedOption: state.answers[q.id] ?? -1,
-      }));
-
-      console.log("Formatted answers for submission:", formattedAnswers);
-
-      fetch(`${API_BASE}/submit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          subjectCode: subjectCode,
-          answers: formattedAnswers,
-        }),
+        // Get pre-exam score from localStorage
+        const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+        const currentSubject = subjects.find(
+          (s) => s["Fənnin kodu"] === subjectCode
+        );
+        const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
+        dispatch({ type: "SET_PRE_EXAM", payload: preExam });
       })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.error) throw new Error(data.error);
-          console.log("Submission successful, score:", data.score);
-          dispatch({ type: "SET_SCORE", payload: data.score });
-          clearSavedExamData(); // Clear both answers and question IDs after successful submission
-
-          // Get pre-exam score from localStorage
-          const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
-          const currentSubject = subjects.find(
-            (s) => s["Fənnin kodu"] === subjectCode
-          );
-          const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
-          dispatch({ type: "SET_PRE_EXAM", payload: preExam });
-        })
-        .catch((err) => {
-          console.error("Submission error:", err);
-          toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
-          dispatch({ type: "SET_ERROR", payload: err.message });
-        })
-        .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
-    });
+      .catch((err) => {
+        console.error("Submission error:", err);
+        toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
+        dispatch({ type: "SET_ERROR", payload: err.message });
+      })
+      .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
   }, [state, subjectCode, setIsExamActive, clearSavedExamData]);
 
   const handleStartExam = async () => {
