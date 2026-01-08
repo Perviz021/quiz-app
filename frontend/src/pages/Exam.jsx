@@ -304,6 +304,7 @@ const Exam = () => {
 
   const handleSubmitRef = useRef(() => {});
   const submittedRef = useRef(false);
+  const visibilitySubmittedRef = useRef(false);
 
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -518,18 +519,95 @@ const Exam = () => {
     };
   }, [state.examStarted, state.submitted]);
 
+  // Submit exam with 0 points when student leaves the page
+  const submitWithZeroPoints = useCallback(() => {
+    if (submittedRef.current || visibilitySubmittedRef.current) {
+      return; // Already submitted
+    }
+
+    visibilitySubmittedRef.current = true;
+    submittedRef.current = true;
+    dispatch({ type: "SUBMIT_EXAM" });
+    setIsExamActive(false);
+
+    // Format answers - all as -1 (not answered) to get 0 points
+    const formattedAnswers = state.questions.map((q) => ({
+      questionId: q.id,
+      selectedOption: -1, // Force all answers as not answered = 0 points
+    }));
+
+    console.log("Submitting exam with 0 points due to page visibility change");
+
+    // Submit exam with 0 points
+    fetch(`${API_BASE}/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        subjectCode: subjectCode,
+        answers: formattedAnswers,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        console.log("Zero-point submission successful");
+        dispatch({ type: "SET_SCORE", payload: 0 });
+        dispatch({ type: "SHOW_POPUP" });
+        clearSavedExamData();
+
+        // Get pre-exam score from localStorage
+        const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+        const currentSubject = subjects.find(
+          (s) => s["Fənnin kodu"] === subjectCode
+        );
+        const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
+        dispatch({ type: "SET_PRE_EXAM", payload: preExam });
+
+        toast.error(
+          "İmtahan səhifəsindən çıxdığınız üçün imtahan 0 bal ilə təhvil verildi!",
+          {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+
+        // Navigate to review page after a short delay
+        setTimeout(() => {
+          navigate(`/review/${subjectCode}`);
+        }, 2000);
+      })
+      .catch((err) => {
+        console.error("Zero-point submission error:", err);
+        toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
+        dispatch({ type: "SET_ERROR", payload: err.message });
+      })
+      .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
+  }, [
+    state.questions,
+    subjectCode,
+    setIsExamActive,
+    clearSavedExamData,
+    navigate,
+  ]);
+
   // Add visibility change handler
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (state.examStarted && !state.submitted && document.hidden) {
-        toast.warning("İmtahan səhifəsindən çıxmaq qadağandır!", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+      if (
+        state.examStarted &&
+        !state.submitted &&
+        !visibilitySubmittedRef.current &&
+        document.hidden
+      ) {
+        // Immediately submit with 0 points when page becomes hidden
+        submitWithZeroPoints();
       }
     };
 
@@ -537,7 +615,7 @@ const Exam = () => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [state.examStarted, state.submitted]);
+  }, [state.examStarted, state.submitted, submitWithZeroPoints]);
 
   useEffect(() => {
     let timer;
