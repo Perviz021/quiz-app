@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post("/submit", authenticate, async (req, res) => {
   const studentId = req.student.studentId;
-  const { subjectCode, answers } = req.body;
+  const { subjectCode, answers, leftPage } = req.body;
 
   if (!studentId || !subjectCode || !Array.isArray(answers)) {
     return res.status(400).json({ error: "Invalid request data" });
@@ -99,9 +99,10 @@ router.post("/submit", authenticate, async (req, res) => {
          SET submitted = true,
              submitted_at = NOW(),
              score = ?,
-             total_questions = ?
+             total_questions = ?,
+             left_page = ?
          WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-        [score, questions.length, studentId, subjectCode]
+        [score, questions.length, leftPage || false, studentId, subjectCode]
       );
 
       // Commit transaction
