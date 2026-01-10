@@ -548,6 +548,7 @@ const Exam = () => {
       body: JSON.stringify({
         subjectCode: subjectCode,
         answers: formattedAnswers,
+        leftPage: true, // Flag to indicate student left the exam page
       }),
     })
       .then((res) => res.json())
