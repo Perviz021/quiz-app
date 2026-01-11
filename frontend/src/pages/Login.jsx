@@ -14,11 +14,18 @@ const Login = ({ setToken, setSubjects }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Trim student code and password before processing
+    const trimmedStudentId = studentId.trim();
+    const trimmedPassword = password.trim();
+
     try {
       const response = await fetch(`${API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId, password }),
+        body: JSON.stringify({
+          studentId: trimmedStudentId,
+          password: trimmedPassword,
+        }),
       });
 
       const data = await response.json();
