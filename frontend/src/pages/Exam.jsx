@@ -716,9 +716,60 @@ const Exam = () => {
     dispatch({ type: "HIDE_CONFIRM_MODAL" });
   };
 
+  // Format time for display
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return {
+      hours: String(hours).padStart(2, "0"),
+      minutes: String(minutes).padStart(2, "0"),
+      seconds: String(secs).padStart(2, "0"),
+    };
+  };
+
+  const timeDisplay = formatTime(state.timeLeft);
+  const showFixedTimer =
+    state.examStarted && state.timeLeft <= 300 && !state.submitted; // 5 minutes = 300 seconds
+
   return (
     <div className="container mx-auto px-4 py-8 flex">
-      <div className="flex-grow" ref={examContentRef}>
+      {/* Fixed Timer Banner - Shows when 5 minutes or less remain */}
+      {showFixedTimer && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white shadow-2xl animate-pulse">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 mr-3 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="text-center">
+              <div className="text-sm font-medium mb-1">QALAN VAXT</div>
+              <div className="text-4xl font-bold tracking-wider">
+                {timeDisplay.minutes}:{timeDisplay.seconds}
+              </div>
+              <div className="text-xs mt-1 opacity-90">
+                Zəhmət olmasa imtahanı vaxtında təhvil verin!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className="flex-grow"
+        ref={examContentRef}
+        style={{ marginTop: showFixedTimer ? "80px" : "0" }}
+      >
         {!state.examStarted ? (
           <ExamRules
             acceptedRules={acceptedRules}
@@ -729,15 +780,16 @@ const Exam = () => {
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-6">İmtahan</h2>
 
-            <div className="text-xl font-semibold text-gray-800 mb-6 bg-indigo-50 p-4 rounded-lg">
+            <div
+              className={`text-xl font-semibold mb-6 p-4 rounded-lg ${
+                state.timeLeft <= 300
+                  ? "bg-red-100 text-red-800 border-2 border-red-400"
+                  : "text-gray-800 bg-indigo-50"
+              }`}
+            >
               Qalan vaxt:{" "}
               <span className="font-bold">
-                {String(Math.floor(state.timeLeft / 3600)).padStart(2, "0")}:
-                {String(Math.floor((state.timeLeft % 3600) / 60)).padStart(
-                  2,
-                  "0"
-                )}
-                :{String(state.timeLeft % 60).padStart(2, "0")}
+                {timeDisplay.hours}:{timeDisplay.minutes}:{timeDisplay.seconds}
               </span>
             </div>
 
