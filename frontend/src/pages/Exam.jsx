@@ -557,7 +557,8 @@ const Exam = () => {
         console.log("Zero-point submission successful");
         dispatch({ type: "SET_SCORE", payload: 0 });
         dispatch({ type: "SHOW_POPUP" });
-        clearSavedExamData();
+        // Don't clear localStorage here - preserve questions and answers in case admin deletes result
+        // localStorage will be cleared on successful normal submission
 
         // Get pre-exam score from localStorage
         const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
@@ -590,13 +591,7 @@ const Exam = () => {
         dispatch({ type: "SET_ERROR", payload: err.message });
       })
       .finally(() => dispatch({ type: "STOP_SUBMITTING" }));
-  }, [
-    state.questions,
-    subjectCode,
-    setIsExamActive,
-    clearSavedExamData,
-    navigate,
-  ]);
+  }, [state.questions, subjectCode, setIsExamActive, navigate]);
 
   // Add visibility change handler
   useEffect(() => {
@@ -662,7 +657,11 @@ const Exam = () => {
           console.log("Time expired submission successful, score:", data.score);
           dispatch({ type: "SET_SCORE", payload: data.score });
           dispatch({ type: "SHOW_POPUP" });
-          clearSavedExamData();
+          // Only clear localStorage if score > 0 (successful submission with answers)
+          // If score is 0, preserve localStorage in case admin deletes record and student re-enters
+          if (data.score > 0) {
+            clearSavedExamData();
+          }
 
           // Get pre-exam score from localStorage
           const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
