@@ -128,7 +128,7 @@ const ResultsByDate = () => {
 
       // Generate filename with date
       const formattedDate = selectedDate.replace(/-/g, "_");
-      const filename = `imtahan_neticeeleri_${formattedDate}.xlsx`;
+      const filename = `imtahan_neticeleri_${formattedDate}.xlsx`;
 
       // Write file and trigger download
       XLSX.writeFile(wb, filename);
