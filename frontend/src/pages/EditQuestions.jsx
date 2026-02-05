@@ -422,7 +422,7 @@ const EditQuestions = () => {
             onClick={() => setShowImportModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200"
           >
-            📥 JSON-dan Import
+            📥 Excel faylından Import
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
