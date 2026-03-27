@@ -32,7 +32,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(
   "/api/uploads/students",
-  express.static(path.join(__dirname, "uploads/students"))
+  express.static(path.join(__dirname, "uploads/students")),
+);
+app.use(
+  "/api/uploads/questions",
+  express.static(path.join(__dirname, "uploads/questions")),
 );
 
 // Routes
