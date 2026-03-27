@@ -1,129 +1,342 @@
 import { useState } from "react";
 import API_BASE from "../config/api";
+import { toast } from "react-toastify";
 
-const AddQuestion = () => {
-  const [formData, setFormData] = useState({
-    questionText: "",
-    questionImage: null,
-    option1Text: "",
-    option1Image: null,
-    option2Text: "",
-    option2Image: null,
-    option3Text: "",
-    option3Image: null,
-    option4Text: "",
-    option4Image: null,
-    option5Text: "",
-    option5Image: null,
-    correctOption: 1,
-    subjectCode: "",
-  });
+// server.js: app.use("/api/uploads", express.static("uploads"))
+// so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
+const IMAGE_BASE = "http://localhost:5000";
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+const getImageUrl = (imageValue) => {
+  if (!imageValue) return null;
+  if (typeof imageValue !== "string") return null;
+  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
+    return imageValue;
+  }
+  // Backend stores relative paths like: uploads/questions/<file>
+  if (imageValue.startsWith("uploads/")) {
+    return `${IMAGE_BASE}/api/${imageValue}`;
+  }
+  if (imageValue.startsWith("/api/")) {
+    return `${IMAGE_BASE}${imageValue}`;
+  }
+  if (imageValue.startsWith("api/uploads/")) {
+    return `${IMAGE_BASE}/${imageValue}`;
+  }
+  return `${IMAGE_BASE}/api/${imageValue}`;
+};
+
+// ─────────────────────────────────────────────
+// Single field: text input + image upload/preview/remove
+// ─────────────────────────────────────────────
+const QuestionField = ({
+  label,
+  fieldKey,
+  textValue,
+  imageSrc,
+  hasImage,
+  onTextChange,
+  onImageSelected,
+  onImageRemoved,
+  isTextarea,
+}) => {
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Şəkil 5MB-dan böyük ola bilməz");
+      e.target.value = "";
+      return;
+    }
+
+    onImageSelected(fieldKey, file);
+    toast.success("Şəkil seçildi. Sual ilə birlikdə yüklənəcək");
+    e.target.value = "";
+  };
+
+  const handleRemoveImage = () => {
+    onImageRemoved(fieldKey);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+
+      {/* Text input */}
+      {isTextarea ? (
+        <textarea
+          value={textValue}
+          rows={3}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm"
+          onChange={(e) => onTextChange(fieldKey, e.target.value)}
+          placeholder="Mətni daxil edin (istəyə görə)"
+        />
+      ) : (
+        <input
+          type="text"
+          value={textValue}
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm"
+          onChange={(e) => onTextChange(fieldKey, e.target.value)}
+          placeholder="Mətni daxil edin (istəyə görə)"
+        />
+      )}
+
+      {/* Image preview OR upload button */}
+      {hasImage ? (
+        <div className="relative inline-block mt-1">
+          <img
+            src={imageSrc}
+            alt={label}
+            className="max-h-48 max-w-full rounded-lg border border-gray-200 shadow-sm object-contain bg-gray-50 p-1"
+          />
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors cursor-pointer"
+            title="Şəkli sil"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <label
+          className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-md border border-dashed border-gray-300 text-sm text-gray-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+        >
+          🖼 Şəkil əlavə et
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+        </label>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Main AddQuestion component
+// Props: subjectCode, lang, onSuccess, onCancel
+// ─────────────────────────────────────────────
+const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
+  const emptyForm = {
+    question:       "",  question_image:  null,
+    option1:        "",  option1_image:   null,
+    option2:        "",  option2_image:   null,
+    option3:        "",  option3_image:   null,
+    option4:        "",  option4_image:   null,
+    option5:        "",  option5_image:   null,
+    correct_option: 1,
+  };
+
+  const [form, setForm]     = useState(emptyForm);
+  const [isAdding, setIsAdding] = useState(false);
+  const [pendingImages, setPendingImages] = useState({});
+  const [previewUrls, setPreviewUrls] = useState({});
+
+  const handleTextChange = (fieldKey, value) => {
+    setForm((prev) => ({ ...prev, [fieldKey]: value }));
+  };
+
+  const clearAllPreviewUrls = () => {
+    Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
+  };
+
+  const handleImageSelected = (fieldKey, file) => {
+    const imageKey = `${fieldKey}_image`;
+    setPendingImages((prev) => ({ ...prev, [imageKey]: file }));
+    setPreviewUrls((prev) => {
+      if (prev[imageKey]) URL.revokeObjectURL(prev[imageKey]);
+      return { ...prev, [imageKey]: URL.createObjectURL(file) };
+    });
+    setForm((prev) => ({ ...prev, [imageKey]: null }));
+  };
+
+  const handleImageRemoved = (fieldKey) => {
+    const imageKey = `${fieldKey}_image`;
+    setPendingImages((prev) => {
+      const next = { ...prev };
+      delete next[imageKey];
+      return next;
+    });
+    setPreviewUrls((prev) => {
+      if (prev[imageKey]) URL.revokeObjectURL(prev[imageKey]);
+      const next = { ...prev };
+      delete next[imageKey];
+      return next;
+    });
+    setForm((prev) => ({ ...prev, [imageKey]: null }));
+  };
+
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch(
+      `${API_BASE}/questions/upload-image?subjectCode=${encodeURIComponent(subjectCode || "unknown")}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Şəkil yüklənmədi");
+    return data.path;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = new FormData();
 
-    for (const key in formData) {
-      if (formData[key] !== null) {
-        payload.append(key, formData[key]);
+    // Each field needs at least text OR image
+    const fields = [
+      { key: "question", label: "Sual" },
+      { key: "option1",  label: "Variant A" },
+      { key: "option2",  label: "Variant B" },
+      { key: "option3",  label: "Variant C" },
+      { key: "option4",  label: "Variant D" },
+      { key: "option5",  label: "Variant E" },
+    ];
+    for (const { key, label } of fields) {
+      if (!form[key] && !form[`${key}_image`]) {
+        toast.error(`${label} mətni və ya şəkli mütləqdir`);
+        return;
       }
     }
 
+    setIsAdding(true);
     try {
-      const res = await fetch(`${API_BASE}/add-question`, {
+      const imagePaths = {};
+      for (const [imageKey, file] of Object.entries(pendingImages)) {
+        imagePaths[imageKey] = await uploadImage(file);
+      }
+
+      const res = await fetch(`${API_BASE}/questions/create`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: payload,
+        body: JSON.stringify({
+          question:       form.question,
+          question_image: imagePaths.question_image || form.question_image,
+          option1:        form.option1,  option1_image: imagePaths.option1_image || form.option1_image,
+          option2:        form.option2,  option2_image: imagePaths.option2_image || form.option2_image,
+          option3:        form.option3,  option3_image: imagePaths.option3_image || form.option3_image,
+          option4:        form.option4,  option4_image: imagePaths.option4_image || form.option4_image,
+          option5:        form.option5,  option5_image: imagePaths.option5_image || form.option5_image,
+          correct_option: form.correct_option,
+          subjectCode,
+          lang: lang || "az",
+        }),
       });
 
       const data = await res.json();
-      alert(data.message || "Sual əlavə olundu!");
+      if (!res.ok) throw new Error(data.error || "Sual əlavə edilmədi");
+
+      toast.success("Sual uğurla əlavə edildi");
+      clearAllPreviewUrls();
+      setForm(emptyForm);
+      setPendingImages({});
+      setPreviewUrls({});
+      onSuccess?.();
     } catch (err) {
-      alert("Xəta baş verdi!");
-      console.error(err);
+      toast.error(err.message);
+    } finally {
+      setIsAdding(false);
     }
   };
 
+  const handleCancel = () => {
+    clearAllPreviewUrls();
+    setForm(emptyForm);
+    setPendingImages({});
+    setPreviewUrls({});
+    onCancel?.();
+  };
+
+  // Shared props builder for QuestionField
+  const fieldProps = (fieldKey, label, isTextarea = false) => ({
+    label,
+    fieldKey,
+    textValue:      form[fieldKey],
+    imageSrc:
+      previewUrls[`${fieldKey}_image`] ||
+      (form[`${fieldKey}_image`] ? getImageUrl(form[`${fieldKey}_image`]) : null),
+    hasImage: Boolean(previewUrls[`${fieldKey}_image`] || form[`${fieldKey}_image`]),
+    onTextChange:   handleTextChange,
+    onImageSelected: handleImageSelected,
+    onImageRemoved: handleImageRemoved,
+    isTextarea,
+  });
+
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-xl font-bold mb-4">Yeni sual əlavə et</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label>Sualın mətni:</label>
-        <input
-          type="text"
-          name="questionText"
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          placeholder="Sualın mətni (istəyə bağlı)"
-        />
+    <div className="bg-white rounded-xl shadow-md p-6 mb-6 border-2 border-green-200">
+      <h3 className="text-xl font-bold text-gray-900 mb-5">
+        Yeni sual əlavə et
+      </h3>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <QuestionField {...fieldProps("question", "Sual *", true)} />
 
-        <label>Sualın şəkli:</label>
-        <input
-          type="file"
-          name="questionImage"
-          accept="image/*"
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="border p-2 rounded">
-            <label>Variant {i} mətni:</label>
-            <input
-              type="text"
-              name={`option${i}Text`}
-              onChange={handleChange}
-              className="w-full p-2 border rounded mb-2"
-              placeholder={`Variant ${i} mətni (istəyə bağlı)`}
-            />
-
-            <label>Variant {i} şəkli:</label>
-            <input
-              type="file"
-              name={`option${i}Image`}
-              accept="image/*"
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-          </div>
+        {[1, 2, 3, 4, 5].map((num) => (
+          <QuestionField
+            key={num}
+            {...fieldProps(
+              `option${num}`,
+              `Variant ${String.fromCharCode(64 + num)}`
+            )}
+          />
         ))}
 
-        <input
-          type="number"
-          name="correctOption"
-          min="1"
-          max="5"
-          required
-          onChange={handleChange}
-          placeholder="Doğru variant (1-5)"
-          className="w-full p-2 border rounded"
-        />
+        <div className="flex flex-wrap gap-4 items-end pt-2 border-t border-gray-100">
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Düzgün cavab *
+            </label>
+            <select
+              value={form.correct_option}
+              className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-indigo-400"
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  correct_option: parseInt(e.target.value),
+                }))
+              }
+              required
+            >
+              {[1, 2, 3, 4, 5].map((num) => (
+                <option key={num} value={num}>
+                  {String.fromCharCode(64 + num)}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <input
-          type="text"
-          name="subjectCode"
-          required
-          onChange={handleChange}
-          placeholder="Fənn kodu"
-          className="w-full p-2 border rounded"
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Əlavə et
-        </button>
+          <div className="flex gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+            >
+              Ləğv et
+            </button>
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isAdding ? "Əlavə edilir..." : "Əlavə et"}
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );
