@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
-  : "http://192.168.1.72:5000";
+  : "http://127.0.0.1";
 
 const socket = io(SOCKET_SERVER_URL, {
   reconnection: true,
