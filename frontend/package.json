@@ -15,7 +15,7 @@
     "better-react-mathjax": "^2.3.0",
     "date-fns": "^4.1.0",
     "html2pdf": "^0.0.11",
-    "html2pdf.js": "^0.10.3",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.483.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
