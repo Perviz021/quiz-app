@@ -7,6 +7,28 @@ import API_BASE from "../config/api";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
 
+// server.js serves uploads at /api/uploads (app.use("/api/uploads", express.static("uploads")))
+// so the full image URL is: http://localhost:5000/api/uploads/questions/filename.jpg
+const IMAGE_BASE = "http://localhost:5000";
+
+const getImageUrl = (imageValue) => {
+  if (!imageValue) return null;
+  if (typeof imageValue !== "string") return null;
+  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
+    return imageValue;
+  }
+  if (imageValue.startsWith("uploads/")) {
+    return `${IMAGE_BASE}/api/${imageValue}`;
+  }
+  if (imageValue.startsWith("/api/")) {
+    return `${IMAGE_BASE}${imageValue}`;
+  }
+  if (imageValue.startsWith("api/uploads/")) {
+    return `${IMAGE_BASE}/${imageValue}`;
+  }
+  return `${IMAGE_BASE}/api/${imageValue}`;
+};
+
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
   ? import.meta.env.VITE_API_BASE.replace(/\/api$/, "")
@@ -20,6 +42,33 @@ const socket = io(SOCKET_SERVER_URL, {
   timeout: 30000,
   autoConnect: true,
 });
+
+// ─────────────────────────────────────────────
+// Renders text and/or image together for any field
+// ─────────────────────────────────────────────
+const ContentBlock = ({ text, imagePath, prefix = "" }) => {
+  const hasText = text && text.trim().length > 0;
+  const hasImage = imagePath && imagePath.trim().length > 0;
+  return (
+    <span className="inline-block w-full">
+      {hasText && (
+        <span
+          dangerouslySetInnerHTML={{
+            __html: prefix ? `${prefix} ${text}` : text,
+          }}
+        />
+      )}
+      {!hasText && prefix && <span className="font-semibold">{prefix}</span>}
+      {hasImage && (
+        <img
+          src={getImageUrl(imagePath) || undefined}
+          alt="content"
+          className="max-w-full max-h-64 object-contain rounded-lg mt-2 block"
+        />
+      )}
+    </span>
+  );
+};
 
 const initialState = {
   questions: [],
@@ -801,57 +850,50 @@ const Exam = () => {
                   ref={(el) => (questionRefs.current[index] = el)}
                   className="p-6 bg-white border border-gray-200 rounded-2xl mb-6 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
-                  {q.question.startsWith("uploads/") &&
-                  (q.question.endsWith(".png") ||
-                    q.question.endsWith(".jpg") ||
-                    q.question.endsWith(".jpeg") ||
-                    q.question.endsWith(".gif")) ? (
-                    <div className="mb-4">
-                      <p className="font-semibold text-lg text-gray-900">
-                        {index + 1}.
-                      </p>
-                      <img
-                        src={`http://localhost:5000/${q.question}`}
-                        alt="Sual şəkli"
-                        className="w-full max-w-md object-contain mt-2 rounded-lg"
-                      />
-                    </div>
-                  ) : (
-                    <p
-                      className="font-semibold text-lg text-gray-900"
-                      dangerouslySetInnerHTML={{
-                        __html: `${index + 1}. ${q.question}`,
-                      }}
-                    ></p>
-                  )}
+                  {/* ── Question body: text + image rendered together ── */}
+                  <p className="font-semibold text-lg text-gray-900">
+                    <ContentBlock
+                      text={q.question}
+                      imagePath={q.question_image}
+                      prefix={`${index + 1}.`}
+                    />
+                  </p>
+
+                  {/* ── Options: text + image rendered together ── */}
                   <div className="mt-4 space-y-3">
                     {[
-                      q.option1,
-                      q.option2,
-                      q.option3,
-                      q.option4,
-                      q.option5,
-                    ].map(
-                      (option, optionIndex) =>
-                        option && (
-                          <label
-                            key={optionIndex}
-                            className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                          >
-                            <input
-                              type="radio"
-                              name={`question-${q.id}`}
-                              value={optionIndex}
-                              checked={state.answers[q.id] === optionIndex + 1}
-                              onChange={() =>
-                                handleAnswer(q.id, optionIndex + 1)
-                              }
-                              className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                      { text: q.option1, image: q.option1_image },
+                      { text: q.option2, image: q.option2_image },
+                      { text: q.option3, image: q.option3_image },
+                      { text: q.option4, image: q.option4_image },
+                      { text: q.option5, image: q.option5_image },
+                    ].map((option, optionIndex) => {
+                      const hasContent = option.text || option.image;
+                      if (!hasContent) return null;
+                      return (
+                        <label
+                          key={optionIndex}
+                          className="flex items-start space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${q.id}`}
+                            value={optionIndex}
+                            checked={state.answers[q.id] === optionIndex + 1}
+                            onChange={() =>
+                              handleAnswer(q.id, optionIndex + 1)
+                            }
+                            className="w-5 h-5 mt-1 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+                          />
+                          <span className="text-gray-700 flex-1">
+                            <ContentBlock
+                              text={option.text}
+                              imagePath={option.image}
                             />
-                            <span className="text-gray-700">{option}</span>
-                          </label>
-                        )
-                    )}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               ))
