@@ -3,7 +3,145 @@ import { useParams, useNavigate } from "react-router-dom";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
+import AddQuestion from "./AddQuestion";
 
+// server.js: app.use("/api/uploads", express.static("uploads"))
+// so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
+const IMAGE_BASE = "http://localhost:5000";
+
+const getImageUrl = (imageValue) => {
+  if (!imageValue) return null;
+  if (typeof imageValue !== "string") return null;
+  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
+    return imageValue;
+  }
+  // Backend stores relative paths like: uploads/questions/<file>
+  if (imageValue.startsWith("uploads/")) {
+    return `${IMAGE_BASE}/api/${imageValue}`;
+  }
+  if (imageValue.startsWith("/api/")) {
+    return `${IMAGE_BASE}${imageValue}`;
+  }
+  if (imageValue.startsWith("api/uploads/")) {
+    return `${IMAGE_BASE}/${imageValue}`;
+  }
+  // Fallback: treat as relative to api/uploads
+  return `${IMAGE_BASE}/api/${imageValue}`;
+};
+
+// ─────────────────────────────────────────────
+// Image editor used inside each edit card
+// Shows full preview if image exists, upload button if not
+// ─────────────────────────────────────────────
+const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Şəkil 5MB-dan böyük ola bilməz");
+      e.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(
+        `${API_BASE}/questions/upload-image?subjectCode=${encodeURIComponent(subjectCode || "unknown")}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          body: formData,
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Şəkil yüklənmədi");
+      onChange(fieldKey, data.path);
+      toast.success("Şəkil uğurla yükləndi");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      await fetch(`${API_BASE}/questions/delete-image`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ path: imageValue }),
+      });
+    } catch {
+      // ignore — still clear from UI
+    }
+    onChange(fieldKey, null);
+  };
+
+  if (imageValue) {
+    return (
+      <div className="relative inline-block mt-2 group">
+        <img
+          src={getImageUrl(imageValue) || undefined}
+          alt="field"
+          className="max-h-48 max-w-full rounded-lg border border-gray-200 shadow-sm object-contain bg-gray-50 p-1"
+        />
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 shadow-md transition-colors cursor-pointer"
+          title="Şəkli sil"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <label
+      className={`inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-md border border-dashed border-gray-300 text-sm text-gray-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all ${
+        uploading ? "opacity-60 pointer-events-none" : ""
+      }`}
+    >
+      {uploading ? (
+        <>
+          <span className="animate-spin inline-block">⏳</span> Yüklənir...
+        </>
+      ) : (
+        <>
+          🖼 Şəkil əlavə et
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+            disabled={uploading}
+          />
+        </>
+      )}
+    </label>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────
 const EditQuestions = () => {
   const { subjectCode, lang } = useParams();
   const navigate = useNavigate();
@@ -13,16 +151,6 @@ const EditQuestions = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newQuestion, setNewQuestion] = useState({
-    question: "",
-    option1: "",
-    option2: "",
-    option3: "",
-    option4: "",
-    option5: "",
-    correct_option: 1,
-  });
-  const [isAdding, setIsAdding] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -76,6 +204,14 @@ const EditQuestions = () => {
         ...prev[questionId],
         [field]: field === "correct_option" ? parseInt(value) : value,
       },
+    }));
+  };
+
+  // Called by ImageFieldEditor inside edit cards
+  const handleImageChange = (questionId, field, value) => {
+    setEditedQuestions((prev) => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], [field]: value },
     }));
   };
 
@@ -144,55 +280,6 @@ const EditQuestions = () => {
     setQuestionToDelete(null);
   };
 
-  const handleAddQuestion = async (e) => {
-    e.preventDefault();
-    setIsAdding(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/questions/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          ...newQuestion,
-          subjectCode: subjectCode,
-          lang: lang || "az",
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to add question");
-      }
-
-      toast.success("Sual uğurla əlavə edildi");
-      setShowAddForm(false);
-      setNewQuestion({
-        question: "",
-        option1: "",
-        option2: "",
-        option3: "",
-        option4: "",
-        option5: "",
-        correct_option: 1,
-      });
-      fetchQuestions(); // Refresh questions list - new question will appear at the end
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  const handleNewQuestionChange = (field, value) => {
-    setNewQuestion((prev) => ({
-      ...prev,
-      [field]: field === "correct_option" ? parseInt(value) : value,
-    }));
-  };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -251,7 +338,6 @@ const EditQuestions = () => {
         const option4 = getCell("variant D");
         const option5 = getCell("variant E");
 
-        // ✅ STRICT mandatory check
         if (
           !question ||
           !option1 ||
@@ -378,11 +464,9 @@ const EditQuestions = () => {
       const question = filteredQuestions[questionIndex];
       const globalIndex = questions.findIndex((q) => q.id === question.id);
 
-      // Calculate which page this question is on
       const targetPage = Math.ceil((questionIndex + 1) / questionsPerPage);
       setCurrentPage(targetPage);
 
-      // Scroll to the question after a short delay to allow page change
       setTimeout(() => {
         questionRefs.current[globalIndex]?.scrollIntoView({
           behavior: "smooth",
@@ -534,98 +618,17 @@ const EditQuestions = () => {
         )}
       </div>
 
-      {/* Add New Question Form */}
+      {/* Add New Question Form — imported component */}
       {showAddForm && (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6 border-2 border-green-200">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Yeni sual əlavə et
-          </h3>
-          <form onSubmit={handleAddQuestion} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sual *
-              </label>
-              <textarea
-                value={newQuestion.question}
-                rows={3}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                onChange={(e) =>
-                  handleNewQuestionChange("question", e.target.value)
-                }
-                required
-                placeholder="Sualın mətni"
-              />
-            </div>
-
-            {[1, 2, 3, 4, 5].map((num) => (
-              <div key={num}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Variant {String.fromCharCode(64 + num)}
-                </label>
-                <input
-                  type="text"
-                  value={newQuestion[`option${num}`] || ""}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  onChange={(e) =>
-                    handleNewQuestionChange(`option${num}`, e.target.value)
-                  }
-                  required={num === 1}
-                  placeholder={`Variant ${String.fromCharCode(64 + num)}`}
-                />
-              </div>
-            ))}
-
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Düzgün cavab *
-                </label>
-                <select
-                  value={newQuestion.correct_option}
-                  className="w-full p-2 border border-gray-300 rounded-md cursor-pointer"
-                  onChange={(e) =>
-                    handleNewQuestionChange("correct_option", e.target.value)
-                  }
-                  required
-                >
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <option key={num} value={num}>
-                      {String.fromCharCode(64 + num)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setNewQuestion({
-                      question: "",
-                      option1: "",
-                      option2: "",
-                      option3: "",
-                      option4: "",
-                      option5: "",
-                      correct_option: 1,
-                    });
-                  }}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-                >
-                  Ləğv et
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAdding}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isAdding ? "Əlavə edilir..." : "Əlavə et"}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+        <AddQuestion
+          subjectCode={subjectCode}
+          lang={lang}
+          onSuccess={() => {
+            setShowAddForm(false);
+            fetchQuestions();
+          }}
+          onCancel={() => setShowAddForm(false)}
+        />
       )}
 
       <div className="flex gap-6">
@@ -640,12 +643,13 @@ const EditQuestions = () => {
               </p>
             </div>
           ) : (
-            currentQuestions.map((question, pageIndex) => {
+            currentQuestions.map((question) => {
               const globalIndex = questions.findIndex(
                 (q) => q.id === question.id
               );
               const displayNumber =
                 filteredQuestions.findIndex((q) => q.id === question.id) + 1;
+              const eq = editedQuestions[question.id] || {};
 
               return (
                 <div
@@ -653,92 +657,105 @@ const EditQuestions = () => {
                   ref={(el) => (questionRefs.current[globalIndex] = el)}
                   className="bg-white rounded-xl shadow-md p-6 space-y-4"
                 >
-                  <div className="space-y-4">
-                    <div>
+                  {/* ── Question field ── */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sual {displayNumber}
+                      {searchQuery && (
+                        <span className="text-gray-500 text-xs ml-2">
+                          (ID: {question.id})
+                        </span>
+                      )}
+                    </label>
+                    <textarea
+                      value={eq.question || ""}
+                      rows={3}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-400"
+                      onChange={(e) =>
+                        handleInputChange(question.id, "question", e.target.value)
+                      }
+                      placeholder="Sual mətni (istəyə görə)"
+                    />
+                    <ImageFieldEditor
+                      fieldKey="question_image"
+                      imageValue={eq.question_image || null}
+                      subjectCode={subjectCode}
+                      onChange={(field, val) =>
+                        handleImageChange(question.id, field, val)
+                      }
+                    />
+                  </div>
+
+                  {/* ── Option fields ── */}
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <div key={num}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sual {displayNumber}
-                        {searchQuery && (
-                          <span className="text-gray-500 text-xs ml-2">
-                            (ID: {question.id})
-                          </span>
-                        )}
+                        Variant {String.fromCharCode(64 + num)}
                       </label>
-                      <textarea
-                        value={editedQuestions[question.id]?.question || ""}
-                        rows={3}
-                        className="w-full p-2 border border-gray-300 rounded-md"
+                      <input
+                        type="text"
+                        value={eq[`option${num}`] || ""}
+                        className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-400"
                         onChange={(e) =>
                           handleInputChange(
                             question.id,
-                            "question",
+                            `option${num}`,
                             e.target.value
                           )
                         }
+                        placeholder={`Variant ${String.fromCharCode(
+                          64 + num
+                        )} mətni (istəyə görə)`}
+                      />
+                      <ImageFieldEditor
+                        fieldKey={`option${num}_image`}
+                        imageValue={eq[`option${num}_image`] || null}
+                        subjectCode={subjectCode}
+                        onChange={(field, val) =>
+                          handleImageChange(question.id, field, val)
+                        }
                       />
                     </div>
+                  ))}
 
-                    {[1, 2, 3, 4, 5].map((num) => (
-                      <div key={num}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Variant {String.fromCharCode(64 + num)}
-                        </label>
-                        <input
-                          type="text"
-                          value={
-                            editedQuestions[question.id]?.[`option${num}`] || ""
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          onChange={(e) =>
-                            handleInputChange(
-                              question.id,
-                              `option${num}`,
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                    ))}
+                  {/* ── Correct answer + action buttons ── */}
+                  <div className="flex gap-4 items-end pt-2 border-t border-gray-100">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Düzgün cavab
+                      </label>
+                      <select
+                        value={eq.correct_option || 1}
+                        className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-indigo-400"
+                        onChange={(e) =>
+                          handleInputChange(
+                            question.id,
+                            "correct_option",
+                            e.target.value
+                          )
+                        }
+                      >
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option key={num} value={num}>
+                            {String.fromCharCode(64 + num)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                    <div className="flex gap-4 items-end">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Düzgün cavab
-                        </label>
-                        <select
-                          value={
-                            editedQuestions[question.id]?.correct_option || 1
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-md cursor-pointer"
-                          onChange={(e) =>
-                            handleInputChange(
-                              question.id,
-                              "correct_option",
-                              e.target.value
-                            )
-                          }
-                        >
-                          {[1, 2, 3, 4, 5].map((num) => (
-                            <option key={num} value={num}>
-                              {String.fromCharCode(64 + num)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleQuestionUpdate(question.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-                        >
-                          Yenilə
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(question.id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-                        >
-                          Sil
-                        </button>
-                      </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleQuestionUpdate(question.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                      >
+                        Yenilə
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(question.id)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                      >
+                        Sil
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -750,7 +767,7 @@ const EditQuestions = () => {
         {/* Sticky Navigation Panel */}
         {questions.length > 10 && (
           <div className="hidden lg:block fixed top-20 right-0 group z-40">
-            {/* Visible Tab Trigger - Always visible on right edge */}
+            {/* Visible Tab Trigger */}
             <div className="fixed right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-l-lg shadow-lg border border-gray-200 border-r-0 cursor-pointer z-50 group-hover:opacity-0 transition-opacity duration-300">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -768,7 +785,7 @@ const EditQuestions = () => {
               </svg>
             </div>
 
-            {/* Navigation Panel - Slides in on hover */}
+            {/* Navigation Panel */}
             <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-l-2xl transition-all duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto group-hover:right-4 hover:right-4 hover:shadow-2xl">
               <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center sticky top-0 bg-white pb-2 border-b border-gray-200 z-10">
                 Sual Naviqasiyası
