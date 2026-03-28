@@ -143,13 +143,13 @@ const Exam = () => {
       try {
         localStorage.setItem(
           `exam_answers_${subjectCode}`,
-          JSON.stringify(answers)
+          JSON.stringify(answers),
         );
       } catch (error) {
         console.error("Error saving answers to localStorage:", error);
       }
     },
-    [subjectCode]
+    [subjectCode],
   );
 
   // Add function to save question IDs to localStorage
@@ -159,20 +159,20 @@ const Exam = () => {
         const questionIds = questions.map((q) => q.id);
         localStorage.setItem(
           `exam_questions_${subjectCode}`,
-          JSON.stringify(questionIds)
+          JSON.stringify(questionIds),
         );
       } catch (error) {
         console.error("Error saving question IDs to localStorage:", error);
       }
     },
-    [subjectCode]
+    [subjectCode],
   );
 
   // Add function to load question IDs from localStorage
   const loadQuestionIdsFromLocalStorage = useCallback(() => {
     try {
       const savedQuestionIds = localStorage.getItem(
-        `exam_questions_${subjectCode}`
+        `exam_questions_${subjectCode}`,
       );
       return savedQuestionIds ? JSON.parse(savedQuestionIds) : null;
     } catch (error) {
@@ -246,7 +246,7 @@ const Exam = () => {
         // Get pre-exam score from localStorage
         const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
         const currentSubject = subjects.find(
-          (s) => s["Fənnin kodu"] === subjectCode
+          (s) => s["Fənnin kodu"] === subjectCode,
         );
         const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
         dispatch({ type: "SET_PRE_EXAM", payload: preExam });
@@ -317,13 +317,13 @@ const Exam = () => {
         // If we have saved question IDs, fetch those specific questions
         response = await fetch(
           `${API_BASE}/questions/${subjectCode}/${lang}?questionIds=${savedQuestionIds.join(
-            ","
+            ",",
           )}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
       } else {
         // Otherwise fetch random questions as usual
@@ -381,7 +381,7 @@ const Exam = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-        }
+        },
       );
 
       // Immediately mark as submitted with 0 points and show popup
@@ -550,8 +550,8 @@ const Exam = () => {
           e.returnValue = "Are you sure you want to leave?";
         }
       },
-      [state.examStarted, state.submitted]
-    )
+      [state.examStarted, state.submitted],
+    ),
   );
 
   // Add context menu prevention
@@ -612,7 +612,7 @@ const Exam = () => {
         // Get pre-exam score from localStorage
         const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
         const currentSubject = subjects.find(
-          (s) => s["Fənnin kodu"] === subjectCode
+          (s) => s["Fənnin kodu"] === subjectCode,
         );
         const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
         dispatch({ type: "SET_PRE_EXAM", payload: preExam });
@@ -626,7 +626,7 @@ const Exam = () => {
             closeOnClick: true,
             pauseOnHover: true,
             draggable: true,
-          }
+          },
         );
 
         // Navigate to review page after a short delay
@@ -677,7 +677,7 @@ const Exam = () => {
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
-        }
+        },
       );
 
       // Set exam as inactive immediately
@@ -715,7 +715,7 @@ const Exam = () => {
           // Get pre-exam score from localStorage
           const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
           const currentSubject = subjects.find(
-            (s) => s["Fənnin kodu"] === subjectCode
+            (s) => s["Fənnin kodu"] === subjectCode,
           );
           const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
           dispatch({ type: "SET_PRE_EXAM", payload: preExam });
@@ -780,15 +780,21 @@ const Exam = () => {
   const showFixedTimer =
     state.examStarted && state.timeLeft <= 300 && !state.submitted; // 5 minutes = 300 seconds
 
+  const answeredCount = Object.keys(state.answers).length;
+  const totalCount = state.questions.length;
+  const progressPct =
+    totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+  const isLowTime = state.timeLeft <= 300;
+
   return (
-    <div className="container mx-auto px-4 py-8 flex">
-      {/* Fixed Timer Banner - Shows when 5 minutes or less remain */}
+    <div className="min-h-screen bg-slate-100">
+      {/* ── Fixed red banner: last 5 minutes ── */}
       {showFixedTimer && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white shadow-2xl animate-pulse">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-center">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 mr-3 animate-spin"
+              className="h-6 w-6 animate-spin"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -801,213 +807,456 @@ const Exam = () => {
               />
             </svg>
             <div className="text-center">
-              <div className="text-sm font-medium mb-1">QALAN VAXT</div>
-              <div className="text-4xl font-bold tracking-wider">
+              <div className="text-xs font-semibold tracking-widest montserrat uppercase opacity-90">
+                QALAN VAXT
+              </div>
+              <div className="text-3xl font-bold tracking-wider montserrat-700">
                 {timeDisplay.minutes}:{timeDisplay.seconds}
               </div>
-              <div className="text-xs mt-1 opacity-90">
-                Zəhmət olmasa imtahanı vaxtında təhvil verin!
+            </div>
+            <p className="hidden sm:block text-sm opacity-90 inter ml-2">
+              Zəhmət olmasa imtahanı vaxtında təhvil verin!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── ExamRules screen (before exam starts) ── */}
+      {!state.examStarted ? (
+        <ExamRules
+          acceptedRules={acceptedRules}
+          setAcceptedRules={setAcceptedRules}
+          onStartExam={handleStartExam}
+        />
+      ) : (
+        <div
+          className="flex"
+          style={{ paddingTop: showFixedTimer ? "80px" : "0" }}
+          ref={examContentRef}
+        >
+          {/* ════════════════════════════════════════
+              LEFT SIDEBAR — fixed, full height
+          ════════════════════════════════════════ */}
+          <aside className="fixed left-0 top-16 bottom-0 w-72 bg-navy shadow-2xl flex flex-col overflow-hidden z-40">
+            {/* ── Timer section ── */}
+            <div
+              className={`px-5 py-4 border-b border-white/10 flex-shrink-0 ${isLowTime ? "bg-red-700/80" : "bg-navy-mid"}`}
+            >
+              <p className="text-gold text-xs font-bold tracking-widest uppercase montserrat mb-2">
+                Qalan Vaxt
+              </p>
+              <div
+                className={`font-mono font-bold tracking-wider text-center montserrat-700 ${isLowTime ? "text-red-200 text-4xl animate-pulse" : "text-white text-3xl"}`}
+              >
+                {timeDisplay.hours}:{timeDisplay.minutes}:{timeDisplay.seconds}
+              </div>
+              {isLowTime && (
+                <p className="text-red-300 text-xs text-center mt-1 inter">
+                  Son 5 dəqiqə!
+                </p>
+              )}
+            </div>
+
+            {/* ── Progress bar ── */}
+            <div className="px-5 py-3 border-b border-white/10 flex-shrink-0">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-slate-300 text-xs inter">Cavablandı</span>
+                <span className="text-white text-xs font-bold montserrat-700">
+                  {answeredCount} / {totalCount}
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gold rounded-full transition-all duration-500"
+                  style={{ width: `${progressPct}%` }}
+                />
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      <div
-        className="flex-grow"
-        ref={examContentRef}
-        style={{ marginTop: showFixedTimer ? "80px" : "0" }}
-      >
-        {!state.examStarted ? (
-          <ExamRules
-            acceptedRules={acceptedRules}
-            setAcceptedRules={setAcceptedRules}
-            onStartExam={handleStartExam}
-          />
-        ) : (
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">İmtahan</h2>
+            {/* ── Question navigation grid ── */}
+            <div className="flex-1 overflow-y-auto px-4 py-3">
+              <p className="text-slate-400 text-xs font-semibold tracking-wider uppercase montserrat mb-3">
+                Sual Naviqasiyası
+              </p>
 
-            <div
-              className={`text-xl font-semibold mb-6 p-4 rounded-lg ${
-                state.timeLeft <= 300
-                  ? "bg-red-100 text-red-800 border-2 border-red-400"
-                  : "text-gray-800 bg-indigo-50"
-              }`}
-            >
-              Qalan vaxt:{" "}
-              <span className="font-bold">
-                {timeDisplay.hours}:{timeDisplay.minutes}:{timeDisplay.seconds}
-              </span>
+              {/* Legend */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-slate-400 text-xs inter">
+                    Cavablandı
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-white/20" />
+                  <span className="text-slate-400 text-xs inter">Boş</span>
+                </div>
+              </div>
+
+              {/* 10×5 grid for 50 questions */}
+              <div className="grid grid-cols-5 gap-1.5">
+                {state.questions.map((q, index) => {
+                  const isAnswered = q.id in state.answers;
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => scrollToQuestion(index)}
+                      title={`Sual ${index + 1}${isAnswered ? " ✓" : ""}`}
+                      className={`w-full aspect-square flex items-center justify-center rounded-lg text-xs font-bold montserrat-700 transition-all duration-150 hover:scale-110 ${
+                        isAnswered
+                          ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                          : "bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {state.error ? (
-              <p className="text-red-600 text-lg">{state.error}</p>
-            ) : (
-              state.questions.map((q, index) => (
-                <div
-                  key={q.id}
-                  ref={(el) => (questionRefs.current[index] = el)}
-                  className="p-6 bg-white border border-gray-200 rounded-2xl mb-6 shadow-sm hover:shadow-md transition-shadow duration-200"
-                >
-                  {/* ── Question body: text + image rendered together ── */}
-                  <p className="font-semibold text-lg text-gray-900">
-                    <ContentBlock
-                      text={q.question}
-                      imagePath={q.question_image}
-                      prefix={`${index + 1}.`}
-                    />
-                  </p>
-
-                  {/* ── Options: text + image rendered together ── */}
-                  <div className="mt-4 space-y-3">
-                    {[
-                      { text: q.option1, image: q.option1_image },
-                      { text: q.option2, image: q.option2_image },
-                      { text: q.option3, image: q.option3_image },
-                      { text: q.option4, image: q.option4_image },
-                      { text: q.option5, image: q.option5_image },
-                    ].map((option, optionIndex) => {
-                      const hasContent = option.text || option.image;
-                      if (!hasContent) return null;
-                      return (
-                        <label
-                          key={optionIndex}
-                          className="flex items-start space-x-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                        >
-                          <input
-                            type="radio"
-                            name={`question-${q.id}`}
-                            value={optionIndex}
-                            checked={state.answers[q.id] === optionIndex + 1}
-                            onChange={() =>
-                              handleAnswer(q.id, optionIndex + 1)
-                            }
-                            className="w-5 h-5 mt-1 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
-                          />
-                          <span className="text-gray-700 flex-1">
-                            <ContentBlock
-                              text={option.text}
-                              imagePath={option.image}
-                            />
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            )}
-            <button
-              onClick={handleSubmitClick}
-              disabled={state.submitted || state.isSubmitting}
-              className={`mt-6 w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-200 ${
-                state.submitted || state.isSubmitting
-                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700 cursor-pointer"
-              }`}
-            >
-              {state.isSubmitting
-                ? "Yadda saxlanılır..."
-                : state.submitted
-                ? "İmtahan sonlandı"
-                : "İmtahanı bitir"}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {state.examStarted && state.questions.length > 0 && (
-        <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-2xl transition-all duration-300 hover:right-4 group">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 bg-white p-2 rounded-l-lg shadow-lg border border-gray-200 border-r-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">
-            Sual Naviqasiyası
-          </h3>
-          <div className="grid grid-cols-5 gap-2">
-            {state.questions.map((q, index) => (
+            {/* ── Submit button ── */}
+            <div className="p-4 border-t border-white/10 flex-shrink-0 bg-navy">
               <button
-                key={q.id}
-                onClick={() => scrollToQuestion(index)}
-                className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold transition-all duration-200 ${
-                  q.id in state.answers
-                    ? "bg-green-500 text-white hover:bg-green-600"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={handleSubmitClick}
+                disabled={state.submitted || state.isSubmitting}
+                className={`w-full py-3 px-4 rounded-xl text-sm font-bold montserrat-700 tracking-wide transition-all duration-200 flex items-center justify-center gap-2 ${
+                  state.submitted || state.isSubmitting
+                    ? "bg-white/10 text-slate-500 cursor-not-allowed"
+                    : "bg-gold hover:bg-gold-light text-navy cursor-pointer shadow-lg shadow-gold/20 hover:-translate-y-0.5"
                 }`}
               >
-                {index + 1}
+                {state.isSubmitting ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                    Yadda saxlanılır...
+                  </>
+                ) : state.submitted ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    İmtahan sonlandı
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    İmtahanı Bitir
+                  </>
+                )}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {state.showPopup && (
-        <Popup
-          score={state.score}
-          preExam={state.preExam}
-          onClose={() => navigate(`/review/${subjectCode}`)}
-        />
-      )}
+              {/* Unanswered warning */}
+              {!state.submitted &&
+                answeredCount < totalCount &&
+                totalCount > 0 && (
+                  <p className="text-amber-400 text-xs text-center mt-2 inter">
+                    {totalCount - answeredCount} sual cavablanmayıb
+                  </p>
+                )}
+            </div>
+          </aside>
 
-      {state.showConfirmModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all animate-scaleIn">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          {/* ════════════════════════════════════════
+              MAIN CONTENT — offset by sidebar width
+          ════════════════════════════════════════ */}
+          <main className="flex-1 ml-72 min-h-screen px-6 py-6">
+            {/* Page title */}
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-navy montserrat-700">
+                  İmtahan
+                </h2>
+                <p className="text-slate-500 text-sm inter mt-0.5">
+                  {subjectCode} ·{" "}
+                  {lang === "az" ? "Azərbaycan dili" : "English"}
+                </p>
+              </div>
+              <div
+                className={`px-4 py-2 rounded-xl text-sm font-bold montserrat-700 border ${
+                  isLowTime
+                    ? "bg-red-50 border-red-200 text-red-700"
+                    : "bg-navy/5 border-navy/20 text-navy"
+                }`}
+              >
+                {timeDisplay.hours}:{timeDisplay.minutes}:{timeDisplay.seconds}
+              </div>
+            </div>
+
+            {/* Error state */}
+            {state.error ? (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-yellow-600"
+                  className="w-8 h-8 text-red-500 mx-auto mb-3"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  strokeWidth={2}
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <p className="text-red-700 font-semibold montserrat-600">
+                  {state.error}
+                </p>
+              </div>
+            ) : (
+              /* Questions list */
+              <div className="space-y-5 max-w-3xl">
+                {state.questions.map((q, index) => {
+                  const isAnswered = q.id in state.answers;
+                  return (
+                    <div
+                      key={q.id}
+                      ref={(el) => (questionRefs.current[index] = el)}
+                      className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 overflow-hidden ${
+                        isAnswered
+                          ? "border-emerald-200 shadow-emerald-50"
+                          : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                      }`}
+                    >
+                      {/* Question header strip */}
+                      <div
+                        className={`px-5 py-2.5 flex items-center justify-between border-b ${
+                          isAnswered
+                            ? "bg-emerald-50 border-emerald-100"
+                            : "bg-slate-50 border-slate-100"
+                        }`}
+                      >
+                        <span
+                          className={`text-xs font-bold montserrat-700 uppercase tracking-wider ${
+                            isAnswered ? "text-emerald-700" : "text-slate-500"
+                          }`}
+                        >
+                          Sual {index + 1}
+                        </span>
+                        {isAnswered && (
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-semibold inter">
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Cavablandı
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Question body */}
+                      <div className="p-5">
+                        <p className="font-semibold text-gray-900 text-base leading-relaxed inter mb-4">
+                          <ContentBlock
+                            text={q.question}
+                            imagePath={q.question_image}
+                            prefix={`${index + 1}.`}
+                          />
+                        </p>
+
+                        {/* Options */}
+                        <div className="space-y-2">
+                          {[
+                            { text: q.option1, image: q.option1_image },
+                            { text: q.option2, image: q.option2_image },
+                            { text: q.option3, image: q.option3_image },
+                            { text: q.option4, image: q.option4_image },
+                            { text: q.option5, image: q.option5_image },
+                          ].map((option, optionIndex) => {
+                            const hasContent = option.text || option.image;
+                            if (!hasContent) return null;
+                            const isSelected =
+                              state.answers[q.id] === optionIndex + 1;
+                            const optionLetter = String.fromCharCode(
+                              65 + optionIndex,
+                            ); // A B C D E
+                            return (
+                              <label
+                                key={optionIndex}
+                                className={`flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all duration-150 ${
+                                  isSelected
+                                    ? "bg-navy/5 border-navy text-navy"
+                                    : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                {/* Letter badge */}
+                                <span
+                                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold montserrat-700 mt-0.5 transition-colors ${
+                                    isSelected
+                                      ? "bg-navy text-white"
+                                      : "bg-slate-100 text-slate-500"
+                                  }`}
+                                >
+                                  {optionLetter}
+                                </span>
+
+                                {/* Hidden radio (logic preserved) */}
+                                <input
+                                  type="radio"
+                                  name={`question-${q.id}`}
+                                  value={optionIndex}
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleAnswer(q.id, optionIndex + 1)
+                                  }
+                                  className="sr-only"
+                                />
+
+                                <span className="text-gray-700 flex-1 text-sm inter leading-relaxed">
+                                  <ContentBlock
+                                    text={option.text}
+                                    imagePath={option.image}
+                                  />
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Bottom spacer so last question isn't hidden behind nothing */}
+                <div className="h-8" />
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ════════════════════════════════
+          CONFIRM SUBMIT MODAL
+      ════════════════════════════════ */}
+      {state.showConfirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center mb-6">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="h-8 w-8 text-amber-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-navy montserrat-700 mb-2">
                 İmtahanı bitirmək istədiyinizə əminsiniz?
               </h3>
-              <p className="text-gray-600 text-lg">
+              <p className="text-slate-500 text-sm inter leading-relaxed">
                 İmtahanı bitirdikdən sonra cavablarınızı dəyişmək mümkün
                 olmayacaq.
               </p>
+
+              {/* Stats */}
+              <div className="mt-4 flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-emerald-600 montserrat-700">
+                    {answeredCount}
+                  </p>
+                  <p className="text-xs text-slate-400 inter">Cavablandı</p>
+                </div>
+                <div className="w-px h-8 bg-slate-200" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-500 montserrat-700">
+                    {totalCount - answeredCount}
+                  </p>
+                  <p className="text-xs text-slate-400 inter">Boş qaldı</p>
+                </div>
+                <div className="w-px h-8 bg-slate-200" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-navy montserrat-700">
+                    {totalCount}
+                  </p>
+                  <p className="text-xs text-slate-400 inter">Cəmi</p>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-4">
+
+            <div className="flex gap-3">
               <button
                 onClick={handleCancelSubmit}
-                className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold montserrat-600 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 cursor-pointer"
               >
                 Ləğv et
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold montserrat-700 hover:bg-red-700 transition-all duration-200 cursor-pointer shadow-lg shadow-red-600/20"
               >
                 Bəli, bitir
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ════════════════════════════════
+          RESULT POPUP
+      ════════════════════════════════ */}
+      {state.showPopup && (
+        <Popup
+          score={state.score}
+          preExam={state.preExam}
+          onClose={() => navigate(`/review/${subjectCode}`)}
+        />
       )}
     </div>
   );
