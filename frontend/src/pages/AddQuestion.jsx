@@ -25,6 +25,11 @@ const getImageUrl = (imageValue) => {
   return `${IMAGE_BASE}/api/${imageValue}`;
 };
 
+const FIELD_LABEL =
+  "block text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-1.5";
+const FIELD_INPUT =
+  "w-full p-2.5 border border-border rounded-lg text-sm inter focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all bg-slate-50 focus:bg-white";
+
 // ─────────────────────────────────────────────
 // Single field: text input + image upload/preview/remove
 // ─────────────────────────────────────────────
@@ -66,14 +71,14 @@ const QuestionField = ({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className={FIELD_LABEL}>{label}</label>
 
       {/* Text input */}
       {isTextarea ? (
         <textarea
           value={textValue}
           rows={3}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm"
+          className={FIELD_INPUT}
           onChange={(e) => onTextChange(fieldKey, e.target.value)}
           placeholder="Mətni daxil edin (istəyə görə)"
         />
@@ -81,7 +86,7 @@ const QuestionField = ({
         <input
           type="text"
           value={textValue}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm"
+          className={FIELD_INPUT}
           onChange={(e) => onTextChange(fieldKey, e.target.value)}
           placeholder="Mətni daxil edin (istəyə görə)"
         />
@@ -93,12 +98,12 @@ const QuestionField = ({
           <img
             src={imageSrc}
             alt={label}
-            className="max-h-48 max-w-full rounded-lg border border-gray-200 shadow-sm object-contain bg-gray-50 p-1"
+            className="max-h-48 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
           />
           <button
             type="button"
             onClick={handleRemoveImage}
-            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors cursor-pointer"
+            className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-700 shadow-md transition-colors cursor-pointer"
             title="Şəkli sil"
           >
             ✕
@@ -106,7 +111,7 @@ const QuestionField = ({
         </div>
       ) : (
         <label
-          className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-md border border-dashed border-gray-300 text-sm text-gray-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+          className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all"
         >
           🖼 Şəkil əlavə et
           <input
@@ -279,10 +284,16 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 mb-6 border-2 border-green-200">
-      <h3 className="text-xl font-bold text-gray-900 mb-5">
-        Yeni sual əlavə et
-      </h3>
+    <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-7 mb-6">
+      <div className="mb-5">
+        <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+          Yeni sual
+        </p>
+        <h3 className="text-xl font-bold text-navy montserrat-700">
+          Sual əlavə et
+        </h3>
+        <div className="baau-gold-divider mt-3 max-w-xs" />
+      </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         <QuestionField {...fieldProps("question", "Sual *", true)} />
 
@@ -296,14 +307,12 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
           />
         ))}
 
-        <div className="flex flex-wrap gap-4 items-end pt-2 border-t border-gray-100">
+        <div className="flex flex-wrap gap-4 items-end pt-4 border-t border-border">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Düzgün cavab *
-            </label>
+            <label className={FIELD_LABEL}>Düzgün cavab *</label>
             <select
               value={form.correct_option}
-              className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-indigo-400"
+              className={`${FIELD_INPUT} cursor-pointer`}
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
@@ -324,14 +333,14 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+              className="px-4 py-2.5 border-2 border-border text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer montserrat-600"
             >
               Ləğv et
             </button>
             <button
               type="submit"
               disabled={isAdding}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg transition-colors cursor-pointer disabled:bg-slate-400 disabled:cursor-not-allowed montserrat-700 focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-2"
             >
               {isAdding ? "Əlavə edilir..." : "Əlavə et"}
             </button>
