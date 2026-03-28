@@ -144,63 +144,87 @@ const ResultsByDate = () => {
     return null;
   }
 
+  const fieldLabel =
+    "block text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-1.5";
+  const fieldInput =
+    "w-full p-3 border border-border rounded-lg text-sm inter focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all bg-slate-50 focus:bg-white";
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Tarixə görə İmtahan Nəticələri
-        </h2>
-        <p className="text-gray-600">
-          Tarix seçərək həmin gün təqdim edilmiş imtahan nəticələrini görə
-          bilərsiniz.
-        </p>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tarix Seçin
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              max={getTodayDate()}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-          <button
-            onClick={fetchResults}
-            disabled={loading || !selectedDate}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              loading || !selectedDate
-                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                : "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
-            }`}
-          >
-            {loading ? "Yüklənir..." : "Nəticələri Göstər"}
-          </button>
+    <div className="min-h-screen bg-surface">
+      <div className="bg-navy-mid">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+            Admin · Hesabat
+          </p>
+          <h1 className="text-white text-2xl sm:text-3xl font-bold montserrat-700 leading-tight">
+            Tarixə görə{" "}
+            <span className="text-gold-light">imtahan nəticələri</span>
+          </h1>
+          <p className="text-slate-300 text-sm inter mt-1 max-w-2xl">
+            Tarix seçərək həmin gün təqdim edilmiş imtahan nəticələrini görə
+            bilərsiniz.
+          </p>
         </div>
+        <svg
+          viewBox="0 0 1440 24"
+          className="w-full block"
+          preserveAspectRatio="none"
+          style={{ height: "24px" }}
+        >
+          <path
+            d="M0,24 C360,0 1080,0 1440,24 L1440,24 L0,24 Z"
+            fill="var(--color-surface, #f4f6fa)"
+          />
+        </svg>
       </div>
 
-      {results.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="mb-4 flex justify-between items-center">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Nəticələr ({results.length})
-            </h3>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Tarix: {selectedDate}
-              </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 md:items-end">
+            <div className="flex-1">
+              <label className={fieldLabel}>Tarix seçin</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                max={getTodayDate()}
+                className={fieldInput}
+              />
+            </div>
+            <button
+              onClick={fetchResults}
+              disabled={loading || !selectedDate}
+              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-200 montserrat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 shrink-0 ${
+                loading || !selectedDate
+                  ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                  : "bg-navy hover:bg-navy-light text-white cursor-pointer focus:ring-navy/40"
+              }`}
+            >
+              {loading ? "Yüklənir..." : "Nəticələri göstər"}
+            </button>
+          </div>
+        </div>
+
+        {results.length > 0 && (
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-50/80">
+              <div>
+                <h3 className="text-lg font-bold text-navy montserrat-700">
+                  Nəticələr{" "}
+                  <span className="text-gold">({results.length})</span>
+                </h3>
+                <p className="text-sm text-slate-600 inter mt-0.5">
+                  Tarix:{" "}
+                  <span className="font-semibold text-navy">{selectedDate}</span>
+                </p>
+              </div>
               <button
                 onClick={downloadExcel}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 cursor-pointer flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-2 cursor-pointer montserrat-700"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="h-5 w-5 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -212,73 +236,91 @@ const ResultsByDate = () => {
                     d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                Excel-ə Yüklə
+                Excel-ə yüklə
               </button>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-indigo-600 text-white">
-                  <th className="p-4 text-left font-semibold">Tələbə Kodu</th>
-                  <th className="p-4 text-left font-semibold">Ad Soyad</th>
-                  <th className="p-4 text-left font-semibold">Akademik Qrup</th>
-                  <th className="p-4 text-left font-semibold">Fənn</th>
-                  <th className="p-4 text-left font-semibold">Fənnin Kodu</th>
-                  <th className="p-4 text-left font-semibold">Fənn Qrupu</th>
-                  <th className="p-4 text-left font-semibold">Bal</th>
-                  <th className="p-4 text-left font-semibold">Başlama Vaxtı</th>
-                  <th className="p-4 text-left font-semibold">Bitmə Vaxtı</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((result) => (
-                  <tr
-                    key={result.id}
-                    className="border-b border-gray-200 hover:bg-indigo-50 transition-colors duration-200"
-                  >
-                    <td className="p-4 text-gray-800">
-                      {result["Tələbə_kodu"]}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {result["Soyadı, adı və ata adı"]}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {result["Akademik qrup"] || "-"}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {result["Fənnin adı"]}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {result["Fənnin kodu"]}
-                    </td>
-                    <td className="p-4 text-gray-800 font-semibold">
-                      {result.fenn_qrupu}
-                    </td>
-                    <td className="p-4 text-gray-800 font-semibold">
-                      {result.score}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {formatDateTime(result.created_at)}
-                    </td>
-                    <td className="p-4 text-gray-800">
-                      {formatDateTime(result.submitted_at)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-navy text-white">
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Tələbə kodu
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Ad soyad
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Akademik qrup
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Fənn
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Fənnin kodu
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Fənn qrupu
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Bal
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Başlama
+                    </th>
+                    <th className="p-3 sm:p-4 text-left font-bold montserrat text-[11px] uppercase tracking-wider">
+                      Bitmə
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {results.map((result) => (
+                    <tr
+                      key={result.id}
+                      className="hover:bg-slate-50/90 transition-colors inter"
+                    >
+                      <td className="p-3 sm:p-4 text-slate-800">
+                        {result["Tələbə_kodu"]}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-800">
+                        {result["Soyadı, adı və ata adı"]}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-800">
+                        {result["Akademik qrup"] || "-"}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-800">
+                        {result["Fənnin adı"]}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-800">
+                        {result["Fənnin kodu"]}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-900 font-semibold">
+                        {result.fenn_qrupu}
+                      </td>
+                      <td className="p-3 sm:p-4 text-navy font-bold">
+                        {result.score}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-700 whitespace-nowrap">
+                        {formatDateTime(result.created_at)}
+                      </td>
+                      <td className="p-3 sm:p-4 text-slate-700 whitespace-nowrap">
+                        {formatDateTime(result.submitted_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {results.length === 0 && !loading && selectedDate && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-          <p className="text-gray-600 text-lg">
-            Seçilmiş tarixdə nəticə tapılmadı.
-          </p>
-        </div>
-      )}
+        {results.length === 0 && !loading && selectedDate && (
+          <div className="bg-white rounded-2xl border border-border shadow-sm p-10 text-center">
+            <p className="text-slate-600 text-lg montserrat-600">
+              Seçilmiş tarixdə nəticə tapılmadı.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
