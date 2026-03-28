@@ -120,7 +120,7 @@ const ExportQuestions = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -146,64 +146,104 @@ const ExportQuestions = () => {
     }
   };
 
+  const fieldInput =
+    "w-full p-3 border border-border rounded-lg text-sm inter focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all bg-slate-50 focus:bg-white";
+  const fieldLabel =
+    "block text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-1.5";
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold text-gray-900 mb-8">
-        Sualları PDF formatında yüklə
-      </h2>
-
-      <div className="bg-white rounded-xl shadow-md p-6 max-w-2xl mx-auto">
-        <div className="flex gap-4 mb-6">
-          <input
-            type="text"
-            value={subjectCode}
-            onChange={(e) => setSubjectCode(e.target.value.toUpperCase())}
-            placeholder="Fənn kodunu daxil edin"
-            className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
-          >
-            <option value="az">Azərbaycan</option>
-            <option value="en">English</option>
-          </select>
-          <button
-            onClick={fetchQuestions}
-            disabled={loading}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-          >
-            {loading ? "Yüklənir..." : "Sualları gətir"}
-          </button>
+    <div className="min-h-screen bg-surface">
+      <div className="bg-navy-mid">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+            Admin · Export
+          </p>
+          <h1 className="text-white text-2xl sm:text-3xl font-bold montserrat-700 leading-tight">
+            Sualları{" "}
+            <span className="text-gold-light">PDF formatında yüklə</span>
+          </h1>
+          <p className="text-slate-300 text-sm inter mt-1">
+            Fənn kodu və dil seçin, sonra sualları gətirin və PDF və ya redaktə
+            səhifəsinə keçin.
+          </p>
         </div>
+        <svg
+          viewBox="0 0 1440 24"
+          className="w-full block"
+          preserveAspectRatio="none"
+          style={{ height: "24px" }}
+        >
+          <path
+            d="M0,24 C360,0 1080,0 1440,24 L1440,24 L0,24 Z"
+            fill="var(--color-surface, #f4f6fa)"
+          />
+        </svg>
+      </div>
 
-        {questions && questions.length > 0 && (
-          <div className="mt-6 flex gap-4">
-            <PDFDownloadLink
-              document={
-                <QuestionsPDF
-                  questions={questions}
-                  subjectCode={subjectCode}
-                  subjectName={subjectName}
-                />
-              }
-              fileName={`${subjectCode} - ${subjectName}.pdf`}
-              className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-            >
-              {({ loading }) => (loading ? "PDF hazırlanır..." : "PDF-i yüklə")}
-            </PDFDownloadLink>
-
-            <button
-              onClick={() =>
-                navigate(`/edit-questions/${subjectCode}/${language}`)
-              }
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
-            >
-              Redaktə et
-            </button>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 mb-6">
+            <div className="flex-1 min-w-[160px]">
+              <label className={fieldLabel}>Fənn kodu</label>
+              <input
+                type="text"
+                value={subjectCode}
+                onChange={(e) => setSubjectCode(e.target.value.toUpperCase())}
+                placeholder="Məs: FEN001"
+                className={fieldInput}
+              />
+            </div>
+            <div className="w-full sm:w-40">
+              <label className={fieldLabel}>Dil</label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className={`${fieldInput} cursor-pointer`}
+              >
+                <option value="az">Azərbaycan</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={fetchQuestions}
+                disabled={loading}
+                className="w-full sm:w-auto px-6 py-3 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-navy/40 focus:ring-offset-2 transition-colors duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed montserrat-700"
+              >
+                {loading ? "Yüklənir..." : "Sualları gətir"}
+              </button>
+            </div>
           </div>
-        )}
+
+          {questions && questions.length > 0 && (
+            <div className="pt-6 border-t border-border flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <PDFDownloadLink
+                document={
+                  <QuestionsPDF
+                    questions={questions}
+                    subjectCode={subjectCode}
+                    subjectName={subjectName}
+                  />
+                }
+                fileName={`${subjectCode} - ${subjectName}.pdf`}
+                className="inline-flex justify-center items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
+              >
+                {({ loading: pdfLoading }) =>
+                  pdfLoading ? "PDF hazırlanır..." : "PDF-i yüklə"
+                }
+              </PDFDownloadLink>
+
+              <button
+                onClick={() =>
+                  navigate(`/edit-questions/${subjectCode}/${language}`)
+                }
+                className="px-6 py-3 bg-white border-2 border-border text-navy font-bold rounded-lg hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer montserrat-700"
+              >
+                Redaktə et
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
