@@ -3,3 +3,131 @@
   background-position: center center;
   @apply bg-cover bg-no-repeat backdrop-blur-2xl;
 }
+
+/* ════════════════════════════════════════════════
+   BAAU COLOUR UTILITIES
+   Use these as plain Tailwind-style class names,
+   e.g. bg-navy  text-gold  border-gold  etc.
+   No square brackets needed anywhere.
+════════════════════════════════════════════════ */
+
+/* Background colours */
+.bg-navy {
+  background-color: #0f2a4a;
+}
+.bg-navy-mid {
+  background-color: #1a3a5c;
+}
+.bg-navy-light {
+  background-color: #254d78;
+}
+.bg-gold {
+  background-color: #d4a017;
+}
+.bg-gold-light {
+  background-color: #f0c040;
+}
+.bg-gold-pale {
+  background-color: #fef3c7;
+}
+.bg-surface {
+  background-color: #f4f6fa;
+}
+
+/* Text colours */
+.text-navy {
+  color: #0f2a4a;
+}
+.text-navy-mid {
+  color: #1a3a5c;
+}
+.text-navy-light {
+  color: #254d78;
+}
+.text-gold {
+  color: #d4a017;
+}
+.text-gold-light {
+  color: #f0c040;
+}
+
+/* Border colours */
+.border-navy {
+  border-color: #0f2a4a;
+}
+.border-navy-mid {
+  border-color: #1a3a5c;
+}
+.border-gold {
+  border-color: #d4a017;
+}
+.border-gold-light {
+  border-color: #f0c040;
+}
+
+/* Shadow utilities */
+.shadow-gold\/20 {
+  box-shadow: 0 4px 14px rgba(212, 160, 23, 0.2);
+}
+.shadow-gold\/30 {
+  box-shadow: 0 4px 14px rgba(212, 160, 23, 0.3);
+}
+.shadow-navy\/20 {
+  box-shadow: 0 4px 14px rgba(15, 42, 74, 0.2);
+}
+.shadow-navy\/30 {
+  box-shadow: 0 4px 14px rgba(15, 42, 74, 0.3);
+}
+
+/* ════════════════════════════════════════════════
+   BAAU NAVBAR
+════════════════════════════════════════════════ */
+.baau-navbar {
+  background: linear-gradient(135deg, #0f2a4a 0%, #1a3a5c 60%, #0f2a4a 100%);
+  border-bottom: 2px solid #d4a017;
+  @apply shadow-xl sticky top-0 z-50;
+}
+
+/* ── Nav link base ── */
+.baau-navlink {
+  @apply relative px-3 py-2 text-sm font-semibold tracking-wide
+         transition-colors duration-200;
+  font-family: "Montserrat", sans-serif;
+}
+.baau-navlink-active {
+  @apply text-white;
+}
+.baau-navlink-disabled {
+  @apply text-slate-500 cursor-not-allowed;
+}
+
+/* Animated gold underline */
+.baau-navlink::after {
+  content: "";
+  @apply absolute bottom-0 left-0 w-full h-0.5;
+  background-color: #d4a017;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.25s ease;
+}
+.baau-navlink-active:hover::after {
+  transform: scaleX(1);
+}
+
+/* ── Student photo in navbar ── */
+.baau-student-card {
+  @apply flex items-center gap-3;
+}
+.baau-student-photo {
+  @apply w-14 h-14 rounded-full object-cover flex-shrink-0;
+  border: 2px solid #d4a017;
+  box-shadow:
+    0 0 0 2px #0f2a4a,
+    0 0 0 4px #d4a017;
+}
+
+/* ── Decorative gold divider used in cards ── */
+.baau-gold-divider {
+  @apply w-8 h-0.5 rounded-full;
+  background-color: #d4a017;
+}
