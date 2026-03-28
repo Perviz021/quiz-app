@@ -3,6 +3,21 @@
 @import "./helper.css";
 
 @theme {
+  /* ── Existing brand colors ── */
   --color-main: #155dfc;
   --color-secondary: #2b7fff;
+
+  /* ── BAAU Navy palette ── */
+  --color-navy: #0f2a4a;
+  --color-navy-mid: #1a3a5c;
+  --color-navy-light: #254d78;
+
+  /* ── BAAU Gold palette ── */
+  --color-gold: #d4a017;
+  --color-gold-light: #f0c040;
+  --color-gold-pale: #fef3c7;
+
+  /* ── Neutral surface ── */
+  --color-surface: #f4f6fa;
+  --color-border: #e2e8f0;
 }
