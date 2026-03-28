@@ -29,6 +29,11 @@ const getImageUrl = (imageValue) => {
   return `${IMAGE_BASE}/api/${imageValue}`;
 };
 
+const FIELD_LABEL =
+  "block text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-1.5";
+const FIELD_INPUT =
+  "w-full p-2.5 border border-border rounded-lg text-sm inter focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all bg-slate-50 focus:bg-white";
+
 // ─────────────────────────────────────────────
 // Image editor used inside each edit card
 // Shows full preview if image exists, upload button if not
@@ -99,12 +104,12 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
         <img
           src={getImageUrl(imageValue) || undefined}
           alt="field"
-          className="max-h-48 max-w-full rounded-lg border border-gray-200 shadow-sm object-contain bg-gray-50 p-1"
+          className="max-h-48 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
         />
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 shadow-md transition-colors cursor-pointer"
+          className="absolute -top-2 -right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-700 shadow-md transition-colors cursor-pointer"
           title="Şəkli sil"
         >
           ✕
@@ -115,7 +120,7 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
 
   return (
     <label
-      className={`inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-md border border-dashed border-gray-300 text-sm text-gray-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all ${
+      className={`inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all ${
         uploading ? "opacity-60 pointer-events-none" : ""
       }`}
     >
@@ -489,64 +494,83 @@ const EditQuestions = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      <div className="flex justify-center items-center min-h-screen bg-surface">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-navy border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h2 className="text-3xl font-bold text-gray-900">
-          Sualları Redaktə Et - {subjectCode} ({lang})
-        </h2>
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200"
-          >
-            📥 Excel faylından Import
-          </button>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-200"
-          >
-            {showAddForm ? "Formu gizlət" : "+ Yeni sual əlavə et"}
-          </button>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 cursor-pointer"
-          >
-            Geri
-          </button>
+    <div className="min-h-screen bg-surface">
+      <div className="bg-navy-mid">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+              Sualların idarə edilməsi
+            </p>
+            <h1 className="text-white text-2xl sm:text-3xl font-bold montserrat-700 leading-tight">
+              Sualları redaktə et —{" "}
+              <span className="text-gold-light">{subjectCode}</span>
+            </h1>
+            <p className="text-slate-300 text-sm inter mt-1">
+              Dil: {lang} · {filteredQuestions.length} sual
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors duration-200 montserrat-600"
+            >
+              📥 Excel import
+            </button>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors duration-200 montserrat-600"
+            >
+              {showAddForm ? "Formu gizlət" : "+ Yeni sual əlavə et"}
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors montserrat-600"
+            >
+              Geri
+            </button>
+          </div>
         </div>
+        <svg
+          viewBox="0 0 1440 24"
+          className="w-full block"
+          preserveAspectRatio="none"
+          style={{ height: "24px" }}
+        >
+          <path
+            d="M0,24 C360,0 1080,0 1440,24 L1440,24 L0,24 Z"
+            fill="var(--color-surface, #f4f6fa)"
+          />
+        </svg>
       </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Search and Navigation Controls */}
-      <div className="bg-white rounded-xl shadow-md p-4 mb-6 space-y-4">
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 sm:p-5 mb-6 space-y-4">
         <div className="flex flex-wrap gap-4 items-center">
           {/* Search */}
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Axtarış
-            </label>
+            <label className={FIELD_LABEL}>Axtarış</label>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Sual və ya variantda axtar..."
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className={FIELD_INPUT}
             />
           </div>
 
           {/* Jump to Question */}
           <div className="flex gap-2 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Suala keç
-              </label>
-              <div className="flex gap-2">
+              <label className={FIELD_LABEL}>Suala keç</label>
+              <div className="flex gap-2 items-end">
                 <input
                   type="number"
                   value={jumpToNumber}
@@ -554,7 +578,7 @@ const EditQuestions = () => {
                   placeholder="№"
                   min="1"
                   max={filteredQuestions.length}
-                  className="w-20 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className={`${FIELD_INPUT} w-20`}
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
                       handleJumpToQuestion();
@@ -563,7 +587,7 @@ const EditQuestions = () => {
                 />
                 <button
                   onClick={handleJumpToQuestion}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer transition-colors duration-200"
+                  className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors duration-200 montserrat-600 h-[42px] shrink-0"
                 >
                   Keç
                 </button>
@@ -572,12 +596,12 @@ const EditQuestions = () => {
           </div>
 
           {/* Question Count */}
-          <div className="text-sm text-gray-600">
-            <span className="font-semibold">
+          <div className="text-sm text-slate-600 inter self-end pb-1">
+            <span className="font-semibold montserrat-600 text-navy">
               {filteredQuestions.length} sual
             </span>
             {searchQuery && (
-              <span className="text-gray-500">
+              <span className="text-slate-500">
                 {" "}
                 (cəmi {questions.length} sualdan)
               </span>
@@ -587,16 +611,16 @@ const EditQuestions = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
               >
                 Əvvəlki
               </button>
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-slate-700 inter">
                 Səhifə {currentPage} / {totalPages}
               </span>
               <button
@@ -604,12 +628,12 @@ const EditQuestions = () => {
                   setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
               >
                 Növbəti
               </button>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600 inter">
               {indexOfFirstQuestion + 1} -{" "}
               {Math.min(indexOfLastQuestion, filteredQuestions.length)} /{" "}
               {filteredQuestions.length}
@@ -635,8 +659,8 @@ const EditQuestions = () => {
         {/* Main Content */}
         <div className="flex-1 space-y-6">
           {currentQuestions.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 text-center">
-              <p className="text-gray-600 text-lg">
+            <div className="bg-white rounded-2xl border border-border shadow-sm p-10 text-center">
+              <p className="text-slate-600 text-lg montserrat-600">
                 {searchQuery
                   ? "Axtarışa uyğun sual tapılmadı"
                   : "Sual tapılmadı"}
@@ -655,14 +679,14 @@ const EditQuestions = () => {
                 <div
                   key={question.id}
                   ref={(el) => (questionRefs.current[globalIndex] = el)}
-                  className="bg-white rounded-xl shadow-md p-6 space-y-4"
+                  className="bg-white rounded-2xl border border-border shadow-sm p-6 space-y-4"
                 >
                   {/* ── Question field ── */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={FIELD_LABEL}>
                       Sual {displayNumber}
                       {searchQuery && (
-                        <span className="text-gray-500 text-xs ml-2">
+                        <span className="text-slate-400 font-normal normal-case tracking-normal ml-2">
                           (ID: {question.id})
                         </span>
                       )}
@@ -670,7 +694,7 @@ const EditQuestions = () => {
                     <textarea
                       value={eq.question || ""}
                       rows={3}
-                      className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-400"
+                      className={FIELD_INPUT}
                       onChange={(e) =>
                         handleInputChange(question.id, "question", e.target.value)
                       }
@@ -689,13 +713,13 @@ const EditQuestions = () => {
                   {/* ── Option fields ── */}
                   {[1, 2, 3, 4, 5].map((num) => (
                     <div key={num}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className={FIELD_LABEL}>
                         Variant {String.fromCharCode(64 + num)}
                       </label>
                       <input
                         type="text"
                         value={eq[`option${num}`] || ""}
-                        className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-400"
+                        className={FIELD_INPUT}
                         onChange={(e) =>
                           handleInputChange(
                             question.id,
@@ -719,14 +743,12 @@ const EditQuestions = () => {
                   ))}
 
                   {/* ── Correct answer + action buttons ── */}
-                  <div className="flex gap-4 items-end pt-2 border-t border-gray-100">
+                  <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end pt-4 border-t border-border">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Düzgün cavab
-                      </label>
+                      <label className={FIELD_LABEL}>Düzgün cavab</label>
                       <select
                         value={eq.correct_option || 1}
-                        className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-indigo-400"
+                        className={`${FIELD_INPUT} cursor-pointer`}
                         onChange={(e) =>
                           handleInputChange(
                             question.id,
@@ -743,16 +765,16 @@ const EditQuestions = () => {
                       </select>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <button
                         onClick={() => handleQuestionUpdate(question.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                        className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
                       >
                         Yenilə
                       </button>
                       <button
                         onClick={() => handleDeleteClick(question.id)}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer"
+                        className="px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
                       >
                         Sil
                       </button>
@@ -768,10 +790,10 @@ const EditQuestions = () => {
         {questions.length > 10 && (
           <div className="hidden lg:block fixed top-20 right-0 group z-40">
             {/* Visible Tab Trigger */}
-            <div className="fixed right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-l-lg shadow-lg border border-gray-200 border-r-0 cursor-pointer z-50 group-hover:opacity-0 transition-opacity duration-300">
+            <div className="fixed right-0 top-1/2 -translate-y-1/2 bg-navy text-gold-light p-2 rounded-l-lg shadow-lg border border-gold/40 border-r-0 cursor-pointer z-50 group-hover:opacity-0 transition-opacity duration-300">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-gray-600"
+                className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -786,9 +808,9 @@ const EditQuestions = () => {
             </div>
 
             {/* Navigation Panel */}
-            <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-gray-200 shadow-xl rounded-l-2xl transition-all duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto group-hover:right-4 hover:right-4 hover:shadow-2xl">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center sticky top-0 bg-white pb-2 border-b border-gray-200 z-10">
-                Sual Naviqasiyası
+            <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-border shadow-xl rounded-l-2xl transition-all duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto group-hover:right-4 hover:right-4 hover:shadow-2xl">
+              <h3 className="text-sm font-bold text-navy mb-3 text-center sticky top-0 bg-white pb-2 border-b border-border z-10 montserrat-700 uppercase tracking-wide">
+                Sual naviqasiyası
               </h3>
               <div className="grid grid-cols-5 gap-2">
                 {filteredQuestions.map((q, index) => {
@@ -814,10 +836,10 @@ const EditQuestions = () => {
                           });
                         }, 100);
                       }}
-                      className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold transition-all duration-200 text-sm ${
+                      className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold transition-all duration-200 text-sm montserrat-600 ${
                         isOnCurrentPage
-                          ? "bg-indigo-600 text-white hover:bg-indigo-700 ring-2 ring-indigo-300"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          ? "bg-navy text-white hover:bg-navy-light ring-2 ring-gold/50"
+                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
                       }`}
                       title={`Sual ${index + 1}`}
                     >
@@ -838,60 +860,94 @@ const EditQuestions = () => {
 
       {/* Import Questions Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl transform transition-all duration-200 scale-100 max-h-[90vh] overflow-y-auto">
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Excel Faylından Sualları Import Et
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-border max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-navy-mid px-6 py-5 shrink-0">
+              <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+                Excel import
+              </p>
+              <h3 className="text-xl font-bold text-white montserrat-700">
+                Sualları fayldan yüklə
               </h3>
+              <p className="text-slate-300 text-sm inter mt-1">
+                {subjectCode} · {lang}
+              </p>
             </div>
+            <div className="baau-gold-divider mx-6 mt-4 shrink-0" />
 
-            <div className="space-y-4">
+            <div className="p-6 pt-5 overflow-y-auto space-y-5">
+              <div className="rounded-xl border border-border bg-slate-50/80 p-4">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-2">
+                  Sütun adları
+                </p>
+                <p className="text-xs text-slate-600 inter leading-relaxed">
+                  <span className="font-semibold text-navy">sual</span>,{" "}
+                  <span className="font-semibold text-navy">variant A</span> …{" "}
+                  <span className="font-semibold text-navy">variant E</span>,{" "}
+                  <span className="font-semibold text-navy">düzgün_variant</span>{" "}
+                  (A–E). Birinci sətir başlıqdır.
+                </p>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Excel Faylı Seçin
-                </label>
+                <label className={FIELD_LABEL}>Excel faylı seçin</label>
                 <input
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={handleFileChange}
-                  className="w-full p-2 border border-gray-300 rounded-md cursor-pointer"
+                  className={`${FIELD_INPUT} cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-navy file:text-white hover:file:bg-navy-light`}
                   disabled={isImporting}
                 />
                 {importFile && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Seçilmiş fayl: {importFile.name}
+                  <p className="text-sm text-slate-600 inter mt-2">
+                    <span className="font-semibold text-navy montserrat-600">
+                      Seçilmiş:
+                    </span>{" "}
+                    {importFile.name}
                   </p>
                 )}
               </div>
 
               {importResult && (
                 <div
-                  className={`p-4 rounded-lg ${
+                  className={`p-4 rounded-xl border ${
                     importResult.errorCount > 0
-                      ? "bg-yellow-50 border border-yellow-200"
-                      : "bg-green-50 border border-green-200"
+                      ? "bg-amber-50/90 border-amber-200"
+                      : "bg-emerald-50/90 border-emerald-200"
                   }`}
                 >
-                  <h4 className="font-semibold mb-2">Import Nəticəsi:</h4>
-                  <p className="text-sm">
-                    ✅ Uğurlu: {importResult.successCount} sual
+                  <h4 className="font-bold text-navy montserrat-700 mb-2 text-sm">
+                    Import nəticəsi
+                  </h4>
+                  <p className="text-sm inter text-slate-700">
+                    Uğurlu:{" "}
+                    <span className="font-semibold text-emerald-700">
+                      {importResult.successCount}
+                    </span>{" "}
+                    sual
                     {importResult.errorCount > 0 && (
                       <>
-                        <br />❌ Xəta: {importResult.errorCount} sual
+                        <br />
+                        Xəta:{" "}
+                        <span className="font-semibold text-red-600">
+                          {importResult.errorCount}
+                        </span>{" "}
+                        sual
                       </>
                     )}
                     <br />
-                    📊 Cəmi: {importResult.total} sual
+                    Cəmi:{" "}
+                    <span className="font-semibold">{importResult.total}</span>{" "}
+                    sətir
                   </p>
                   {importResult.errors && importResult.errors.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-semibold">Xətalar:</p>
-                      <ul className="text-xs list-disc list-inside mt-1">
+                    <div className="mt-3 pt-3 border-t border-amber-200/80">
+                      <p className="text-xs font-bold text-slate-600 montserrat mb-1">
+                        Xətalar
+                      </p>
+                      <ul className="text-xs list-disc list-inside space-y-0.5 text-red-700 inter">
                         {importResult.errors.map((error, idx) => (
-                          <li key={idx} className="text-red-600">
-                            {error}
-                          </li>
+                          <li key={idx}>{error}</li>
                         ))}
                       </ul>
                     </div>
@@ -899,7 +955,7 @@ const EditQuestions = () => {
                 </div>
               )}
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 <button
                   onClick={() => {
                     setShowImportModal(false);
@@ -907,16 +963,16 @@ const EditQuestions = () => {
                     setImportResult(null);
                   }}
                   disabled={isImporting}
-                  className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer disabled:opacity-50 montserrat-600"
                 >
                   Ləğv et
                 </button>
                 <button
                   onClick={handleImportQuestions}
                   disabled={!importFile || isImporting}
-                  className="flex-1 py-3 px-6 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-6 rounded-xl bg-navy hover:bg-navy-light text-white font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/40 focus:ring-offset-2 cursor-pointer disabled:bg-slate-400 disabled:cursor-not-allowed montserrat-700"
                 >
-                  {isImporting ? "Import edilir..." : "Import Et"}
+                  {isImporting ? "Import edilir..." : "Import et"}
                 </button>
               </div>
             </div>
@@ -926,9 +982,17 @@ const EditQuestions = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-200 scale-100">
-            <div className="text-center mb-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
+          <div className="bg-white rounded-2xl border border-border max-w-md w-full mx-auto shadow-2xl overflow-hidden">
+            <div className="bg-navy-mid px-6 py-4">
+              <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat">
+                Diqqət
+              </p>
+              <h3 className="text-xl font-bold text-white montserrat-700 mt-1">
+                Sualı silmək
+              </h3>
+            </div>
+            <div className="p-8 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -945,33 +1009,31 @@ const EditQuestions = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Sualı Silmək
-              </h3>
-              <p className="text-gray-600 text-lg">
+              <p className="text-slate-600 text-base inter">
                 Bu sualı silmək istədiyinizə əminsiniz?
               </p>
-              <p className="text-gray-500 text-sm mt-2">
+              <p className="text-slate-500 text-sm inter mt-2">
                 Bu əməliyyat geri alına bilməz.
               </p>
-            </div>
-            <div className="flex gap-4">
+              <div className="flex gap-3 mt-8">
               <button
                 onClick={handleDeleteCancel}
-                className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 cursor-pointer"
+                className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer montserrat-600"
               >
                 Ləğv et
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer"
+                className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 cursor-pointer montserrat-700"
               >
-                Bəli, Sil
+                Bəli, sil
               </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
