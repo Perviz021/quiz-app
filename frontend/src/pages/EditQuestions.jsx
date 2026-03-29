@@ -47,7 +47,9 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
 
     const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowed.includes(file.type)) {
-      toast.error("Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir");
+      toast.error(
+        "Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir",
+      );
       e.target.value = "";
       return;
     }
@@ -68,7 +70,7 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
           method: "POST",
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           body: formData,
-        }
+        },
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Şəkil yüklənmədi");
@@ -166,6 +168,7 @@ const EditQuestions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [questionsPerPage] = useState(20);
   const [jumpToNumber, setJumpToNumber] = useState("");
+  const [navOpen, setNavOpen] = useState(false);
   const questionRefs = useRef([]);
 
   useEffect(() => {
@@ -180,7 +183,7 @@ const EditQuestions = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -231,7 +234,7 @@ const EditQuestions = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(editedQuestions[questionId]),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -261,7 +264,7 @@ const EditQuestions = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -352,7 +355,7 @@ const EditQuestions = () => {
           !option5
         ) {
           throw new Error(
-            `Sətir ${rowNumber}: sual və bütün variantlar mütləq doldurulmalıdır`
+            `Sətir ${rowNumber}: sual və bütün variantlar mütləq doldurulmalıdır`,
           );
         }
 
@@ -360,7 +363,7 @@ const EditQuestions = () => {
 
         if (!correctOption) {
           throw new Error(
-            `Sətir ${rowNumber}: düzgün_variant A, B, C, D və ya E olmalıdır`
+            `Sətir ${rowNumber}: düzgün_variant A, B, C, D və ya E olmalıdır`,
           );
         }
 
@@ -404,7 +407,7 @@ const EditQuestions = () => {
           result.errorCount > 0
             ? `. ${result.errorCount} sual xəta ilə qarşılaşdı`
             : ""
-        }`
+        }`,
       );
 
       // Refresh questions list
@@ -442,17 +445,17 @@ const EditQuestions = () => {
   const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
   const currentQuestions = filteredQuestions.slice(
     indexOfFirstQuestion,
-    indexOfLastQuestion
+    indexOfLastQuestion,
   );
 
   // Scroll to question
   const scrollToQuestion = (index) => {
     const actualIndex = filteredQuestions.findIndex(
-      (q) => q.id === currentQuestions[index]?.id
+      (q) => q.id === currentQuestions[index]?.id,
     );
     if (actualIndex !== -1) {
       const globalIndex = questions.findIndex(
-        (q) => q.id === filteredQuestions[actualIndex]?.id
+        (q) => q.id === filteredQuestions[actualIndex]?.id,
       );
       questionRefs.current[globalIndex]?.scrollIntoView({
         behavior: "smooth",
@@ -482,7 +485,7 @@ const EditQuestions = () => {
       setJumpToNumber("");
     } else {
       toast.error(
-        `Xahiş edirik 1 ilə ${filteredQuestions.length} arasında bir rəqəm daxil edin`
+        `Xahiş edirik 1 ilə ${filteredQuestions.length} arasında bir rəqəm daxil edin`,
       );
     }
   };
@@ -551,488 +554,666 @@ const EditQuestions = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Search and Navigation Controls */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 sm:p-5 mb-6 space-y-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          {/* Search */}
-          <div className="flex-1 min-w-[200px]">
-            <label className={FIELD_LABEL}>Axtarış</label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Sual və ya variantda axtar..."
-              className={FIELD_INPUT}
-            />
-          </div>
+        {/* Search and Navigation Controls */}
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-4 sm:p-5 mb-6 space-y-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            {/* Search */}
+            <div className="flex-1 min-w-[200px]">
+              <label className={FIELD_LABEL}>Axtarış</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Sual və ya variantda axtar..."
+                className={FIELD_INPUT}
+              />
+            </div>
 
-          {/* Jump to Question */}
-          <div className="flex gap-2 items-end">
-            <div>
-              <label className={FIELD_LABEL}>Suala keç</label>
-              <div className="flex gap-2 items-end">
-                <input
-                  type="number"
-                  value={jumpToNumber}
-                  onChange={(e) => setJumpToNumber(e.target.value)}
-                  placeholder="№"
-                  min="1"
-                  max={filteredQuestions.length}
-                  className={`${FIELD_INPUT} w-20`}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      handleJumpToQuestion();
-                    }
-                  }}
-                />
-                <button
-                  onClick={handleJumpToQuestion}
-                  className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors duration-200 montserrat-600 h-[42px] shrink-0"
-                >
-                  Keç
-                </button>
+            {/* Jump to Question */}
+            <div className="flex gap-2 items-end">
+              <div>
+                <label className={FIELD_LABEL}>Suala keç</label>
+                <div className="flex gap-2 items-end">
+                  <input
+                    type="number"
+                    value={jumpToNumber}
+                    onChange={(e) => setJumpToNumber(e.target.value)}
+                    placeholder="№"
+                    min="1"
+                    max={filteredQuestions.length}
+                    className={`${FIELD_INPUT} w-20`}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleJumpToQuestion();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleJumpToQuestion}
+                    className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-semibold rounded-lg cursor-pointer transition-colors duration-200 montserrat-600 h-[42px] shrink-0"
+                  >
+                    Keç
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Question Count */}
+            <div className="text-sm text-slate-600 inter self-end pb-1">
+              <span className="font-semibold montserrat-600 text-navy">
+                {filteredQuestions.length} sual
+              </span>
+              {searchQuery && (
+                <span className="text-slate-500">
+                  {" "}
+                  (cəmi {questions.length} sualdan)
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Question Count */}
-          <div className="text-sm text-slate-600 inter self-end pb-1">
-            <span className="font-semibold montserrat-600 text-navy">
-              {filteredQuestions.length} sual
-            </span>
-            {searchQuery && (
-              <span className="text-slate-500">
-                {" "}
-                (cəmi {questions.length} sualdan)
-              </span>
-            )}
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
+                >
+                  Əvvəlki
+                </button>
+                <span className="text-sm text-slate-700 inter">
+                  Səhifə {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
+                >
+                  Növbəti
+                </button>
+              </div>
+              <div className="text-sm text-slate-600 inter">
+                {indexOfFirstQuestion + 1} -{" "}
+                {Math.min(indexOfLastQuestion, filteredQuestions.length)} /{" "}
+                {filteredQuestions.length}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
-              >
-                Əvvəlki
-              </button>
-              <span className="text-sm text-slate-700 inter">
-                Səhifə {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="px-3 py-1.5 border border-border rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inter"
-              >
-                Növbəti
-              </button>
-            </div>
-            <div className="text-sm text-slate-600 inter">
-              {indexOfFirstQuestion + 1} -{" "}
-              {Math.min(indexOfLastQuestion, filteredQuestions.length)} /{" "}
-              {filteredQuestions.length}
-            </div>
-          </div>
+        {/* Add New Question Form — imported component */}
+        {showAddForm && (
+          <AddQuestion
+            subjectCode={subjectCode}
+            lang={lang}
+            onSuccess={() => {
+              setShowAddForm(false);
+              fetchQuestions();
+            }}
+            onCancel={() => setShowAddForm(false)}
+          />
         )}
-      </div>
 
-      {/* Add New Question Form — imported component */}
-      {showAddForm && (
-        <AddQuestion
-          subjectCode={subjectCode}
-          lang={lang}
-          onSuccess={() => {
-            setShowAddForm(false);
-            fetchQuestions();
-          }}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
+        <div className="flex gap-6">
+          {/* Main Content */}
+          <div className="flex-1 space-y-6">
+            {currentQuestions.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-border shadow-sm p-10 text-center">
+                <p className="text-slate-600 text-lg montserrat-600">
+                  {searchQuery
+                    ? "Axtarışa uyğun sual tapılmadı"
+                    : "Sual tapılmadı"}
+                </p>
+              </div>
+            ) : (
+              currentQuestions.map((question) => {
+                const globalIndex = questions.findIndex(
+                  (q) => q.id === question.id,
+                );
+                const displayNumber =
+                  filteredQuestions.findIndex((q) => q.id === question.id) + 1;
+                const eq = editedQuestions[question.id] || {};
 
-      <div className="flex gap-6">
-        {/* Main Content */}
-        <div className="flex-1 space-y-6">
-          {currentQuestions.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-border shadow-sm p-10 text-center">
-              <p className="text-slate-600 text-lg montserrat-600">
-                {searchQuery
-                  ? "Axtarışa uyğun sual tapılmadı"
-                  : "Sual tapılmadı"}
-              </p>
-            </div>
-          ) : (
-            currentQuestions.map((question) => {
-              const globalIndex = questions.findIndex(
-                (q) => q.id === question.id
-              );
-              const displayNumber =
-                filteredQuestions.findIndex((q) => q.id === question.id) + 1;
-              const eq = editedQuestions[question.id] || {};
-
-              return (
-                <div
-                  key={question.id}
-                  ref={(el) => (questionRefs.current[globalIndex] = el)}
-                  className="bg-white rounded-2xl border border-border shadow-sm p-6 space-y-4"
-                >
-                  {/* ── Question field ── */}
-                  <div>
-                    <label className={FIELD_LABEL}>
-                      Sual {displayNumber}
-                      {searchQuery && (
-                        <span className="text-slate-400 font-normal normal-case tracking-normal ml-2">
-                          (ID: {question.id})
-                        </span>
-                      )}
-                    </label>
-                    <textarea
-                      value={eq.question || ""}
-                      rows={3}
-                      className={FIELD_INPUT}
-                      onChange={(e) =>
-                        handleInputChange(question.id, "question", e.target.value)
-                      }
-                      placeholder="Sual mətni (istəyə görə)"
-                    />
-                    <ImageFieldEditor
-                      fieldKey="question_image"
-                      imageValue={eq.question_image || null}
-                      subjectCode={subjectCode}
-                      onChange={(field, val) =>
-                        handleImageChange(question.id, field, val)
-                      }
-                    />
-                  </div>
-
-                  {/* ── Option fields ── */}
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <div key={num}>
+                return (
+                  <div
+                    key={question.id}
+                    ref={(el) => (questionRefs.current[globalIndex] = el)}
+                    className="bg-white rounded-2xl border border-border shadow-sm p-6 space-y-4"
+                  >
+                    {/* ── Question field ── */}
+                    <div>
                       <label className={FIELD_LABEL}>
-                        Variant {String.fromCharCode(64 + num)}
+                        Sual {displayNumber}
+                        {searchQuery && (
+                          <span className="text-slate-400 font-normal normal-case tracking-normal ml-2">
+                            (ID: {question.id})
+                          </span>
+                        )}
                       </label>
-                      <input
-                        type="text"
-                        value={eq[`option${num}`] || ""}
+                      <textarea
+                        value={eq.question || ""}
+                        rows={3}
                         className={FIELD_INPUT}
                         onChange={(e) =>
                           handleInputChange(
                             question.id,
-                            `option${num}`,
-                            e.target.value
+                            "question",
+                            e.target.value,
                           )
                         }
-                        placeholder={`Variant ${String.fromCharCode(
-                          64 + num
-                        )} mətni (istəyə görə)`}
+                        placeholder="Sual mətni (istəyə görə)"
                       />
                       <ImageFieldEditor
-                        fieldKey={`option${num}_image`}
-                        imageValue={eq[`option${num}_image`] || null}
+                        fieldKey="question_image"
+                        imageValue={eq.question_image || null}
                         subjectCode={subjectCode}
                         onChange={(field, val) =>
                           handleImageChange(question.id, field, val)
                         }
                       />
                     </div>
-                  ))}
 
-                  {/* ── Correct answer + action buttons ── */}
-                  <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end pt-4 border-t border-border">
-                    <div className="flex-1">
-                      <label className={FIELD_LABEL}>Düzgün cavab</label>
-                      <select
-                        value={eq.correct_option || 1}
-                        className={`${FIELD_INPUT} cursor-pointer`}
-                        onChange={(e) =>
-                          handleInputChange(
-                            question.id,
-                            "correct_option",
-                            e.target.value
-                          )
-                        }
-                      >
-                        {[1, 2, 3, 4, 5].map((num) => (
-                          <option key={num} value={num}>
-                            {String.fromCharCode(64 + num)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* ── Option fields ── */}
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <div key={num}>
+                        <label className={FIELD_LABEL}>
+                          Variant {String.fromCharCode(64 + num)}
+                        </label>
+                        <input
+                          type="text"
+                          value={eq[`option${num}`] || ""}
+                          className={FIELD_INPUT}
+                          onChange={(e) =>
+                            handleInputChange(
+                              question.id,
+                              `option${num}`,
+                              e.target.value,
+                            )
+                          }
+                          placeholder={`Variant ${String.fromCharCode(
+                            64 + num,
+                          )} mətni (istəyə görə)`}
+                        />
+                        <ImageFieldEditor
+                          fieldKey={`option${num}_image`}
+                          imageValue={eq[`option${num}_image`] || null}
+                          subjectCode={subjectCode}
+                          onChange={(field, val) =>
+                            handleImageChange(question.id, field, val)
+                          }
+                        />
+                      </div>
+                    ))}
 
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => handleQuestionUpdate(question.id)}
-                        className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
-                      >
-                        Yenilə
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(question.id)}
-                        className="px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
-                      >
-                        Sil
-                      </button>
+                    {/* ── Correct answer + action buttons ── */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end pt-4 border-t border-border">
+                      <div className="flex-1">
+                        <label className={FIELD_LABEL}>Düzgün cavab</label>
+                        <select
+                          value={eq.correct_option || 1}
+                          className={`${FIELD_INPUT} cursor-pointer`}
+                          onChange={(e) =>
+                            handleInputChange(
+                              question.id,
+                              "correct_option",
+                              e.target.value,
+                            )
+                          }
+                        >
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <option key={num} value={num}>
+                              {String.fromCharCode(64 + num)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => handleQuestionUpdate(question.id)}
+                          className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
+                        >
+                          Yenilə
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(question.id)}
+                          className="px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
+                        >
+                          Sil
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Sticky Navigation Panel */}
-        {questions.length > 10 && (
-          <div className="hidden lg:block fixed top-20 right-0 group z-40">
-            {/* Visible Tab Trigger */}
-            <div className="fixed right-0 top-1/2 -translate-y-1/2 bg-navy text-gold-light p-2 rounded-l-lg shadow-lg border border-gold/40 border-r-0 cursor-pointer z-50 group-hover:opacity-0 transition-opacity duration-300">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </div>
-
-            {/* Navigation Panel */}
-            <div className="fixed top-20 -right-64 w-64 p-4 bg-white border border-border shadow-xl rounded-l-2xl transition-all duration-300 max-h-[calc(100vh-6rem)] overflow-y-auto group-hover:right-4 hover:right-4 hover:shadow-2xl">
-              <h3 className="text-sm font-bold text-navy mb-3 text-center sticky top-0 bg-white pb-2 border-b border-border z-10 montserrat-700 uppercase tracking-wide">
-                Sual naviqasiyası
-              </h3>
-              <div className="grid grid-cols-5 gap-2">
-                {filteredQuestions.map((q, index) => {
-                  const globalIndex = questions.findIndex(
-                    (question) => question.id === q.id
-                  );
-                  const isOnCurrentPage =
-                    index >= indexOfFirstQuestion &&
-                    index < indexOfLastQuestion;
-
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => {
-                        const targetPage = Math.ceil(
-                          (index + 1) / questionsPerPage
-                        );
-                        setCurrentPage(targetPage);
-                        setTimeout(() => {
-                          questionRefs.current[globalIndex]?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                          });
-                        }, 100);
-                      }}
-                      className={`w-10 h-10 flex items-center justify-center rounded-full font-semibold transition-all duration-200 text-sm montserrat-600 ${
-                        isOnCurrentPage
-                          ? "bg-navy text-white hover:bg-navy-light ring-2 ring-gold/50"
-                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                      }`}
-                      title={`Sual ${index + 1}`}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-              {filteredQuestions.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Sual tapılmadı
-                </p>
-              )}
-            </div>
+                );
+              })
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Import Questions Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-border max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="bg-navy-mid px-6 py-5 shrink-0">
-              <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
-                Excel import
-              </p>
-              <h3 className="text-xl font-bold text-white montserrat-700">
-                Sualları fayldan yüklə
-              </h3>
-              <p className="text-slate-300 text-sm inter mt-1">
-                {subjectCode} · {lang}
-              </p>
-            </div>
-            <div className="baau-gold-divider mx-6 mt-4 shrink-0" />
-
-            <div className="p-6 pt-5 overflow-y-auto space-y-5">
-              <div className="rounded-xl border border-border bg-slate-50/80 p-4">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-2">
-                  Sütun adları
-                </p>
-                <p className="text-xs text-slate-600 inter leading-relaxed">
-                  <span className="font-semibold text-navy">sual</span>,{" "}
-                  <span className="font-semibold text-navy">variant A</span> …{" "}
-                  <span className="font-semibold text-navy">variant E</span>,{" "}
-                  <span className="font-semibold text-navy">düzgün_variant</span>{" "}
-                  (A–E). Birinci sətir başlıqdır.
-                </p>
-              </div>
-
-              <div>
-                <label className={FIELD_LABEL}>Excel faylı seçin</label>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileChange}
-                  className={`${FIELD_INPUT} cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-navy file:text-white hover:file:bg-navy-light`}
-                  disabled={isImporting}
-                />
-                {importFile && (
-                  <p className="text-sm text-slate-600 inter mt-2">
-                    <span className="font-semibold text-navy montserrat-600">
-                      Seçilmiş:
-                    </span>{" "}
-                    {importFile.name}
-                  </p>
-                )}
-              </div>
-
-              {importResult && (
+          {/* ── Sticky Navigation Panel ── */}
+          {questions.length > 10 && (
+            <>
+              {/* Backdrop — clicking it closes the panel */}
+              {navOpen && (
                 <div
-                  className={`p-4 rounded-xl border ${
-                    importResult.errorCount > 0
-                      ? "bg-amber-50/90 border-amber-200"
-                      : "bg-emerald-50/90 border-emerald-200"
-                  }`}
-                >
-                  <h4 className="font-bold text-navy montserrat-700 mb-2 text-sm">
-                    Import nəticəsi
-                  </h4>
-                  <p className="text-sm inter text-slate-700">
-                    Uğurlu:{" "}
-                    <span className="font-semibold text-emerald-700">
-                      {importResult.successCount}
-                    </span>{" "}
-                    sual
-                    {importResult.errorCount > 0 && (
-                      <>
-                        <br />
-                        Xəta:{" "}
-                        <span className="font-semibold text-red-600">
-                          {importResult.errorCount}
-                        </span>{" "}
-                        sual
-                      </>
-                    )}
-                    <br />
-                    Cəmi:{" "}
-                    <span className="font-semibold">{importResult.total}</span>{" "}
-                    sətir
-                  </p>
-                  {importResult.errors && importResult.errors.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/80">
-                      <p className="text-xs font-bold text-slate-600 montserrat mb-1">
-                        Xətalar
-                      </p>
-                      <ul className="text-xs list-disc list-inside space-y-0.5 text-red-700 inter">
-                        {importResult.errors.map((error, idx) => (
-                          <li key={idx}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                  className="hidden lg:block fixed inset-0 z-40"
+                  onClick={() => setNavOpen(false)}
+                />
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                <button
-                  onClick={() => {
-                    setShowImportModal(false);
-                    setImportFile(null);
-                    setImportResult(null);
-                  }}
-                  disabled={isImporting}
-                  className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer disabled:opacity-50 montserrat-600"
-                >
-                  Ləğv et
-                </button>
-                <button
-                  onClick={handleImportQuestions}
-                  disabled={!importFile || isImporting}
-                  className="flex-1 py-3 px-6 rounded-xl bg-navy hover:bg-navy-light text-white font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/40 focus:ring-offset-2 cursor-pointer disabled:bg-slate-400 disabled:cursor-not-allowed montserrat-700"
-                >
-                  {isImporting ? "Import edilir..." : "Import et"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
-          <div className="bg-white rounded-2xl border border-border max-w-md w-full mx-auto shadow-2xl overflow-hidden">
-            <div className="bg-navy-mid px-6 py-4">
-              <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat">
-                Diqqət
-              </p>
-              <h3 className="text-xl font-bold text-white montserrat-700 mt-1">
-                Sualı silmək
-              </h3>
-            </div>
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              {/* Pull tab — always visible, opens panel on click */}
+              <button
+                onClick={() => setNavOpen((o) => !o)}
+                className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 flex-col items-center bg-navy border border-gold/40 border-r-0 rounded-l-xl px-2 py-4 shadow-lg gap-2 cursor-pointer transition-colors hover:bg-navy-light"
+                title="Naviqasiya panelini aç"
+              >
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-red-600"
+                  className={`w-4 h-4 text-gold-light transition-transform duration-300 ${navOpen ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  strokeWidth={2.5}
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    d="M15 19l-7-7 7-7"
                   />
                 </svg>
+                <span
+                  className="text-gold-light text-[10px] font-bold montserrat-700 tracking-widest uppercase"
+                  style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)",
+                  }}
+                >
+                  Naviqasiya
+                </span>
+              </button>
+
+              {/* Slide-in panel — controlled by navOpen state, no hover gap issue */}
+              <div
+                className={`hidden lg:flex fixed top-20 z-50 w-72 bg-navy border-l border-t border-b border-gold/20 shadow-2xl rounded-l-2xl flex-col transition-all duration-300 ease-in-out ${
+                  navOpen ? "right-0" : "-right-72"
+                }`}
+                style={{ maxHeight: "calc(100vh - 6rem)" }}
+              >
+                {/* Panel header */}
+                <div className="bg-navy-mid px-4 py-3 flex-shrink-0 border-b border-white/10 rounded-tl-2xl">
+                  <div className="flex items-center justify-between">
+                    <p className="text-gold text-[10px] font-bold tracking-widest uppercase montserrat">
+                      Sual Naviqasiyası
+                    </p>
+                    <button
+                      onClick={() => setNavOpen(false)}
+                      className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer transition-colors"
+                      title="Bağla"
+                    >
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Legend + count */}
+                  <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-gold" />
+                      <span className="text-slate-300 text-[11px] inter">
+                        Cari səhifə
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-white/20" />
+                      <span className="text-slate-300 text-[11px] inter">
+                        Digər
+                      </span>
+                    </div>
+                    <span className="ml-auto text-[11px] font-bold text-white montserrat-700">
+                      {filteredQuestions.length} sual
+                    </span>
+                  </div>
+                </div>
+
+                {/* Question grid — scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+                  {filteredQuestions.length === 0 ? (
+                    <p className="text-slate-400 text-sm text-center py-6 inter">
+                      Sual tapılmadı
+                    </p>
+                  ) : (
+                    Array.from({
+                      length: Math.ceil(
+                        filteredQuestions.length / questionsPerPage,
+                      ),
+                    }).map((_, pageIdx) => {
+                      const pageStart = pageIdx * questionsPerPage;
+                      const pageEnd = Math.min(
+                        pageStart + questionsPerPage,
+                        filteredQuestions.length,
+                      );
+                      const isActivePage = pageIdx + 1 === currentPage;
+
+                      return (
+                        <div key={pageIdx}>
+                          {/* Page label */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span
+                              className={`text-[10px] font-bold montserrat-700 tracking-wider uppercase px-2 py-0.5 rounded-full ${
+                                isActivePage
+                                  ? "bg-gold text-navy"
+                                  : "bg-white/10 text-slate-400"
+                              }`}
+                            >
+                              Səh. {pageIdx + 1}
+                            </span>
+                            <div className="flex-1 h-px bg-white/10" />
+                          </div>
+
+                          {/* 5-column button grid */}
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {filteredQuestions
+                              .slice(pageStart, pageEnd)
+                              .map((q, slotIdx) => {
+                                const index = pageStart + slotIdx;
+                                const globalIndex = questions.findIndex(
+                                  (question) => question.id === q.id,
+                                );
+                                const isOnCurrentPage =
+                                  index >= indexOfFirstQuestion &&
+                                  index < indexOfLastQuestion;
+
+                                return (
+                                  <button
+                                    key={q.id}
+                                    onClick={() => {
+                                      const targetPage = Math.ceil(
+                                        (index + 1) / questionsPerPage,
+                                      );
+                                      setCurrentPage(targetPage);
+                                      setTimeout(() => {
+                                        questionRefs.current[
+                                          globalIndex
+                                        ]?.scrollIntoView({
+                                          behavior: "smooth",
+                                          block: "center",
+                                        });
+                                      }, 100);
+                                    }}
+                                    title={`Sual ${index + 1}`}
+                                    className={`w-full aspect-square flex items-center justify-center rounded-lg text-[11px] font-bold montserrat-700 transition-all duration-150 hover:scale-110 cursor-pointer ${
+                                      isOnCurrentPage
+                                        ? "bg-gold text-navy shadow-md"
+                                        : "bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
+                                    }`}
+                                  >
+                                    {index + 1}
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Panel footer — pagination controls */}
+                <div className="flex-shrink-0 px-4 py-3 border-t border-white/10 bg-navy-mid rounded-bl-2xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-[11px] inter">
+                      {indexOfFirstQuestion + 1}–
+                      {Math.min(indexOfLastQuestion, filteredQuestions.length)}{" "}
+                      / {filteredQuestions.length}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center transition-colors"
+                      >
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+                      <span className="text-white text-[11px] font-bold montserrat-700 px-1">
+                        {currentPage}/{totalPages}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={currentPage === totalPages}
+                        className="w-6 h-6 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center transition-colors"
+                      >
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-slate-600 text-base inter">
-                Bu sualı silmək istədiyinizə əminsiniz?
-              </p>
-              <p className="text-slate-500 text-sm inter mt-2">
-                Bu əməliyyat geri alına bilməz.
-              </p>
-              <div className="flex gap-3 mt-8">
-              <button
-                onClick={handleDeleteCancel}
-                className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer montserrat-600"
-              >
-                Ləğv et
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 cursor-pointer montserrat-700"
-              >
-                Bəli, sil
-              </button>
+            </>
+          )}
+        </div>
+
+        {/* Import Questions Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-border max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="bg-navy-mid px-6 py-5 shrink-0">
+                <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-1">
+                  Excel import
+                </p>
+                <h3 className="text-xl font-bold text-white montserrat-700">
+                  Sualları fayldan yüklə
+                </h3>
+                <p className="text-slate-300 text-sm inter mt-1">
+                  {subjectCode} · {lang}
+                </p>
+              </div>
+              <div className="baau-gold-divider mx-6 mt-4 shrink-0" />
+
+              <div className="p-6 pt-5 overflow-y-auto space-y-5">
+                <div className="rounded-xl border border-border bg-slate-50/80 p-4">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-2">
+                    Sütun adları
+                  </p>
+                  <p className="text-xs text-slate-600 inter leading-relaxed">
+                    <span className="font-semibold text-navy">sual</span>,{" "}
+                    <span className="font-semibold text-navy">variant A</span> …{" "}
+                    <span className="font-semibold text-navy">variant E</span>,{" "}
+                    <span className="font-semibold text-navy">
+                      düzgün_variant
+                    </span>{" "}
+                    (A–E). Birinci sətir başlıqdır.
+                  </p>
+                </div>
+
+                <div>
+                  <label className={FIELD_LABEL}>Excel faylı seçin</label>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileChange}
+                    className={`${FIELD_INPUT} cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-navy file:text-white hover:file:bg-navy-light`}
+                    disabled={isImporting}
+                  />
+                  {importFile && (
+                    <p className="text-sm text-slate-600 inter mt-2">
+                      <span className="font-semibold text-navy montserrat-600">
+                        Seçilmiş:
+                      </span>{" "}
+                      {importFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {importResult && (
+                  <div
+                    className={`p-4 rounded-xl border ${
+                      importResult.errorCount > 0
+                        ? "bg-amber-50/90 border-amber-200"
+                        : "bg-emerald-50/90 border-emerald-200"
+                    }`}
+                  >
+                    <h4 className="font-bold text-navy montserrat-700 mb-2 text-sm">
+                      Import nəticəsi
+                    </h4>
+                    <p className="text-sm inter text-slate-700">
+                      Uğurlu:{" "}
+                      <span className="font-semibold text-emerald-700">
+                        {importResult.successCount}
+                      </span>{" "}
+                      sual
+                      {importResult.errorCount > 0 && (
+                        <>
+                          <br />
+                          Xəta:{" "}
+                          <span className="font-semibold text-red-600">
+                            {importResult.errorCount}
+                          </span>{" "}
+                          sual
+                        </>
+                      )}
+                      <br />
+                      Cəmi:{" "}
+                      <span className="font-semibold">
+                        {importResult.total}
+                      </span>{" "}
+                      sətir
+                    </p>
+                    {importResult.errors && importResult.errors.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-amber-200/80">
+                        <p className="text-xs font-bold text-slate-600 montserrat mb-1">
+                          Xətalar
+                        </p>
+                        <ul className="text-xs list-disc list-inside space-y-0.5 text-red-700 inter">
+                          {importResult.errors.map((error, idx) => (
+                            <li key={idx}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <button
+                    onClick={() => {
+                      setShowImportModal(false);
+                      setImportFile(null);
+                      setImportResult(null);
+                    }}
+                    disabled={isImporting}
+                    className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer disabled:opacity-50 montserrat-600"
+                  >
+                    Ləğv et
+                  </button>
+                  <button
+                    onClick={handleImportQuestions}
+                    disabled={!importFile || isImporting}
+                    className="flex-1 py-3 px-6 rounded-xl bg-navy hover:bg-navy-light text-white font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/40 focus:ring-offset-2 cursor-pointer disabled:bg-slate-400 disabled:cursor-not-allowed montserrat-700"
+                  >
+                    {isImporting ? "Import edilir..." : "Import et"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 p-4">
+            <div className="bg-white rounded-2xl border border-border max-w-md w-full mx-auto shadow-2xl overflow-hidden">
+              <div className="bg-navy-mid px-6 py-4">
+                <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat">
+                  Diqqət
+                </p>
+                <h3 className="text-xl font-bold text-white montserrat-700 mt-1">
+                  Sualı silmək
+                </h3>
+              </div>
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-slate-600 text-base inter">
+                  Bu sualı silmək istədiyinizə əminsiniz?
+                </p>
+                <p className="text-slate-500 text-sm inter mt-2">
+                  Bu əməliyyat geri alına bilməz.
+                </p>
+                <div className="flex gap-3 mt-8">
+                  <button
+                    onClick={handleDeleteCancel}
+                    className="flex-1 py-3 px-6 rounded-xl border-2 border-border text-slate-700 font-bold hover:bg-slate-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-2 cursor-pointer montserrat-600"
+                  >
+                    Ləğv et
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    className="flex-1 py-3 px-6 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-2 cursor-pointer montserrat-700"
+                  >
+                    Bəli, sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
