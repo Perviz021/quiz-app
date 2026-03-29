@@ -15,7 +15,6 @@ const Login = ({ setToken, setSubjects }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Trim student code and password before processing
     const trimmedStudentId = studentId.trim();
     const trimmedPassword = password.trim();
 
@@ -30,26 +29,32 @@ const Login = ({ setToken, setSubjects }) => {
       });
 
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.error || "Something went wrong");
 
+      // ── Store token and non-sensitive identity fields ─────────────────────
       localStorage.setItem("token", data.token);
       localStorage.setItem("studentId", data.student.studentId);
-      localStorage.setItem("status", data.student.status);
       localStorage.setItem("fullname", data.student.fullname);
       localStorage.setItem("group", data.student.group);
       localStorage.setItem("faculty", data.student.faculty);
       localStorage.setItem("ixtisaslasma", data.student.ixtisaslasma);
 
+      // ── DO NOT write status to localStorage ───────────────────────────────
+      // App.jsx derives status from the signed JWT so it cannot be tampered
+      // with by editing localStorage. Storing it here would be a no-op
+      // at best and misleading at worst.
+
       setToken(data.token);
 
-      if (data.student.status === "student") {
+      const serverStatus = data.student.status;
+
+      if (serverStatus === "student") {
         localStorage.setItem("subjects", JSON.stringify(data.subjects));
         setSubjects(data.subjects);
         navigate("/");
-      } else if (data.student.status === "staff") {
+      } else if (serverStatus === "staff") {
         navigate("/admin");
-      } else if (data.student.status === "teacher") {
+      } else if (serverStatus === "teacher") {
         localStorage.setItem("subjects", JSON.stringify(data.subjects));
         setSubjects(data.subjects);
         navigate("/teacher");
@@ -71,13 +76,13 @@ const Login = ({ setToken, setSubjects }) => {
 
   return (
     <div className="min-h-screen flex flex-col loginBg overflow-hidden">
-      {/* Same header language as Home / AdminDashboard */}
+      {/* ── Header banner ── */}
       <div className="bg-navy-mid shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
               src={logo}
-              alt=""
+              alt="BAAU Logo"
               className="h-12 sm:h-14 w-auto object-contain drop-shadow-md"
             />
             <div>
@@ -107,7 +112,7 @@ const Login = ({ setToken, setSubjects }) => {
         </svg>
       </div>
 
-      {/* Background photo still covers full viewport via .loginBg; card sits over lower area */}
+      {/* ── Login card ── */}
       <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-14">
         <div className="w-full max-w-md rounded-2xl border border-white/25 bg-white/95 shadow-2xl backdrop-blur-sm p-8 sm:p-9">
           <div className="text-center mb-8">
