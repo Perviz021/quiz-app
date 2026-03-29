@@ -17,9 +17,11 @@ router.get("/results/:studentId", async (req, res) => {
 
   try {
     const [results] = await pool.query(
-      `SELECT s.\`Fənnin adı\`, r.\`Fənnin kodu\`, r.score, r.created_at, r.submitted_at
+      `SELECT s.\`Fənnin adı\`, r.\`Fənnin kodu\`, r.score, r.created_at, r.submitted_at,
+              COALESCE(f.\`Pre-Exam\`, 0) AS preExam
         FROM results r
         JOIN subjects s ON r.\`Fənnin kodu\` = s.\`Fənnin kodu\`
+        LEFT JOIN ftp f ON r.\`Tələbə_kodu\` = f.\`Tələbə_kodu\` AND r.\`Fənnin kodu\` = f.\`Fənnin kodu\`
         WHERE r.\`Tələbə_kodu\` = ?`,
       [studentId]
     );
