@@ -27,7 +27,7 @@ router.post("/submit", authenticate, async (req, res) => {
                 TIMESTAMPDIFF(SECOND, force_submit_time, NOW()) as seconds_since_force
          FROM results 
          WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-        [studentId, subjectCode]
+        [studentId, subjectCode],
       );
 
       if (examStatus.length === 0) {
@@ -37,14 +37,29 @@ router.post("/submit", authenticate, async (req, res) => {
 
       const exam = examStatus[0];
 
-      // Check various submission conditions
+      // Already submitted → reject
       if (exam.submitted) {
         await connection.rollback();
         return res.status(403).json({ error: "Imtahan artıq bitmişdir" });
       }
 
-      // For normal submission, check if time is up
-      if (!exam.force_submit && exam.timeLeft <= 0) {
+      // ── Time check with grace period ──────────────────────────────────────
+      //
+      // WHY THE GRACE PERIOD:
+      // The frontend countdown reaches 0 and immediately fires the fetch.
+      // By the time the request arrives at the server, the DB timestamp
+      // calculation also shows timeLeft <= 0 — which was previously causing
+      // a 403 rejection and the student getting 0 because the backend
+      // refused to save their answers.
+      //
+      // We allow a 30-second grace window so the auto-submit always succeeds.
+      // Admins can still force-submit at any time; that path is unchanged.
+      //
+      const GRACE_SECONDS = 30;
+      const isOvertime =
+        exam.timeLeft !== null && exam.timeLeft < -GRACE_SECONDS;
+
+      if (!exam.force_submit && isOvertime) {
         await connection.rollback();
         return res.status(403).json({ error: "Imtahan vaxtı bitmişdir" });
       }
@@ -64,7 +79,7 @@ router.post("/submit", authenticate, async (req, res) => {
       // Get all questions for scoring
       const [questions] = await connection.query(
         "SELECT id, correct_option FROM questions WHERE fənnin_kodu = ?",
-        [subjectCode]
+        [subjectCode],
       );
 
       // Process each answer
@@ -84,8 +99,8 @@ router.post("/submit", authenticate, async (req, res) => {
                 answer.questionId,
                 answer.selectedOption,
                 isCorrect,
-              ]
-            )
+              ],
+            ),
           );
         }
       }
@@ -102,7 +117,7 @@ router.post("/submit", authenticate, async (req, res) => {
              total_questions = ?,
              left_page = ?
          WHERE Tələbə_kodu = ? AND \`Fənnin kodu\` = ?`,
-        [score, questions.length, leftPage || false, studentId, subjectCode]
+        [score, questions.length, leftPage || false, studentId, subjectCode],
       );
 
       // Commit transaction
@@ -135,7 +150,7 @@ router.get("/pre-exam/:subjectCode", authenticate, async (req, res) => {
       `SELECT \`Pre-Exam\` as preExam 
        FROM ftp 
        WHERE \`Tələbə_kodu\` = ? AND \`Fənnin kodu\` = ?`,
-      [studentId, subjectCode]
+      [studentId, subjectCode],
     );
 
     if (rows.length === 0) {
