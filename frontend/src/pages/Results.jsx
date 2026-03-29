@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { formatDate } from "../utils/dateFormatter";
 import API_BASE from "../config/api";
 
-// ── Letter grade helper (same logic as Popup.jsx) ────────────────────────────
+// ── Letter grade + pass rules (same logic as Popup.jsx) ─────────────────────
 const getLetterGrade = (score) => {
   const s = Number(score);
   if (s >= 91) return "A";
@@ -12,6 +12,16 @@ const getLetterGrade = (score) => {
   if (s >= 61) return "D";
   if (s >= 51) return "E";
   return "F";
+};
+
+/** Yekun bal = imtahan + giriş; keçid üçün imtahan ≥ 17 və hərf qiyməti F deyil */
+const getFinalScore = (examScore, preExam) =>
+  Number(examScore) + Number(preExam ?? 0);
+
+const isPassingResult = (examScore, preExam) => {
+  const finalScore = getFinalScore(examScore, preExam);
+  const letter = getLetterGrade(finalScore);
+  return Number(examScore) >= 17 && letter !== "F";
 };
 
 const gradeStyle = {
@@ -23,13 +33,13 @@ const gradeStyle = {
   F: { bg: "bg-red-500",     light: "bg-red-50",      text: "text-red-700",      border: "border-red-200"     },
 };
 
-// ── Small donut ring showing score / 60 ─────────────────────────────────────
-const ScoreRing = ({ score }) => {
-  const grade   = getLetterGrade(score);
+// ── Small donut ring: arc = yekun bal / 100, letter from yekun bal ───────────
+const ScoreRing = ({ finalScore }) => {
+  const grade   = getLetterGrade(finalScore);
   const style   = gradeStyle[grade] || gradeStyle.F;
   const radius  = 18;
   const circ    = 2 * Math.PI * radius;
-  const pct     = Math.min(Number(score) / 60, 1);
+  const pct     = Math.min(Number(finalScore) / 100, 1);
   const dash    = `${(pct * circ).toFixed(1)} ${circ.toFixed(1)}`;
 
   // Inline stroke colour so we don't need arbitrary Tailwind values
@@ -73,8 +83,8 @@ const Results = () => {
       .catch(() => setLoading(false));
   }, [studentId]);
 
-  // Summary counts
-  const passed  = results.filter((r) => getLetterGrade(r.score) !== "F").length;
+  // Summary counts (yekun bal + minimum imtahan balı — Popup ilə eyni)
+  const passed  = results.filter((r) => isPassingResult(r.score, r.preExam)).length;
   const failed  = results.length - passed;
 
   return (
@@ -134,9 +144,12 @@ const Results = () => {
           /* ── Results cards ── */
           <div className="space-y-3">
             {results.map((result, index) => {
-              const grade      = getLetterGrade(result.score);
-              const style      = gradeStyle[grade] || gradeStyle.F;
-              const isPassing  = grade !== "F";
+              const examScore   = Number(result.score);
+              const preExam     = Number(result.preExam ?? 0);
+              const finalScore  = getFinalScore(result.score, result.preExam);
+              const grade       = getLetterGrade(finalScore);
+              const style       = gradeStyle[grade] || gradeStyle.F;
+              const isPassing   = isPassingResult(result.score, result.preExam);
 
               return (
                 <div
@@ -145,8 +158,8 @@ const Results = () => {
                 >
                   <div className="flex items-center gap-4 px-5 py-4">
 
-                    {/* Score ring */}
-                    <ScoreRing score={result.score} />
+                    {/* Score ring (yekun bal əsasında) */}
+                    <ScoreRing finalScore={finalScore} />
 
                     {/* Subject + dates */}
                     <div className="flex-1 min-w-0">
@@ -167,16 +180,21 @@ const Results = () => {
                           Bitdi: {formatDate(result["submitted_at"], "dd/MM/yyyy HH:mm:ss")}
                         </span>
                       </div>
+                      <p className="text-[11px] text-slate-500 inter mt-1">
+                        İmtahan: <span className="font-semibold text-slate-700">{examScore}</span>
+                        {" · "}
+                        Giriş: <span className="font-semibold text-slate-700">{preExam}</span>
+                      </p>
                     </div>
 
-                    {/* Score badge */}
+                    {/* Score badge — yekun bal */}
                     <div className="flex flex-col items-end gap-2 flex-shrink-0">
                       <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border ${style.border} ${style.light}`}>
                         <span className={`text-base font-black montserrat-900 ${style.text}`}>
-                          {result.score}
+                          {finalScore}
                         </span>
                         <span className={`text-[10px] font-bold montserrat-700 ${style.text} opacity-70`}>
-                          bal
+                          yekun bal
                         </span>
                       </div>
 
