@@ -241,7 +241,7 @@ const Exam = () => {
         if (data.error) throw new Error(data.error);
         console.log("Submission successful, score:", data.score);
         dispatch({ type: "SET_SCORE", payload: data.score });
-        clearSavedExamData(); // Clear both answers and question IDs after successful submission
+        clearSavedExamData();
 
         // Get pre-exam score from localStorage
         const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
@@ -314,11 +314,8 @@ const Exam = () => {
 
       let response;
       if (savedQuestionIds) {
-        // If we have saved question IDs, fetch those specific questions
         response = await fetch(
-          `${API_BASE}/questions/${subjectCode}/${lang}?questionIds=${savedQuestionIds.join(
-            ",",
-          )}`,
+          `${API_BASE}/questions/${subjectCode}/${lang}?questionIds=${savedQuestionIds.join(",")}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -326,7 +323,6 @@ const Exam = () => {
           },
         );
       } else {
-        // Otherwise fetch random questions as usual
         response = await fetch(`${API_BASE}/questions/${subjectCode}/${lang}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
@@ -342,7 +338,6 @@ const Exam = () => {
       const data = await response.json();
       dispatch({ type: "SET_QUESTIONS", payload: data });
 
-      // Save question IDs if this is a new exam session
       if (!savedQuestionIds) {
         saveQuestionIdsToLocalStorage(data);
       }
@@ -354,6 +349,34 @@ const Exam = () => {
   const handleSubmitRef = useRef(() => {});
   const submittedRef = useRef(false);
   const visibilitySubmittedRef = useRef(false);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // timeExpiredSubmittedRef — guards the auto-submit-on-time-expiry path
+  // so it can fire at most once, even if the timer useEffect re-runs.
+  //
+  // WHY THIS IS NEEDED:
+  // state.answers changes every time the student selects an answer, and it
+  // is in the timer useEffect's dependency array (because we need the latest
+  // answers at submission time). This means the effect re-runs on every
+  // answer, which can trigger the timeLeft <= 0 branch multiple times.
+  // The ref is synchronously set to true the instant we enter the branch,
+  // so any concurrent re-run sees it and exits immediately.
+  // ─────────────────────────────────────────────────────────────────────────
+  const timeExpiredSubmittedRef = useRef(false);
+
+  // Keep a ref to the latest questions and answers so the timer effect can
+  // read them without depending on them (avoids re-creating the interval on
+  // every answer selection while still submitting the latest answers).
+  const latestQuestionsRef = useRef([]);
+  const latestAnswersRef = useRef({});
+
+  useEffect(() => {
+    latestQuestionsRef.current = state.questions;
+  }, [state.questions]);
+
+  useEffect(() => {
+    latestAnswersRef.current = state.answers;
+  }, [state.answers]);
 
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -384,16 +407,12 @@ const Exam = () => {
         },
       );
 
-      // Immediately mark as submitted with 0 points and show popup
       console.log("Dispatching FORCE_SUBMIT action");
       dispatch({ type: "FORCE_SUBMIT", payload: 0 });
       console.log("Dispatching SET_SCORE action");
       dispatch({ type: "SET_SCORE", payload: 0 });
-
-      // Show popup immediately
       dispatch({ type: "SHOW_POPUP" });
 
-      // Navigate to review page after a short delay
       console.log("Setting up navigation timeout");
       setTimeout(() => {
         console.log("Navigating to review page");
@@ -411,7 +430,6 @@ const Exam = () => {
     roomId.current = `${studentId}_${subjectCode}`;
     console.log("Setting up socket connection for room:", roomId.current);
 
-    // Socket event handlers
     const updateTimeHandler = ({ timeLeft }) => {
       console.log(`Received time update: ${timeLeft} seconds`);
       if (!submittedRef.current && timeLeft !== undefined) {
@@ -445,7 +463,6 @@ const Exam = () => {
       console.log("🟢 Socket connected:", socket.id);
       if (state.examStarted) {
         console.log("Joining exam room:", roomId.current);
-        // Join the room using the room ID
         socket.emit("join_room", roomId.current);
       }
     };
@@ -454,13 +471,11 @@ const Exam = () => {
       console.log("Socket reconnected!");
       if (state.examStarted) {
         console.log("Rejoining exam room after reconnect:", roomId.current);
-        // Join the room using the room ID
         socket.emit("join_room", roomId.current);
         toast.info("İmtahan bağlantısı bərpa olundu.");
       }
     };
 
-    // Set up socket listeners
     console.log("Setting up socket listeners");
     socket.on("connect", connectHandler);
     socket.on("reconnect", reconnectHandler);
@@ -469,23 +484,16 @@ const Exam = () => {
       toast.error("Bağlantı bərpa edilə bilmədi.");
     });
     socket.on("error", errorHandler);
-
-    // Remove any existing listeners first
     socket.off("force_submit");
-    // Add the force submit listener
     socket.on("force_submit", forceSubmitHandler);
-
     socket.on("extend_time", extendTimeHandler);
     socket.on("update_time", updateTimeHandler);
 
-    // Join exam room on mount
     if (state.examStarted && socket.connected) {
       console.log("Initially joining exam room:", roomId.current);
-      // Join the room using the room ID
       socket.emit("join_room", roomId.current);
     }
 
-    // Debug socket connection
     console.log("Socket connection status:", {
       connected: socket.connected,
       id: socket.id,
@@ -514,13 +522,8 @@ const Exam = () => {
           roomId: roomId.current,
         });
       };
-
-      // Check immediately
       checkConnection();
-
-      // And every 5 seconds
       const interval = setInterval(checkConnection, 5000);
-
       return () => clearInterval(interval);
     }
   }, [state.examStarted]);
@@ -537,7 +540,6 @@ const Exam = () => {
     useCallback(
       (e) => {
         if (state.examStarted && !state.submitted) {
-          // Show warning toast instead of submitting
           toast.warning("İmtahan səhifəsindən çıxmaq istədiyinizə əminsiniz?", {
             position: "top-center",
             autoClose: 5000,
@@ -561,7 +563,6 @@ const Exam = () => {
         e.preventDefault();
       }
     };
-
     document.addEventListener("contextmenu", handleContextMenu);
     return () => {
       document.removeEventListener("contextmenu", handleContextMenu);
@@ -571,7 +572,7 @@ const Exam = () => {
   // Submit exam with 0 points when student leaves the page
   const submitWithZeroPoints = useCallback(() => {
     if (submittedRef.current || visibilitySubmittedRef.current) {
-      return; // Already submitted
+      return;
     }
 
     visibilitySubmittedRef.current = true;
@@ -579,15 +580,13 @@ const Exam = () => {
     dispatch({ type: "SUBMIT_EXAM" });
     setIsExamActive(false);
 
-    // Format answers - all as -1 (not answered) to get 0 points
     const formattedAnswers = state.questions.map((q) => ({
       questionId: q.id,
-      selectedOption: -1, // Force all answers as not answered = 0 points
+      selectedOption: -1,
     }));
 
     console.log("Submitting exam with 0 points due to page visibility change");
 
-    // Submit exam with 0 points
     fetch(`${API_BASE}/submit`, {
       method: "POST",
       headers: {
@@ -597,7 +596,7 @@ const Exam = () => {
       body: JSON.stringify({
         subjectCode: subjectCode,
         answers: formattedAnswers,
-        leftPage: true, // Flag to indicate student left the exam page
+        leftPage: true,
       }),
     })
       .then((res) => res.json())
@@ -606,10 +605,7 @@ const Exam = () => {
         console.log("Zero-point submission successful");
         dispatch({ type: "SET_SCORE", payload: 0 });
         dispatch({ type: "SHOW_POPUP" });
-        // Don't clear localStorage here - preserve questions and answers in case admin deletes result
-        // localStorage will be cleared on successful normal submission
 
-        // Get pre-exam score from localStorage
         const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
         const currentSubject = subjects.find(
           (s) => s["Fənnin kodu"] === subjectCode,
@@ -629,7 +625,6 @@ const Exam = () => {
           },
         );
 
-        // Navigate to review page after a short delay
         setTimeout(() => {
           navigate(`/review/${subjectCode}`);
         }, 2000);
@@ -651,23 +646,49 @@ const Exam = () => {
         !visibilitySubmittedRef.current &&
         document.hidden
       ) {
-        // Immediately submit with 0 points when page becomes hidden
         submitWithZeroPoints();
       }
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [state.examStarted, state.submitted, submitWithZeroPoints]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // TIMER useEffect
+  //
+  // KEY CHANGES vs the original:
+  //
+  // 1. state.questions and state.answers are REMOVED from the dependency
+  //    array. Instead we read them via latestQuestionsRef / latestAnswersRef.
+  //    This stops the interval from being torn down and recreated on every
+  //    answer selection, which was causing the timeLeft <= 0 branch to fire
+  //    multiple times.
+  //
+  // 2. timeExpiredSubmittedRef is checked synchronously at the very start of
+  //    the timeLeft <= 0 branch and set to true immediately. This makes the
+  //    guard atomic — even if two renders race into the else-if at the exact
+  //    same moment, only one will proceed past the ref check.
+  //
+  // 3. dispatch({ type: "SUBMIT_EXAM" }) is called before the fetch, so
+  //    state.submitted becomes true in the next render, which stops the
+  //    interval from running again via the first condition.
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     let timer;
+
     if (state.examStarted && state.timeLeft > 0 && !state.submitted) {
+      // Normal countdown — fires every second
       timer = setInterval(() => dispatch({ type: "DECREMENT_TIME" }), 1000);
     } else if (state.timeLeft <= 0 && state.examStarted && !state.submitted) {
-      // Show warning toast
+      // ── Guard: only fire once ──────────────────────────────────────────────
+      if (timeExpiredSubmittedRef.current) return;
+      timeExpiredSubmittedRef.current = true;
+      // ─────────────────────────────────────────────────────────────────────
+
+      console.log("Time expired — auto-submitting exam with real answers");
+
       toast.warning(
         "İmtahan vaxtı bitdi! Cavablarınız avtomatik olaraq yadda saxlanılır...",
         {
@@ -680,13 +701,19 @@ const Exam = () => {
         },
       );
 
-      // Set exam as inactive immediately
+      // Mark as submitted immediately so the UI locks and no further
+      // state changes can re-trigger this branch
+      dispatch({ type: "SUBMIT_EXAM" });
       setIsExamActive(false);
 
-      // Submit the exam normally
-      const formattedAnswers = state.questions.map((q) => ({
+      // Read latest data from refs — avoids stale closure problem while
+      // keeping these values out of the dependency array
+      const questions = latestQuestionsRef.current;
+      const answers = latestAnswersRef.current;
+
+      const formattedAnswers = questions.map((q) => ({
         questionId: q.id,
-        selectedOption: state.answers[q.id] ?? -1,
+        selectedOption: answers[q.id] ?? -1,
       }));
 
       fetch(`${API_BASE}/submit`, {
@@ -706,13 +733,11 @@ const Exam = () => {
           console.log("Time expired submission successful, score:", data.score);
           dispatch({ type: "SET_SCORE", payload: data.score });
           dispatch({ type: "SHOW_POPUP" });
-          // Only clear localStorage if score > 0 (successful submission with answers)
-          // If score is 0, preserve localStorage in case admin deletes record and student re-enters
+
           if (data.score > 0) {
             clearSavedExamData();
           }
 
-          // Get pre-exam score from localStorage
           const subjects = JSON.parse(localStorage.getItem("subjects")) || [];
           const currentSubject = subjects.find(
             (s) => s["Fənnin kodu"] === subjectCode,
@@ -720,7 +745,6 @@ const Exam = () => {
           const preExam = currentSubject ? currentSubject["Pre-Exam"] || 0 : 0;
           dispatch({ type: "SET_PRE_EXAM", payload: preExam });
 
-          // Navigate to review page after a short delay
           setTimeout(() => {
             navigate(`/review/${subjectCode}`);
           }, 2000);
@@ -729,15 +753,18 @@ const Exam = () => {
           console.error("Time expired submission error:", err);
           toast.error(`İmtahanı təhvil vermək mümkün olmadı: ${err.message}`);
           dispatch({ type: "SET_ERROR", payload: err.message });
+          dispatch({ type: "STOP_SUBMITTING" });
         });
     }
+
     return () => clearInterval(timer);
   }, [
+    // ── Intentionally NOT including state.questions or state.answers ──────
+    // Those are read via refs to avoid restarting the interval on every
+    // answer selection. All other deps that affect control flow stay.
     state.examStarted,
     state.timeLeft,
     state.submitted,
-    state.questions,
-    state.answers,
     subjectCode,
     navigate,
     clearSavedExamData,
@@ -778,7 +805,7 @@ const Exam = () => {
 
   const timeDisplay = formatTime(state.timeLeft);
   const showFixedTimer =
-    state.examStarted && state.timeLeft <= 300 && !state.submitted; // 5 minutes = 300 seconds
+    state.examStarted && state.timeLeft <= 300 && !state.submitted;
 
   const answeredCount = Object.keys(state.answers).length;
   const totalCount = state.questions.length;
@@ -1118,7 +1145,7 @@ const Exam = () => {
                               state.answers[q.id] === optionIndex + 1;
                             const optionLetter = String.fromCharCode(
                               65 + optionIndex,
-                            ); // A B C D E
+                            );
                             return (
                               <label
                                 key={optionIndex}
@@ -1128,7 +1155,6 @@ const Exam = () => {
                                     : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50"
                                 }`}
                               >
-                                {/* Letter badge */}
                                 <span
                                   className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold montserrat-700 mt-0.5 transition-colors ${
                                     isSelected
@@ -1138,8 +1164,6 @@ const Exam = () => {
                                 >
                                   {optionLetter}
                                 </span>
-
-                                {/* Hidden radio (logic preserved) */}
                                 <input
                                   type="radio"
                                   name={`question-${q.id}`}
@@ -1150,7 +1174,6 @@ const Exam = () => {
                                   }
                                   className="sr-only"
                                 />
-
                                 <span className="text-gray-700 flex-1 text-sm inter leading-relaxed">
                                   <ContentBlock
                                     text={option.text}
@@ -1165,8 +1188,6 @@ const Exam = () => {
                     </div>
                   );
                 })}
-
-                {/* Bottom spacer so last question isn't hidden behind nothing */}
                 <div className="h-8" />
               </div>
             )}
@@ -1181,7 +1202,6 @@ const Exam = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
             <div className="text-center mb-6">
-              {/* Icon */}
               <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="h-8 w-8 text-amber-500"
@@ -1204,8 +1224,6 @@ const Exam = () => {
                 İmtahanı bitirdikdən sonra cavablarınızı dəyişmək mümkün
                 olmayacaq.
               </p>
-
-              {/* Stats */}
               <div className="mt-4 flex items-center justify-center gap-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-emerald-600 montserrat-700">
@@ -1229,7 +1247,6 @@ const Exam = () => {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3">
               <button
                 onClick={handleCancelSubmit}
