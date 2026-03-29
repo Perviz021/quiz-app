@@ -842,7 +842,7 @@ const Exam = () => {
             <div
               className={`px-5 py-4 border-b border-white/10 flex-shrink-0 ${isLowTime ? "bg-red-700/80" : "bg-navy-mid"}`}
             >
-              <p className="text-gold text-xs font-bold tracking-widest uppercase montserrat mb-2">
+              <p className="text-gold text-xs font-bold tracking-widest uppercase montserrat mb-2 mt-[10px]">
                 Qalan Vaxt
               </p>
               <div
