@@ -6,28 +6,7 @@ import { useExam } from "../context/ExamContext";
 import API_BASE from "../config/api";
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
-
-// server.js serves uploads at /api/uploads (app.use("/api/uploads", express.static("uploads")))
-// so the full image URL is: http://localhost:5000/api/uploads/questions/filename.jpg
-const IMAGE_BASE = "http://localhost:5000";
-
-const getImageUrl = (imageValue) => {
-  if (!imageValue) return null;
-  if (typeof imageValue !== "string") return null;
-  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
-    return imageValue;
-  }
-  if (imageValue.startsWith("uploads/")) {
-    return `${IMAGE_BASE}/api/${imageValue}`;
-  }
-  if (imageValue.startsWith("/api/")) {
-    return `${IMAGE_BASE}${imageValue}`;
-  }
-  if (imageValue.startsWith("api/uploads/")) {
-    return `${IMAGE_BASE}/${imageValue}`;
-  }
-  return `${IMAGE_BASE}/api/${imageValue}`;
-};
+import ContentBlock from "../components/ContentBlock";
 
 // Derive Socket.IO URL from VITE_API_BASE or use fallback
 const SOCKET_SERVER_URL = import.meta.env.VITE_API_BASE
@@ -42,33 +21,6 @@ const socket = io(SOCKET_SERVER_URL, {
   timeout: 30000,
   autoConnect: true,
 });
-
-// ─────────────────────────────────────────────
-// Renders text and/or image together for any field
-// ─────────────────────────────────────────────
-const ContentBlock = ({ text, imagePath, prefix = "" }) => {
-  const hasText = text && text.trim().length > 0;
-  const hasImage = imagePath && imagePath.trim().length > 0;
-  return (
-    <span className="inline-block w-full">
-      {hasText && (
-        <span
-          dangerouslySetInnerHTML={{
-            __html: prefix ? `${prefix} ${text}` : text,
-          }}
-        />
-      )}
-      {!hasText && prefix && <span className="font-semibold">{prefix}</span>}
-      {hasImage && (
-        <img
-          src={getImageUrl(imagePath) || undefined}
-          alt="content"
-          className="max-w-full max-h-64 object-contain rounded-lg mt-2 block"
-        />
-      )}
-    </span>
-  );
-};
 
 const initialState = {
   questions: [],
