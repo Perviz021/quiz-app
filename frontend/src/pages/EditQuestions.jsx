@@ -4,6 +4,7 @@ import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import AddQuestion from "./AddQuestion";
+import ContentBlock from "../components/ContentBlock";
 
 // server.js: app.use("/api/uploads", express.static("uploads"))
 // so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
@@ -750,6 +751,33 @@ const EditQuestions = () => {
                         />
                       </div>
                     ))}
+
+                    {/* Rendered view (same content style as Exam/Review) */}
+                    <div className="pt-2">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                        <p className="font-semibold text-gray-900 text-base leading-relaxed inter">
+                          <ContentBlock
+                            text={eq.question || ""}
+                            imagePath={eq.question_image || ""}
+                            prefix={`${displayNumber}.`}
+                          />
+                        </p>
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <div
+                              key={`rendered-opt-${num}`}
+                              className="rounded-lg border border-slate-200 bg-white p-3"
+                            >
+                              <ContentBlock
+                                text={eq[`option${num}`] || ""}
+                                imagePath={eq[`option${num}_image`] || ""}
+                                prefix={`${String.fromCharCode(64 + num)}.`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
                     {/* ── Correct answer + action buttons ── */}
                     <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end pt-4 border-t border-border">
