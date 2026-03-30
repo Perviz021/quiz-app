@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
+import MathEditor from "../components/MathEditor";
 
 // server.js: app.use("/api/uploads", express.static("uploads"))
 // so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
@@ -50,7 +51,9 @@ const QuestionField = ({
 
     const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowed.includes(file.type)) {
-      toast.error("Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir");
+      toast.error(
+        "Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir",
+      );
       e.target.value = "";
       return;
     }
@@ -73,22 +76,20 @@ const QuestionField = ({
     <div className="space-y-2">
       <label className={FIELD_LABEL}>{label}</label>
 
-      {/* Text input */}
+      {/* Text input — MathEditor supports LaTeX formulas */}
       {isTextarea ? (
-        <textarea
+        <MathEditor
           value={textValue}
+          onChange={(val) => onTextChange(fieldKey, val)}
           rows={3}
-          className={FIELD_INPUT}
-          onChange={(e) => onTextChange(fieldKey, e.target.value)}
-          placeholder="Mətni daxil edin (istəyə görə)"
+          placeholder="Mətni daxil edin. Düstur: $\frac{a}{b}$ · Blok: $$\int_0^1 x\,dx$$"
         />
       ) : (
-        <input
-          type="text"
+        <MathEditor
           value={textValue}
-          className={FIELD_INPUT}
-          onChange={(e) => onTextChange(fieldKey, e.target.value)}
-          placeholder="Mətni daxil edin (istəyə görə)"
+          onChange={(val) => onTextChange(fieldKey, val)}
+          rows={2}
+          placeholder="Variant mətni. Düstur: $\sqrt{x}$"
         />
       )}
 
@@ -110,9 +111,7 @@ const QuestionField = ({
           </button>
         </div>
       ) : (
-        <label
-          className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all"
-        >
+        <label className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all">
           🖼 Şəkil əlavə et
           <input
             type="file"
@@ -132,16 +131,22 @@ const QuestionField = ({
 // ─────────────────────────────────────────────
 const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
   const emptyForm = {
-    question:       "",  question_image:  null,
-    option1:        "",  option1_image:   null,
-    option2:        "",  option2_image:   null,
-    option3:        "",  option3_image:   null,
-    option4:        "",  option4_image:   null,
-    option5:        "",  option5_image:   null,
+    question: "",
+    question_image: null,
+    option1: "",
+    option1_image: null,
+    option2: "",
+    option2_image: null,
+    option3: "",
+    option3_image: null,
+    option4: "",
+    option4_image: null,
+    option5: "",
+    option5_image: null,
     correct_option: 1,
   };
 
-  const [form, setForm]     = useState(emptyForm);
+  const [form, setForm] = useState(emptyForm);
   const [isAdding, setIsAdding] = useState(false);
   const [pendingImages, setPendingImages] = useState({});
   const [previewUrls, setPreviewUrls] = useState({});
@@ -190,7 +195,7 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: formData,
-      }
+      },
     );
 
     const data = await res.json();
@@ -204,11 +209,11 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
     // Each field needs at least text OR image
     const fields = [
       { key: "question", label: "Sual" },
-      { key: "option1",  label: "Variant A" },
-      { key: "option2",  label: "Variant B" },
-      { key: "option3",  label: "Variant C" },
-      { key: "option4",  label: "Variant D" },
-      { key: "option5",  label: "Variant E" },
+      { key: "option1", label: "Variant A" },
+      { key: "option2", label: "Variant B" },
+      { key: "option3", label: "Variant C" },
+      { key: "option4", label: "Variant D" },
+      { key: "option5", label: "Variant E" },
     ];
     for (const { key, label } of fields) {
       if (!form[key] && !form[`${key}_image`]) {
@@ -231,13 +236,18 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          question:       form.question,
+          question: form.question,
           question_image: imagePaths.question_image || form.question_image,
-          option1:        form.option1,  option1_image: imagePaths.option1_image || form.option1_image,
-          option2:        form.option2,  option2_image: imagePaths.option2_image || form.option2_image,
-          option3:        form.option3,  option3_image: imagePaths.option3_image || form.option3_image,
-          option4:        form.option4,  option4_image: imagePaths.option4_image || form.option4_image,
-          option5:        form.option5,  option5_image: imagePaths.option5_image || form.option5_image,
+          option1: form.option1,
+          option1_image: imagePaths.option1_image || form.option1_image,
+          option2: form.option2,
+          option2_image: imagePaths.option2_image || form.option2_image,
+          option3: form.option3,
+          option3_image: imagePaths.option3_image || form.option3_image,
+          option4: form.option4,
+          option4_image: imagePaths.option4_image || form.option4_image,
+          option5: form.option5,
+          option5_image: imagePaths.option5_image || form.option5_image,
           correct_option: form.correct_option,
           subjectCode,
           lang: lang || "az",
@@ -272,12 +282,16 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
   const fieldProps = (fieldKey, label, isTextarea = false) => ({
     label,
     fieldKey,
-    textValue:      form[fieldKey],
+    textValue: form[fieldKey],
     imageSrc:
       previewUrls[`${fieldKey}_image`] ||
-      (form[`${fieldKey}_image`] ? getImageUrl(form[`${fieldKey}_image`]) : null),
-    hasImage: Boolean(previewUrls[`${fieldKey}_image`] || form[`${fieldKey}_image`]),
-    onTextChange:   handleTextChange,
+      (form[`${fieldKey}_image`]
+        ? getImageUrl(form[`${fieldKey}_image`])
+        : null),
+    hasImage: Boolean(
+      previewUrls[`${fieldKey}_image`] || form[`${fieldKey}_image`],
+    ),
+    onTextChange: handleTextChange,
     onImageSelected: handleImageSelected,
     onImageRemoved: handleImageRemoved,
     isTextarea,
@@ -302,7 +316,7 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
             key={num}
             {...fieldProps(
               `option${num}`,
-              `Variant ${String.fromCharCode(64 + num)}`
+              `Variant ${String.fromCharCode(64 + num)}`,
             )}
           />
         ))}
