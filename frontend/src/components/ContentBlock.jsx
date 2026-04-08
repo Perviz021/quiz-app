@@ -1,23 +1,16 @@
 /**
  * ContentBlock.jsx
  *
- * Replaces the inline ContentBlock defined inside Exam.jsx and Review.jsx.
- * Import this file in both pages instead of defining it locally.
- *
- * Renders:
- *  - Plain text (with <br> support from the backend)
- *  - LaTeX formulas via KaTeX ($...$ and $$...$$)
- *  - Images stored as relative paths (uploads/questions/...)
- *
- * Usage:
- *   <ContentBlock text={q.question} imagePath={q.question_image} prefix="1." />
+ * Renders text (with optional LaTeX via MathRenderer) and/or an image.
+ * Images are fetched with the JWT token via useAuthImage so they work
+ * even though the /api/uploads/questions endpoint now requires authentication.
  */
 
-import MathRenderer from "./MathRenderer";
+import useAuthImage from "../hooks/useAuthImage";
 
 const IMAGE_BASE = "http://localhost:5000";
 
-const getImageUrl = (imageValue) => {
+export const getImageUrl = (imageValue) => {
   if (!imageValue) return null;
   if (typeof imageValue !== "string") return null;
   if (imageValue.startsWith("http://") || imageValue.startsWith("https://"))
@@ -30,28 +23,58 @@ const getImageUrl = (imageValue) => {
   return `${IMAGE_BASE}/api/${imageValue}`;
 };
 
+// ── Image sub-component — uses the auth hook ─────────────────────────────────
+const AuthImage = ({ imagePath, alt = "content", className = "" }) => {
+  // Build the full URL first, then fetch it with auth
+  const fullUrl = getImageUrl(imagePath);
+  const blobUrl = useAuthImage(fullUrl);
+
+  if (!blobUrl) {
+    // Show a subtle placeholder while loading
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 inter mt-2">
+        <svg
+          className="w-4 h-4 animate-pulse"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 21h18M21 3H3m18 0v18M3 3v18"
+          />
+        </svg>
+        Yüklənir...
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={blobUrl}
+      alt={alt}
+      className={`max-w-full max-h-64 object-contain rounded-lg mt-2 block ${className}`}
+    />
+  );
+};
+
+// ── Main exported component ───────────────────────────────────────────────────
 const ContentBlock = ({ text, imagePath, prefix = "" }) => {
   const hasText = text && text.trim().length > 0;
   const hasImage = imagePath && imagePath.trim().length > 0;
 
-  // Prepend number/prefix to text if given
   const fullText =
     prefix && hasText ? `${prefix} ${text}` : hasText ? text : null;
 
-  // Prefix with no text (image-only question that still needs a number)
   const prefixOnly = prefix && !hasText;
 
   return (
     <span className="inline-block w-full">
       {prefixOnly && <span className="font-semibold">{prefix} </span>}
-      {fullText && <MathRenderer text={fullText} />}
-      {hasImage && (
-        <img
-          src={getImageUrl(imagePath) || undefined}
-          alt="content"
-          className="max-w-full max-h-64 object-contain rounded-lg mt-2 block"
-        />
-      )}
+      {fullText && <span dangerouslySetInnerHTML={{ __html: fullText }} />}
+      {hasImage && <AuthImage imagePath={imagePath} />}
     </span>
   );
 };
