@@ -7,6 +7,7 @@
  */
 
 import useAuthImage from "../hooks/useAuthImage";
+import MathRenderer from "./MathRenderer";
 
 const IMAGE_BASE = "http://localhost:5000";
 
@@ -73,7 +74,7 @@ const ContentBlock = ({ text, imagePath, prefix = "" }) => {
   return (
     <span className="inline-block w-full">
       {prefixOnly && <span className="font-semibold">{prefix} </span>}
-      {fullText && <span dangerouslySetInnerHTML={{ __html: fullText }} />}
+      {fullText && <MathRenderer text={fullText} />}
       {hasImage && <AuthImage imagePath={imagePath} />}
     </span>
   );
