@@ -20,13 +20,30 @@ const NavLink = ({ label, onClick, disabled }) => (
 // ── Role badge shown next to the logo ─────────────────────────────────────────
 const RoleBadge = ({ status }) => {
   const map = {
-    student: { label: "TƏLƏBƏ",  bg: "bg-blue-500/20",  border: "border-blue-400/40",  text: "text-blue-200"  },
-    teacher: { label: "MÜƏLLİM", bg: "bg-emerald-500/20", border: "border-emerald-400/40", text: "text-emerald-200" },
-    staff:   { label: "ADMİN",   bg: "bg-red-500/20",   border: "border-red-400/40",   text: "text-red-200"   },
+    student: {
+      label: "TƏLƏBƏ",
+      bg: "bg-blue-500/20",
+      border: "border-blue-400/40",
+      text: "text-blue-200",
+    },
+    teacher: {
+      label: "MÜƏLLİM",
+      bg: "bg-emerald-500/20",
+      border: "border-emerald-400/40",
+      text: "text-emerald-200",
+    },
+    staff: {
+      label: "ADMİN",
+      bg: "bg-red-500/20",
+      border: "border-red-400/40",
+      text: "text-red-200",
+    },
   };
   const s = map[status] || map.student;
   return (
-    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-widest border ${s.bg} ${s.border} ${s.text} montserrat`}>
+    <span
+      className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-widest border ${s.bg} ${s.border} ${s.text} montserrat`}
+    >
       {s.label}
     </span>
   );
@@ -38,10 +55,10 @@ const Navbar = () => {
   const { isExamActive } = useExam();
   const status = localStorage.getItem("status");
   const [studentInfo] = useState({
-    fullname:     localStorage.getItem("fullname")     || "",
-    studentId:    localStorage.getItem("studentId")    || "",
-    group:        localStorage.getItem("group")        || "",
-    faculty:      localStorage.getItem("faculty")      || "",
+    fullname: localStorage.getItem("fullname") || "",
+    studentId: localStorage.getItem("studentId") || "",
+    group: localStorage.getItem("group") || "",
+    faculty: localStorage.getItem("faculty") || "",
     ixtisaslasma: localStorage.getItem("ixtisaslasma") || "",
   });
 
@@ -55,43 +72,43 @@ const Navbar = () => {
     <nav className="baau-navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-
           {/* ── LEFT: BAAU logo (always visible) + student/role info ── */}
           <div className="flex items-center gap-4">
-
             {/* University logo — always shown for every role */}
             <button
               onClick={() => handleNavigation("/")}
               disabled={isExamActive}
-              className={`flex-shrink-0 transition-opacity duration-200 ${
-                isExamActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"
+              className={`shrink-0 transition-opacity duration-200 ${
+                isExamActive
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer hover:opacity-90"
               }`}
               title="Ana Səhifə"
             >
               <img
                 src={logo}
                 alt="BAAU Logo"
-                className="h-12 w-auto object-contain"
+                className="h-16! w-auto object-contain"
               />
             </button>
 
             {/* Vertical gold rule */}
-            <div className="hidden sm:block w-px h-10 bg-gradient-to-b from-transparent via-[#d4a017] to-transparent opacity-60" />
+            <div className="hidden sm:block w-px h-10 bg-linear-to-b from-transparent via-[#0891B2] to-transparent opacity-60" />
 
             {/* University name text — hidden on very small screens */}
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="text-white text-sm font-bold tracking-wider montserrat">
                 BAAU
               </span>
-              <span className="text-[#d4a017] text-[10px] font-semibold tracking-[0.15em] montserrat uppercase">
-                İmtahan Sistemi
+              <span className="text-[#0891B2] text-[10px] font-semibold tracking-[0.15em] montserrat uppercase">
+                Elektron Test İmtahan Sistemi
               </span>
             </div>
 
             {/* For students: show their photo + info inline */}
             {status === "student" && studentInfo.studentId && (
               <>
-                <div className="hidden md:block w-px h-10 bg-gradient-to-b from-transparent via-slate-500 to-transparent opacity-40" />
+                <div className="hidden md:block w-px h-10 bg-linear-to-b from-transparent via-slate-500 to-transparent opacity-40" />
                 <div className="baau-student-card">
                   <img
                     src={`${API_BASE}/uploads/students/${studentInfo.studentId}.jpg`}
@@ -99,14 +116,14 @@ const Navbar = () => {
                     className="baau-student-photo"
                   />
                   <div className="hidden md:flex flex-col gap-0.5">
-                    <span className="text-white text-sm font-semibold leading-tight montserrat-600 truncate max-w-[200px]">
+                    <span className="text-white text-sm font-semibold leading-tight montserrat-600 truncate">
                       {studentInfo.fullname}
                     </span>
                     <span className="text-slate-300 text-xs inter">
                       {studentInfo.studentId}
                     </span>
                     {studentInfo.ixtisaslasma && (
-                      <span className="text-slate-400 text-[11px] inter truncate max-w-[200px]">
+                      <span className="text-slate-400 text-[11px] inter truncate">
                         {studentInfo.ixtisaslasma}
                       </span>
                     )}
@@ -130,11 +147,10 @@ const Navbar = () => {
 
           {/* ── RIGHT: Navigation links ── */}
           <div className="flex items-center gap-1 sm:gap-2">
-
             {/* Exam active warning chip */}
             {isExamActive && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full mr-2 montserrat">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full mr-2 montserrat">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                 İmtahan davam edir
               </span>
             )}
@@ -168,11 +184,11 @@ const Navbar = () => {
                   onClick={() => handleNavigation("/admin/export-questions")}
                   disabled={isExamActive}
                 />
-                <NavLink
+                {/* <NavLink
                   label="Protokol"
                   onClick={() => handleNavigation("/admin/protocol")}
                   disabled={isExamActive}
-                />
+                /> */}
                 <NavLink
                   label="Nəticələri Yüklə"
                   onClick={() => handleNavigation("/admin/results-by-date")}
@@ -181,7 +197,6 @@ const Navbar = () => {
               </>
             )}
           </div>
-
         </div>
       </div>
     </nav>
