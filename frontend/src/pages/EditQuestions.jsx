@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import AddQuestion from "./AddQuestion";
 import ContentBlock from "../components/ContentBlock";
+import useAuthImage from "../hooks/useAuthImage";
 
 // server.js: app.use("/api/uploads", express.static("uploads"))
 // so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
@@ -34,6 +35,37 @@ const FIELD_LABEL =
   "block text-[11px] font-bold text-slate-500 uppercase tracking-wider montserrat mb-1.5";
 const FIELD_INPUT =
   "w-full p-2.5 border border-border rounded-lg text-sm inter focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all bg-slate-50 focus:bg-white";
+
+// ─────────────────────────────────────────────
+// Authenticated image — fetches with JWT so the secured endpoint works
+// ─────────────────────────────────────────────
+const AuthImg = ({ imageValue, className }) => {
+  const fullUrl = getImageUrl(imageValue);
+  const blobUrl = useAuthImage(fullUrl);
+
+  if (!blobUrl) {
+    return (
+      <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs inter">
+        <svg
+          className="w-4 h-4 animate-pulse"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 21h18M21 3H3m18 0v18M3 3v18"
+          />
+        </svg>
+        Yüklənir...
+      </div>
+    );
+  }
+
+  return <img src={blobUrl} alt="field" className={className} />;
+};
 
 // ─────────────────────────────────────────────
 // Image editor used inside each edit card
@@ -104,9 +136,8 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
   if (imageValue) {
     return (
       <div className="relative inline-block mt-2 group">
-        <img
-          src={getImageUrl(imageValue) || undefined}
-          alt="field"
+        <AuthImg
+          imageValue={imageValue}
           className="max-h-48 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
         />
         <button
@@ -758,10 +789,15 @@ const EditQuestions = () => {
                         <p className="font-semibold text-gray-900 text-base leading-relaxed inter">
                           <ContentBlock
                             text={eq.question || ""}
-                            imagePath={eq.question_image || ""}
                             prefix={`${displayNumber}.`}
                           />
                         </p>
+                        {eq.question_image && (
+                          <AuthImg
+                            imageValue={eq.question_image}
+                            className="max-h-64 max-w-full rounded-lg border border-border shadow-sm object-contain bg-white p-1"
+                          />
+                        )}
                         <div className="space-y-2">
                           {[1, 2, 3, 4, 5].map((num) => (
                             <div
@@ -770,9 +806,14 @@ const EditQuestions = () => {
                             >
                               <ContentBlock
                                 text={eq[`option${num}`] || ""}
-                                imagePath={eq[`option${num}_image`] || ""}
                                 prefix={`${String.fromCharCode(64 + num)}.`}
                               />
+                              {eq[`option${num}_image`] && (
+                                <AuthImg
+                                  imageValue={eq[`option${num}_image`]}
+                                  className="max-h-48 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
+                                />
+                              )}
                             </div>
                           ))}
                         </div>
