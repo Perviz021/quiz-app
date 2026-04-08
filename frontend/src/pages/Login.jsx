@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { logo } from "../assets";
+import { loginBg, logo } from "../assets";
 
 const Login = ({ setToken, setSubjects }) => {
   const [studentId, setStudentId] = useState("");
@@ -75,7 +75,7 @@ const Login = ({ setToken, setSubjects }) => {
     "w-full px-4 py-3 border border-border rounded-xl text-sm inter bg-slate-50 focus:bg-white focus:ring-2 focus:ring-navy/25 focus:border-navy outline-none transition-all";
 
   return (
-    <div className="min-h-screen flex flex-col loginBg overflow-hidden">
+    <div className="h-screen flex flex-col loginBg overflow-hidden">
       {/* ── Header banner ── */}
       <div className="bg-navy-mid shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -83,7 +83,7 @@ const Login = ({ setToken, setSubjects }) => {
             <img
               src={logo}
               alt="BAAU Logo"
-              className="h-12 sm:h-14 w-auto object-contain drop-shadow-md"
+              className="h-16 sm:h-14 w-auto object-contain drop-shadow-md"
             />
             <div>
               <p className="text-gold-light text-[11px] font-semibold tracking-widest uppercase montserrat mb-0.5">
@@ -112,9 +112,13 @@ const Login = ({ setToken, setSubjects }) => {
         </svg>
       </div>
 
-      {/* ── Login card ── */}
-      <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-14">
-        <div className="w-full max-w-md rounded-2xl border border-white/25 bg-white/95 shadow-2xl backdrop-blur-sm p-8 sm:p-9">
+      {/* ── Login card + background image with dark overlay ── */}
+      <div
+        className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4 sm:py-6 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${loginBg})` }}
+      >
+        <div className="absolute inset-0 bg-slate-950/55" />
+        <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/25 bg-white/95 shadow-2xl backdrop-blur-sm p-8 sm:p-9">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-800 montserrat-700 tracking-tight">
               Xoş gəlmisiniz
