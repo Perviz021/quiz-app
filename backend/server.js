@@ -3,6 +3,7 @@ import cors from "cors";
 import { createServer } from "http";
 import { initializeSocket } from "./socket/index.js";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
@@ -17,6 +18,7 @@ import addQuestion from "./routes/addQuestion.js";
 import examSubmission from "./routes/examSubmission.js";
 import exportRoutes from "./routes/exportRoutes.js";
 import examRequestsRoutes from "./routes/examRequests.js";
+import { authenticate } from "./middleware/auth.js";
 
 const app = express();
 const server = createServer(app);
@@ -34,10 +36,29 @@ app.use(
   "/api/uploads/students",
   express.static(path.join(__dirname, "uploads/students")),
 );
-app.use(
-  "/api/uploads/questions",
-  express.static(path.join(__dirname, "uploads/questions")),
-);
+
+// ── Question images: AUTHENTICATED ───────────────────────────────────────────
+app.get("/api/uploads/questions/:filename", authenticate, (req, res) => {
+  const { filename } = req.params;
+
+  // Prevent path traversal attacks (e.g. ../../etc/passwd)
+  if (
+    !filename ||
+    filename.includes("..") ||
+    filename.includes("/") ||
+    filename.includes("\\")
+  ) {
+    return res.status(400).json({ error: "Etibarsız fayl adı" });
+  }
+
+  const filePath = path.join(__dirname, "uploads", "questions", filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "Fayl tapılmadı" });
+  }
+
+  res.sendFile(filePath);
+});
 
 // Routes
 app.use("/api", authRoutes);
