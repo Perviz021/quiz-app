@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 const CardTeacher = ({ subject }) => (
   <div className="h-full p-5 flex flex-col">
     <div className="flex items-start justify-between mb-3">
-      <span className="text-[11px] font-bold uppercase tracking-widest text-[#d4a017] bg-[#d4a017]/10 px-2 py-0.5 rounded montserrat">
+      <span className="text-[11px] font-bold uppercase tracking-widest text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded montserrat">
         {subject.id}
       </span>
       <span className="text-[11px] text-blue-200 bg-white/10 px-2 py-0.5 rounded inter">
@@ -22,9 +22,9 @@ const CardTeacher = ({ subject }) => (
     <div className="baau-gold-divider mb-3" />
     <div className="flex items-center justify-between">
       <span className="text-blue-200 text-[11px] inter">Sualları idarə et</span>
-      <div className="w-6 h-6 rounded-full bg-[#d4a017]/20 flex items-center justify-center">
+      <div className="w-6 h-6 rounded-full bg-[#0891B2]/20 flex items-center justify-center">
         <svg
-          className="w-3 h-3 text-[#d4a017]"
+          className="w-3 h-3 text-[#0891B2]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -95,7 +95,7 @@ const CardIneligible = ({ subject, reason }) => (
         {subject.id}
       </span>
       <svg
-        className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0"
+        className="w-4 h-4 text-red-400 mt-0.5 shrink-0"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -131,7 +131,7 @@ const CardIneligible = ({ subject, reason }) => (
 const CardActive = ({ subject, requestStatus, onStart, onRequest }) => (
   <div className="h-full p-5 flex flex-col">
     <div className="flex items-start justify-between mb-2">
-      <span className="text-[11px] font-bold uppercase tracking-widest text-[#d4a017] bg-[#d4a017]/10 px-2 py-0.5 rounded montserrat">
+      <span className="text-[11px] font-bold uppercase tracking-widest text-[#0891B2] bg-[#0891B2]/10 px-2 py-0.5 rounded montserrat">
         {subject.id}
       </span>
       <span className="inline-flex items-center gap-1 text-[11px] text-emerald-300 bg-emerald-400/10 border border-emerald-400/25 px-2 py-0.5 rounded inter">
@@ -181,7 +181,7 @@ const CardActive = ({ subject, requestStatus, onStart, onRequest }) => (
         İmtahana Başla →
       </button>
     ) : requestStatus === "pending" ? (
-      <div className="w-full mt-auto flex items-center justify-center gap-2 bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-semibold py-2.5 rounded-lg montserrat-600">
+      <div className="w-full mt-auto flex items-center justify-center gap-2 bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 text-xs font-semibold py-2.5 rounded-lg montserrat-600">
         <svg
           className="w-3.5 h-3.5 animate-spin"
           fill="none"
@@ -206,7 +206,7 @@ const CardActive = ({ subject, requestStatus, onStart, onRequest }) => (
     ) : (
       <button
         onClick={onRequest}
-        className="w-full mt-auto bg-[#d4a017] hover:bg-[#f0c040] active:bg-[#b8860b] text-[#0f2a4a] text-xs font-bold py-2.5 rounded-lg transition-colors duration-200 cursor-pointer montserrat-700 tracking-wide"
+        className="w-full mt-auto bg-[#0891B2] hover:bg-[#06B6D4] active:bg-[#0E7490] text-[#0f2a4a] text-xs font-bold py-2.5 rounded-lg transition-colors duration-200 cursor-pointer montserrat-700 tracking-wide"
       >
         Sorğu Göndər
       </button>
@@ -221,7 +221,7 @@ const CardNotToday = ({ subject }) => (
         {subject.id}
       </span>
       <svg
-        className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"
+        className="w-4 h-4 text-slate-400 mt-0.5 shrink-0"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -442,7 +442,7 @@ const Home = () => {
             <p className="text-slate-300 text-sm inter mt-1">
               {status === "teacher"
                 ? "Fənn suallarını idarə edin"
-                : `${subjects.length} fənn tapıldı`}
+                : `ETİS üzərində verəcəyiniz fənn sayı: ${subjects.length}`}
             </p>
           </div>
           <button
@@ -498,18 +498,15 @@ const Home = () => {
                   "bg-navy-mid hover:bg-navy-light border border-white/10";
                 clickable = true;
               } else if (isCompleted) {
-                wrapperClass =
-                  "bg-white border border-border opacity-75";
+                wrapperClass = "bg-white border border-border opacity-75";
               } else if (!isEligible) {
-                wrapperClass =
-                  "bg-white border border-border opacity-60";
+                wrapperClass = "bg-white border border-border opacity-60";
               } else if (isToday) {
                 wrapperClass =
                   "bg-navy-mid hover:bg-navy-light border border-white/10";
                 clickable = true;
               } else {
-                wrapperClass =
-                  "bg-white border border-border opacity-75";
+                wrapperClass = "bg-white border border-border opacity-75";
               }
 
               return (
