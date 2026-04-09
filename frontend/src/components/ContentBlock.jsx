@@ -25,7 +25,7 @@ export const getImageUrl = (imageValue) => {
 };
 
 // ── Image sub-component — uses the auth hook ─────────────────────────────────
-const AuthImage = ({ imagePath, alt = "content", className = "" }) => {
+const AuthImage = ({ imagePath, alt = "content", className = "", onImageClick }) => {
   // Build the full URL first, then fetch it with auth
   const fullUrl = getImageUrl(imagePath);
   const blobUrl = useAuthImage(fullUrl);
@@ -56,13 +56,20 @@ const AuthImage = ({ imagePath, alt = "content", className = "" }) => {
     <img
       src={blobUrl}
       alt={alt}
-      className={`max-w-full max-h-64 object-contain rounded-lg mt-2 block ${className}`}
+      className={`max-w-full max-h-64 object-contain rounded-lg mt-2 block cursor-pointer hover:opacity-80 transition-opacity ${className}`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onImageClick) {
+          onImageClick(blobUrl);
+        }
+      }}
     />
   );
 };
 
 // ── Main exported component ───────────────────────────────────────────────────
-const ContentBlock = ({ text, imagePath, prefix = "" }) => {
+const ContentBlock = ({ text, imagePath, prefix = "", onImageClick }) => {
   const hasText = text && text.trim().length > 0;
   const hasImage = imagePath && imagePath.trim().length > 0;
 
@@ -75,7 +82,7 @@ const ContentBlock = ({ text, imagePath, prefix = "" }) => {
     <span className="inline-block w-full">
       {prefixOnly && <span className="font-semibold">{prefix} </span>}
       {fullText && <MathRenderer text={fullText} />}
-      {hasImage && <AuthImage imagePath={imagePath} />}
+      {hasImage && <AuthImage imagePath={imagePath} onImageClick={onImageClick} />}
     </span>
   );
 };
