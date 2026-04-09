@@ -86,6 +86,7 @@ const Exam = () => {
   const questionRefs = useRef([]);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [acceptedRules, setAcceptedRules] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState(null);
   const roomId = useRef(null);
   const examContentRef = useRef(null);
 
@@ -1079,6 +1080,7 @@ const Exam = () => {
                             text={q.question}
                             imagePath={q.question_image}
                             prefix={`${index + 1}.`}
+                            onImageClick={setEnlargedImage}
                           />
                         </p>
 
@@ -1130,6 +1132,7 @@ const Exam = () => {
                                   <ContentBlock
                                     text={option.text}
                                     imagePath={option.image}
+                                    onImageClick={setEnlargedImage}
                                   />
                                 </span>
                               </label>
@@ -1226,6 +1229,33 @@ const Exam = () => {
           preExam={state.preExam}
           onClose={() => navigate(`/review/${subjectCode}`)}
         />
+      )}
+
+      {/* ════════════════════════════════
+          IMAGE LIGHTBOX
+      ════════════════════════════════ */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-[90vh] w-full flex items-center justify-center">
+            <img 
+              src={enlargedImage} 
+              alt="Enlarged" 
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 text-white"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
