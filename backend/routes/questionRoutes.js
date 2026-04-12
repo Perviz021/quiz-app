@@ -12,6 +12,73 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // ─────────────────────────────────────────────
+// Seeded RNG + option shuffler
+//
+// WHY SEEDED (not Math.random):
+// If the student refreshes mid-exam the page re-fetches questions.
+// A random shuffle each time would scramble the order, making their
+// localStorage-saved answers point at the wrong slots.
+// Seeding with studentId + questionId gives the same shuffle every
+// time for that specific student+question pair.
+// ─────────────────────────────────────────────
+const mulberry32 = (seed) => {
+  let s = seed >>> 0;
+  return () => {
+    s += 0x6d2b79f5;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const seededShuffle = (array, seed) => {
+  const rand = mulberry32(seed);
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const studentSeed = (studentId) =>
+  [...String(studentId)].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+
+// Shuffle one question's options.
+// Returns { shuffledOptions, shuffledCorrect, originalToShuffled }
+// originalToShuffled: { originalSlot(1-5) → newSlot(1-5) }
+const shuffleQuestionOptions = (q, studentId) => {
+  const seed = (studentSeed(studentId) * 31 + q.id) >>> 0;
+
+  const options = [1, 2, 3, 4, 5].map((n) => ({
+    originalSlot: n,
+    text: q[`option${n}`] || null,
+    image: q[`option${n}_image`] || null,
+  }));
+
+  // Only shuffle slots that have content — keep empty ones at the end
+  const filled = options.filter((o) => o.text || o.image);
+  const empty = options.filter((o) => !o.text && !o.image);
+  const shuffled = [...seededShuffle(filled, seed), ...empty];
+
+  const originalToShuffled = {};
+  shuffled.forEach((o, idx) => {
+    originalToShuffled[o.originalSlot] = idx + 1;
+  });
+
+  const shuffledCorrect =
+    originalToShuffled[q.correct_option] ?? q.correct_option;
+
+  const shuffledOptions = {};
+  shuffled.forEach((o, idx) => {
+    shuffledOptions[`option${idx + 1}`] = o.text;
+    shuffledOptions[`option${idx + 1}_image`] = o.image;
+  });
+
+  return { shuffledOptions, shuffledCorrect, originalToShuffled };
+};
+
+// ─────────────────────────────────────────────
 // Multer setup
 //
 // WHY req.query instead of req.body for subjectCode:
@@ -120,9 +187,9 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
       `Fetching questions for student ${studentId}, subject ${subjectCode}`,
     );
 
-    // 🔍 Check exam status
+    // 🔍 Check exam status (also fetch stored shuffle map if it exists)
     const [examStatus] = await db.query(
-      "SELECT submitted, submitted_at FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+      "SELECT submitted, submitted_at, option_order FROM results WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
       [studentId, subjectCode],
     );
 
@@ -187,24 +254,86 @@ router.get("/questions/:subjectCode/:lang", authenticate, async (req, res) => {
       });
     }
 
-    res.json(
-      questions.map((q) => ({
+    // ── Shuffle options per student ───────────────────────────────────────
+    // Parse any existing shuffle map so page refreshes reuse the same order
+    let optionOrderMap = {};
+    const existingOrder = examStatus[0].option_order;
+    if (existingOrder) {
+      try {
+        optionOrderMap =
+          typeof existingOrder === "string"
+            ? JSON.parse(existingOrder)
+            : existingOrder;
+      } catch {
+        optionOrderMap = {};
+      }
+    }
+
+    let orderMapChanged = false;
+
+    const shuffledQuestions = questions.map((q) => {
+      let shuffledOptions, shuffledCorrect;
+
+      if (optionOrderMap[q.id]) {
+        // Reuse existing shuffle so saved answers still match
+        const stored = optionOrderMap[q.id];
+        shuffledCorrect = stored.correct;
+
+        // Rebuild option text/image from stored originalToShuffled map
+        const slotToOriginal = {};
+        for (const [orig, newSlot] of Object.entries(stored.map)) {
+          slotToOriginal[newSlot] = parseInt(orig);
+        }
+        shuffledOptions = {};
+        for (let newSlot = 1; newSlot <= 5; newSlot++) {
+          const origSlot = slotToOriginal[newSlot];
+          shuffledOptions[`option${newSlot}`] = origSlot
+            ? q[`option${origSlot}`] || null
+            : null;
+          shuffledOptions[`option${newSlot}_image`] = origSlot
+            ? q[`option${origSlot}_image`] || null
+            : null;
+        }
+      } else {
+        // New question — compute and store shuffle
+        const result = shuffleQuestionOptions(q, studentId);
+        shuffledOptions = result.shuffledOptions;
+        shuffledCorrect = result.shuffledCorrect;
+        optionOrderMap[q.id] = {
+          correct: shuffledCorrect,
+          map: result.originalToShuffled,
+        };
+        orderMapChanged = true;
+      }
+
+      return {
         id: q.id,
         question: q.question ? q.question.replace(/\n/g, "<br>") : "",
         question_image: q.question_image || null,
-        option1: q.option1 || "",
-        option1_image: q.option1_image || null,
-        option2: q.option2 || "",
-        option2_image: q.option2_image || null,
-        option3: q.option3 || "",
-        option3_image: q.option3_image || null,
-        option4: q.option4 || "",
-        option4_image: q.option4_image || null,
-        option5: q.option5 || "",
-        option5_image: q.option5_image || null,
-        correctOption: q.correct_option,
-      })),
-    );
+        option1: shuffledOptions.option1 || "",
+        option1_image: shuffledOptions.option1_image || null,
+        option2: shuffledOptions.option2 || "",
+        option2_image: shuffledOptions.option2_image || null,
+        option3: shuffledOptions.option3 || "",
+        option3_image: shuffledOptions.option3_image || null,
+        option4: shuffledOptions.option4 || "",
+        option4_image: shuffledOptions.option4_image || null,
+        option5: shuffledOptions.option5 || "",
+        option5_image: shuffledOptions.option5_image || null,
+        // correctOption is intentionally NOT sent to the client.
+        // Scoring uses the server-side stored shuffledCorrect value.
+      };
+    });
+
+    // Persist the shuffle map so refreshes get the same order
+    if (!existingOrder || orderMapChanged) {
+      await db.query(
+        "UPDATE results SET option_order = ? WHERE Tələbə_kodu = ? AND `Fənnin kodu` = ?",
+        [JSON.stringify(optionOrderMap), studentId, subjectCode],
+      );
+    }
+
+    res.json(shuffledQuestions);
   } catch (error) {
     console.error("Error fetching questions:", error);
     res.status(500).json({ error: "Failed to fetch questions" });
