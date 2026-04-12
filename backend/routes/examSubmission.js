@@ -20,9 +20,9 @@ router.post("/submit", authenticate, async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Check exam status
+      // Check exam status (fetch option_order for shuffle-aware scoring)
       const [examStatus] = await connection.query(
-        `SELECT submitted, force_submit, force_submit_time,
+        `SELECT submitted, force_submit, force_submit_time, option_order,
                 TIMESTAMPDIFF(SECOND, NOW(), created_at + INTERVAL 90 MINUTE + INTERVAL extra_time MINUTE) as timeLeft,
                 TIMESTAMPDIFF(SECOND, force_submit_time, NOW()) as seconds_since_force
          FROM results 
@@ -72,37 +72,63 @@ router.post("/submit", authenticate, async (req, res) => {
           .json({ error: "Force submit grace period expired" });
       }
 
+      // ── Parse stored shuffle map ──────────────────────────────────────────
+      // option_order: { "questionId": { correct: shuffledSlot, map: {...} } }
+      // We score against shuffledCorrect — the slot the student actually saw.
+      let optionOrderMap = {};
+      if (exam.option_order) {
+        try {
+          optionOrderMap =
+            typeof exam.option_order === "string"
+              ? JSON.parse(exam.option_order)
+              : exam.option_order;
+        } catch {
+          optionOrderMap = {};
+        }
+      }
+
       // Calculate score
       let score = 0;
       const answerPromises = [];
 
-      // Get all questions for scoring
+      // Fetch original correct_option as fallback for questions with no stored map
       const [questions] = await connection.query(
         "SELECT id, correct_option FROM questions WHERE fənnin_kodu = ?",
         [subjectCode],
       );
+      const dbCorrectMap = {};
+      questions.forEach((q) => {
+        dbCorrectMap[q.id] = q.correct_option;
+      });
 
       // Process each answer
       for (const answer of answers) {
-        const question = questions.find((q) => q.id === answer.questionId);
-        if (question) {
-          const isCorrect = question.correct_option === answer.selectedOption;
-          if (isCorrect) score++;
+        const qid = answer.questionId;
 
-          answerPromises.push(
-            connection.query(
-              `INSERT INTO answers (Tələbə_kodu, \`Fənnin kodu\`, question_id, selected_option, is_correct)
+        // Use the shuffled correct slot if available, otherwise fall back to DB value
+        const stored = optionOrderMap[qid];
+        const correctSlot = stored
+          ? stored.correct
+          : (dbCorrectMap[qid] ?? null);
+
+        if (correctSlot === null) continue;
+
+        const isCorrect = correctSlot === answer.selectedOption;
+        if (isCorrect) score++;
+
+        answerPromises.push(
+          connection.query(
+            `INSERT INTO answers (Tələbə_kodu, \`Fənnin kodu\`, question_id, selected_option, is_correct)
                VALUES (?, ?, ?, ?, ?)`,
-              [
-                studentId,
-                subjectCode,
-                answer.questionId,
-                answer.selectedOption,
-                isCorrect,
-              ],
-            ),
-          );
-        }
+            [
+              studentId,
+              subjectCode,
+              answer.questionId,
+              answer.selectedOption,
+              isCorrect,
+            ],
+          ),
+        );
       }
 
       // Save all answers
