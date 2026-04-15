@@ -25,7 +25,12 @@ export const getImageUrl = (imageValue) => {
 };
 
 // ── Image sub-component — uses the auth hook ─────────────────────────────────
-const AuthImage = ({ imagePath, alt = "content", className = "", onImageClick }) => {
+const AuthImage = ({
+  imagePath,
+  alt = "content",
+  className = "",
+  onImageClick,
+}) => {
   // Build the full URL first, then fetch it with auth
   const fullUrl = getImageUrl(imagePath);
   const blobUrl = useAuthImage(fullUrl);
@@ -82,7 +87,9 @@ const ContentBlock = ({ text, imagePath, prefix = "", onImageClick }) => {
     <span className="inline-block w-full">
       {prefixOnly && <span className="font-semibold">{prefix} </span>}
       {fullText && <MathRenderer text={fullText} />}
-      {hasImage && <AuthImage imagePath={imagePath} onImageClick={onImageClick} />}
+      {hasImage && (
+        <AuthImage imagePath={imagePath} onImageClick={onImageClick} />
+      )}
     </span>
   );
 };
