@@ -284,18 +284,20 @@ const AddQuestion = ({ subjectCode, lang, onSuccess, onCancel }) => {
       <form onSubmit={handleSubmit} className="space-y-5">
         <QuestionField {...fieldProps("question", "Sual *", true)} />
 
-        {[1, 2, 3, 4, 5].map((num) => (
-          <QuestionField
-            key={num}
-            {...fieldProps(
-              `option${num}`,
-              `Variant ${String.fromCharCode(64 + num)}`,
-            )}
-          />
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <QuestionField
+              key={num}
+              {...fieldProps(
+                `option${num}`,
+                `Variant ${String.fromCharCode(64 + num)}`,
+              )}
+            />
+          ))}
+        </div>
 
-        <div className="flex flex-wrap gap-4 items-end pt-4 border-t border-border">
-          <div className="flex-1 min-w-[160px]">
+        <div className="flex flex-row flex-wrap gap-3 items-end pt-4 border-t border-border">
+          <div className="w-28">
             <label className={FIELD_LABEL}>Düzgün cavab *</label>
             <select
               value={form.correct_option}
