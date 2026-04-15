@@ -41,16 +41,12 @@ const PasteImageZone = ({ onFile, uploading = false, fieldLabel = "" }) => {
 
   const handleFile = (file) => {
     if (!file) {
-      toast.error(
-        "Mübadilə buferindən şəkil tapılmadı. Əvvəlcə şəkli kopyalayın.",
-      );
+      toast.error("Mübadilə buferindən şəkil tapılmadı. Əvvəlcə şəkli kopyalayın.");
       return;
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error(
-        "Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir",
-      );
+      toast.error("Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir");
       return;
     }
 
@@ -116,8 +112,8 @@ const PasteImageZone = ({ onFile, uploading = false, fieldLabel = "" }) => {
       onBlur={() => setFocused(false)}
       onPaste={handleZonePaste}
       className={[
-        "mt-2 flex flex-col items-center justify-center gap-2",
-        "w-full rounded-xl border-2 border-dashed py-4 px-4",
+        "mt-1.5 flex flex-row items-center justify-center gap-2",
+        "w-full rounded-lg border-2 border-dashed py-2 px-3",
         "cursor-pointer select-none outline-none transition-all duration-200",
         isDisabled
           ? "opacity-50 pointer-events-none border-slate-200 bg-slate-50"
@@ -129,7 +125,7 @@ const PasteImageZone = ({ onFile, uploading = false, fieldLabel = "" }) => {
       {uploading || pasting ? (
         <>
           <svg
-            className="w-5 h-5 animate-spin text-navy"
+            className="w-4 h-4 animate-spin text-navy flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -154,7 +150,7 @@ const PasteImageZone = ({ onFile, uploading = false, fieldLabel = "" }) => {
       ) : (
         <>
           <svg
-            className="w-6 h-6 shrink-0"
+            className="w-4 h-4 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -166,20 +162,11 @@ const PasteImageZone = ({ onFile, uploading = false, fieldLabel = "" }) => {
               d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
             />
           </svg>
-
-          <div className="text-center leading-tight">
-            <p className="text-xs font-bold montserrat-700 tracking-wide">
-              Klikləyin → Ctrl+V
-            </p>
-            <p className="text-[11px] inter mt-0.5 opacity-70">
-              {focused
-                ? "İndi Ctrl+V basın"
-                : "Şəkil yapışdırmaq üçün bura klikləyin"}
-            </p>
-          </div>
-
+          <p className="text-xs font-bold montserrat-700 tracking-wide leading-none">
+            {focused ? "İndi Ctrl+V basın" : "Klikləyin → Ctrl+V"}
+          </p>
           {focused && (
-            <span className="text-[10px] font-bold tracking-widest uppercase montserrat px-2 py-0.5 rounded-full bg-gold text-navy">
+            <span className="text-[10px] font-bold tracking-widest uppercase montserrat px-1.5 py-0.5 rounded-full bg-gold text-navy ml-1">
               Hazır
             </span>
           )}
