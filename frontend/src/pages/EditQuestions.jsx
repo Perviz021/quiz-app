@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import AddQuestion from "./AddQuestion";
 import ContentBlock from "../components/ContentBlock";
 import useAuthImage from "../hooks/useAuthImage";
+import PasteImageZone from "../components/PasteImageZone";
 
 // server.js: app.use("/api/uploads", express.static("uploads"))
 // so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
@@ -74,24 +75,7 @@ const AuthImg = ({ imageValue, className }) => {
 const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
   const [uploading, setUploading] = useState(false);
 
-  const handleFileSelect = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type)) {
-      toast.error(
-        "Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir",
-      );
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Şəkil 5MB-dan böyük ola bilməz");
-      e.target.value = "";
-      return;
-    }
-
+  const handlePastedFile = async (file) => {
     setUploading(true);
     try {
       const formData = new FormData();
@@ -113,7 +97,6 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
       toast.error(err.message);
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
 
@@ -153,28 +136,11 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
   }
 
   return (
-    <label
-      className={`inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all ${
-        uploading ? "opacity-60 pointer-events-none" : ""
-      }`}
-    >
-      {uploading ? (
-        <>
-          <span className="animate-spin inline-block">⏳</span> Yüklənir...
-        </>
-      ) : (
-        <>
-          🖼 Şəkil əlavə et
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={uploading}
-          />
-        </>
-      )}
-    </label>
+    <PasteImageZone
+      onFile={handlePastedFile}
+      uploading={uploading}
+      fieldLabel={fieldKey}
+    />
   );
 };
 
