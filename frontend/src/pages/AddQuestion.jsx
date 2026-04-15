@@ -2,6 +2,7 @@ import { useState } from "react";
 import API_BASE from "../config/api";
 import { toast } from "react-toastify";
 import MathEditor from "../components/MathEditor";
+import PasteImageZone from "../components/PasteImageZone";
 
 // server.js: app.use("/api/uploads", express.static("uploads"))
 // so full URL = http://localhost:5000/api/uploads/questions/filename.jpg
@@ -45,29 +46,6 @@ const QuestionField = ({
   onImageRemoved,
   isTextarea,
 }) => {
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type)) {
-      toast.error(
-        "Yalnız şəkil faylları (.jpg, .png, .gif, .webp) dəstəklənir",
-      );
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Şəkil 5MB-dan böyük ola bilməz");
-      e.target.value = "";
-      return;
-    }
-
-    onImageSelected(fieldKey, file);
-    toast.success("Şəkil seçildi. Sual ilə birlikdə yüklənəcək");
-    e.target.value = "";
-  };
-
   const handleRemoveImage = () => {
     onImageRemoved(fieldKey);
   };
@@ -93,7 +71,7 @@ const QuestionField = ({
         />
       )}
 
-      {/* Image preview OR upload button */}
+      {/* Image preview OR paste zone */}
       {hasImage ? (
         <div className="relative inline-block mt-1">
           <img
@@ -111,15 +89,10 @@ const QuestionField = ({
           </button>
         </div>
       ) : (
-        <label className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-sm text-slate-600 inter cursor-pointer hover:border-gold hover:text-navy hover:bg-gold-pale/40 transition-all">
-          🖼 Şəkil əlavə et
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-        </label>
+        <PasteImageZone
+          onFile={(file) => onImageSelected(fieldKey, file)}
+          fieldLabel={label}
+        />
       )}
     </div>
   );
