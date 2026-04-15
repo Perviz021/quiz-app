@@ -121,7 +121,7 @@ const ImageFieldEditor = ({ fieldKey, imageValue, subjectCode, onChange }) => {
       <div className="relative inline-block mt-2 group">
         <AuthImg
           imageValue={imageValue}
-          className="max-h-48 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
+          className="max-h-32 max-w-full rounded-lg border border-border shadow-sm object-contain bg-slate-50 p-1"
         />
         <button
           type="button"
@@ -717,37 +717,39 @@ const EditQuestions = () => {
                       />
                     </div>
 
-                    {/* ── Option fields ── */}
-                    {[1, 2, 3, 4, 5].map((num) => (
-                      <div key={num}>
-                        <label className={FIELD_LABEL}>
-                          Variant {String.fromCharCode(64 + num)}
-                        </label>
-                        <input
-                          type="text"
-                          value={eq[`option${num}`] || ""}
-                          className={FIELD_INPUT}
-                          onChange={(e) =>
-                            handleInputChange(
-                              question.id,
-                              `option${num}`,
-                              e.target.value,
-                            )
-                          }
-                          placeholder={`Variant ${String.fromCharCode(
-                            64 + num,
-                          )} mətni (istəyə görə)`}
-                        />
-                        <ImageFieldEditor
-                          fieldKey={`option${num}_image`}
-                          imageValue={eq[`option${num}_image`] || null}
-                          subjectCode={subjectCode}
-                          onChange={(field, val) =>
-                            handleImageChange(question.id, field, val)
-                          }
-                        />
-                      </div>
-                    ))}
+                    {/* ── Option fields — 2-col grid ── */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <div key={num}>
+                          <label className={FIELD_LABEL}>
+                            Variant {String.fromCharCode(64 + num)}
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={eq[`option${num}`] || ""}
+                            className={`${FIELD_INPUT}`}
+                            onChange={(e) =>
+                              handleInputChange(
+                                question.id,
+                                `option${num}`,
+                                e.target.value,
+                              )
+                            }
+                            placeholder={`Variant ${String.fromCharCode(
+                              64 + num,
+                            )} mətni (istəyə görə)`}
+                          />
+                          <ImageFieldEditor
+                            fieldKey={`option${num}_image`}
+                            imageValue={eq[`option${num}_image`] || null}
+                            subjectCode={subjectCode}
+                            onChange={(field, val) =>
+                              handleImageChange(question.id, field, val)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
 
                     {/* Rendered view (same content style as Exam/Review) */}
                     <div className="pt-2">
@@ -787,8 +789,8 @@ const EditQuestions = () => {
                     </div>
 
                     {/* ── Correct answer + action buttons ── */}
-                    <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end pt-4 border-t border-border">
-                      <div className="flex-1">
+                    <div className="flex flex-row flex-wrap gap-3 items-end pt-4 border-t border-border">
+                      <div className="w-28">
                         <label className={FIELD_LABEL}>Düzgün cavab</label>
                         <select
                           value={eq.correct_option || 1}
@@ -809,7 +811,7 @@ const EditQuestions = () => {
                         </select>
                       </div>
 
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex gap-2 shrink-0 ml-auto">
                         <button
                           onClick={() => handleQuestionUpdate(question.id)}
                           className="px-4 py-2.5 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-navy/30 focus:ring-offset-2 transition-colors duration-200 cursor-pointer montserrat-700"
